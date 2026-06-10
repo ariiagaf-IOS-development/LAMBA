@@ -1,6 +1,6 @@
 # LAMBA Architecture
 
-This document summarizes the architecture defined in the project plans (`Новый документ.pdf` and `Копия ламба (6).pdf`) and reflects the intended MVP structure.
+This document summarizes the architecture defined in the project plans and reflects the intended MVP structure.
 
 ## 1. System Overview
 
