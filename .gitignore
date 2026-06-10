@@ -1,0 +1,47 @@
+# Logs and temporary output
+*.log
+*.tmp
+tmp/
+output/
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
+.venv/
+venv/
+env/
+
+# Environment/config
+.env
+.env.*
+
+# IDE/editor files
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# OS artifacts
+.DS_Store
+Thumbs.db
