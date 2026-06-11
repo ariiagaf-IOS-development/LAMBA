@@ -1,0 +1,32 @@
+basePath: /
+definitions:
+  handler.HealthResponse:
+    properties:
+      service:
+        example: lamba-api
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Backend API for the LAMBA vehicle maintenance MVP.
+  title: LAMBA Backend API
+  version: 0.1.0
+paths:
+  /health:
+    get:
+      description: Returns basic API liveness information.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.HealthResponse'
+      summary: Check API health
+      tags:
+      - health
+swagger: "2.0"

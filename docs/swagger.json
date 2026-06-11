@@ -1,0 +1,48 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Backend API for the LAMBA vehicle maintenance MVP.",
+        "title": "LAMBA Backend API",
+        "contact": {},
+        "version": "0.1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/health": {
+            "get": {
+                "description": "Returns basic API liveness information.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Check API health",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HealthResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handler.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "service": {
+                    "type": "string",
+                    "example": "lamba-api"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        }
+    }
+}
