@@ -10,9 +10,22 @@
 		A3B9FB702FDB85D900EB6F9B /* Lamba.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lamba.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A378C7CA2FDBF0020061D15E /* Exceptions for "Lamba" folder in "Lamba" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Repositories/ChatRepository.swift,
+			);
+			target = A3B9FB6F2FDB85D900EB6F9B /* Lamba */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A3B9FB722FDB85D900EB6F9B /* Lamba */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A378C7CA2FDBF0020061D15E /* Exceptions for "Lamba" folder in "Lamba" target */,
+			);
 			path = Lamba;
 			sourceTree = "<group>";
 		};
