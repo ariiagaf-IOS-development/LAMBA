@@ -9,6 +9,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	serviceName = "lamba-api"
+
+	checkAPI      = "api"
+	checkPostgres = "postgres"
+
+	statusOK          = "ok"
+	statusUnavailable = "unavailable"
+	statusDegraded    = "degraded"
+
+	healthTimeout = 2 * time.Second
+)
+
 type HealthResponse struct {
 	Service string            `json:"service" example:"lamba-api"`
 	Status  string            `json:"status" example:"ok"`
@@ -23,7 +36,7 @@ func NewHealthHandler(db *sql.DB) *HealthHandler {
 	return &HealthHandler{db: db}
 }
 
-// Health godoc
+// CheckHealth godoc
 // @Summary Check API health
 // @Description Returns API liveness information and database readiness when configured.
 // @Tags health
@@ -31,26 +44,29 @@ func NewHealthHandler(db *sql.DB) *HealthHandler {
 // @Success 200 {object} HealthResponse
 // @Failure 503 {object} HealthResponse
 // @Router /health [get]
-func (h *HealthHandler) Health(c *gin.Context) {
-	checks := map[string]string{"api": "ok"}
+func (h *HealthHandler) CheckHealth(c *gin.Context) {
+	checks := map[string]string{
+		checkAPI: statusOK,
+	}
+
 	statusCode := http.StatusOK
-	status := "ok"
+	status := statusOK
 
 	if h.db != nil {
-		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), healthTimeout)
 		defer cancel()
 
 		if err := h.db.PingContext(ctx); err != nil {
-			checks["postgres"] = "unavailable"
+			checks[checkPostgres] = statusUnavailable
 			statusCode = http.StatusServiceUnavailable
-			status = "degraded"
+			status = statusDegraded
 		} else {
-			checks["postgres"] = "ok"
+			checks[checkPostgres] = statusOK
 		}
 	}
 
 	c.JSON(statusCode, HealthResponse{
-		Service: "lamba-api",
+		Service: serviceName,
 		Status:  status,
 		Checks:  checks,
 	})

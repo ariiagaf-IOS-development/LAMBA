@@ -2,7 +2,9 @@ package handler
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/internal/domain"
@@ -12,6 +14,7 @@ import (
 
 type AuthHandler struct {
 	auth *service.AuthService
+	log  *slog.Logger
 }
 
 type authRequest struct {
@@ -31,8 +34,15 @@ type authResponse struct {
 	TokenType string       `json:"token_type" example:"Basic"`
 }
 
-func NewAuthHandler(auth *service.AuthService) *AuthHandler {
-	return &AuthHandler{auth: auth}
+func NewAuthHandler(auth *service.AuthService, log *slog.Logger) *AuthHandler {
+	if log == nil {
+		log = slog.Default()
+	}
+
+	return &AuthHandler{
+		auth: auth,
+		log:  log,
+	}
 }
 
 // Register godoc
@@ -56,7 +66,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	user, err := h.auth.Register(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		handleAuthError(c, err)
+		h.handleAuthError(c, err)
 		return
 	}
 
@@ -84,7 +94,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	user, err := h.auth.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		handleAuthError(c, err)
+		h.handleAuthError(c, err)
 		return
 	}
 
@@ -110,7 +120,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	c.JSON(http.StatusOK, newUserResponse(user))
 }
 
-func handleAuthError(c *gin.Context, err error) {
+func (h *AuthHandler) handleAuthError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, service.ErrInvalidEmail):
 		errorJSON(c, http.StatusBadRequest, "invalid email")
@@ -121,6 +131,14 @@ func handleAuthError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrInvalidCredentials):
 		errorJSON(c, http.StatusUnauthorized, "invalid credentials")
 	default:
+		h.log.ErrorContext(
+			c.Request.Context(),
+			"auth request failed",
+			slog.String("method", c.Request.Method),
+			slog.String("path", c.FullPath()),
+			slog.String("error", err.Error()),
+		)
+
 		errorJSON(c, http.StatusInternalServerError, "internal server error")
 	}
 }
@@ -137,6 +155,6 @@ func newUserResponse(user domain.User) userResponse {
 	return userResponse{
 		ID:        user.ID,
 		Email:     user.Email,
-		CreatedAt: user.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		CreatedAt: user.CreatedAt.UTC().Format(time.RFC3339),
 	}
 }

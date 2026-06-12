@@ -52,32 +52,40 @@ func Migrate(ctx context.Context, conn *sql.DB) error {
 			continue
 		}
 
-		contents, err := migrationFiles.ReadFile(path.Join("migrations", entry.Name()))
-		if err != nil {
-			return fmt.Errorf("read migration %s: %w", entry.Name(), err)
+		if err := applyMigration(ctx, conn, entry.Name(), version); err != nil {
+			return err
 		}
+	}
 
-		tx, err := conn.BeginTx(ctx, nil)
-		if err != nil {
-			return fmt.Errorf("begin migration %s: %w", entry.Name(), err)
-		}
+	return nil
+}
 
-		if _, err := tx.ExecContext(ctx, string(contents)); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("apply migration %s: %w", entry.Name(), err)
-		}
+func applyMigration(ctx context.Context, conn *sql.DB, name string, version int64) error {
+	contents, err := migrationFiles.ReadFile(path.Join("migrations", name))
+	if err != nil {
+		return fmt.Errorf("read migration %s: %w", name, err)
+	}
 
-		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO schema_migrations (version, name)
-			VALUES ($1, $2)
-		`, version, entry.Name()); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("record migration %s: %w", entry.Name(), err)
-		}
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin migration %s: %w", name, err)
+	}
 
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit migration %s: %w", entry.Name(), err)
-		}
+	if _, err := tx.ExecContext(ctx, string(contents)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("apply migration %s: %w", name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO schema_migrations (version, name)
+		VALUES ($1, $2)
+	`, version, name); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("record migration %s: %w", name, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit migration %s: %w", name, err)
 	}
 
 	return nil
@@ -94,11 +102,16 @@ func migrationVersion(name string) (int64, error) {
 		return 0, fmt.Errorf("invalid migration version in %q: %w", name, err)
 	}
 
+	if version <= 0 {
+		return 0, fmt.Errorf("migration version must be positive in %q", name)
+	}
+
 	return version, nil
 }
 
 func migrationApplied(ctx context.Context, conn *sql.DB, version int64) (bool, error) {
 	var applied bool
+
 	if err := conn.QueryRowContext(ctx, `
 		SELECT EXISTS (
 			SELECT 1

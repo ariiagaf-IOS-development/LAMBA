@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"gitlab.pg.innopolis.university/lamba/LAMBA/internal/domain"
 )
@@ -28,7 +29,7 @@ func (r *UserRepository) Create(ctx context.Context, email, passwordHash string)
 		return domain.User{}, ErrConflict
 	}
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, fmt.Errorf("create user: %w", err)
 	}
 
 	return user, nil
@@ -36,6 +37,7 @@ func (r *UserRepository) Create(ctx context.Context, email, passwordHash string)
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
 	var user domain.User
+
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, email, password_hash, created_at
 		FROM users
@@ -45,7 +47,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 		return domain.User{}, ErrNotFound
 	}
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, fmt.Errorf("find user by email: %w", err)
 	}
 
 	return user, nil
@@ -53,6 +55,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 
 func (r *UserRepository) FindByID(ctx context.Context, id int64) (domain.User, error) {
 	var user domain.User
+
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, email, password_hash, created_at
 		FROM users
@@ -62,7 +65,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id int64) (domain.User, e
 		return domain.User{}, ErrNotFound
 	}
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, fmt.Errorf("find user by id: %w", err)
 	}
 
 	return user, nil

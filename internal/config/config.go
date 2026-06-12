@@ -1,13 +1,11 @@
 package config
 
 import (
+	"log"
 	"os"
 	"strconv"
-)
 
-const (
-	defaultDatabaseURL = "postgres://lamba:lamba@localhost:5432/lamba?sslmode=disable"
-	defaultBcryptCost  = 12
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -16,44 +14,66 @@ type Config struct {
 	BcryptCost  int
 }
 
-func Load() Config {
+const (
+	envHTTPAddr    = "HTTP_ADDR"
+	envPort        = "PORT"
+	envDatabaseURL = "DATABASE_URL"
+	envBcryptCost  = "BCRYPT_COST"
+)
+
+const (
+	defaultPort        = "8080"
+	defaultDatabaseURL = "postgres://lamba:lamba@localhost:5432/lamba?sslmode=disable"
+	defaultBcryptCost  = 12
+)
+
+const (
+	minBcryptCost = 4
+	maxBcryptCost = 31
+)
+
+func MustLoad() Config {
+	if err := godotenv.Load(); err != nil {
+		log.Println("no .env file found")
+	}
+
 	return Config{
-		HTTPAddr:    httpAddr(),
-		DatabaseURL: stringEnv("DATABASE_URL", defaultDatabaseURL),
-		BcryptCost:  intEnv("BCRYPT_COST", defaultBcryptCost),
+		HTTPAddr:    loadHTTPAddr(),
+		DatabaseURL: getEnv(envDatabaseURL, defaultDatabaseURL),
+		BcryptCost:  getEnvIntInRange(envBcryptCost, defaultBcryptCost, minBcryptCost, maxBcryptCost),
 	}
 }
 
-func httpAddr() string {
-	if value := os.Getenv("HTTP_ADDR"); value != "" {
+func loadHTTPAddr() string {
+	if value := os.Getenv(envHTTPAddr); value != "" {
 		return value
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	return ":" + port
+	return ":" + getEnv(envPort, defaultPort)
 }
 
-func stringEnv(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-
-	return fallback
-}
-
-func intEnv(key string, fallback int) int {
+func getEnv(key string, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
-		return fallback
+		return defaultValue
+	}
+
+	return value
+}
+
+func getEnvIntInRange(key string, defaultValue, minValue, maxValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
 	}
 
 	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed < 4 || parsed > 31 {
-		return fallback
+	if err != nil {
+		log.Fatalf("invalid int value for %s: %s", key, value)
+	}
+
+	if parsed < minValue || parsed > maxValue {
+		log.Fatalf("%s must be between %d and %d", key, minValue, maxValue)
 	}
 
 	return parsed

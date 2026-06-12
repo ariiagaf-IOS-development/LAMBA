@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
+	"os"
 
 	_ "gitlab.pg.innopolis.university/lamba/LAMBA/docs"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/internal/config"
@@ -10,33 +11,34 @@ import (
 	"gitlab.pg.innopolis.university/lamba/LAMBA/internal/router"
 )
 
-// @title LAMBA Backend API
-// @version 0.1.0
-// @description Backend API for the LAMBA vehicle maintenance MVP.
-// @host localhost:8080
-// @BasePath /
-// @securityDefinitions.basic BasicAuth
 func main() {
 	ctx := context.Background()
-	cfg := config.Load()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	cfg := config.MustLoad()
 
 	conn, err := db.Connect(ctx, cfg)
 	if err != nil {
-		log.Fatalf("failed to connect to PostgreSQL: %v", err)
+		logger.Error("failed to connect to PostgreSQL", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 	defer conn.Close()
 
 	if err := db.Migrate(ctx, conn); err != nil {
-		log.Fatalf("failed to run migrations: %v", err)
+		logger.Error("failed to run migrations", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	r := router.New(router.Dependencies{
 		Config: cfg,
 		DB:     conn,
+		Logger: logger,
 	})
 
-	log.Printf("starting LAMBA API on %s", cfg.HTTPAddr)
+	logger.Info("starting LAMBA API", slog.String("addr", cfg.HTTPAddr))
+
 	if err := r.Run(cfg.HTTPAddr); err != nil {
-		log.Fatalf("failed to start LAMBA API: %v", err)
+		logger.Error("failed to start LAMBA API", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 }

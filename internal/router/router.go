@@ -35,15 +35,17 @@ func New(deps ...Dependencies) *gin.Engine {
 	r.Use(gin.Logger(), gin.Recovery())
 
 	healthHandler := handler.NewHealthHandler(dep.DB)
-	r.GET("/health", healthHandler.Health)
+	r.GET("/health", healthHandler.CheckHealth)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	if dep.DB != nil {
 		userRepo := repository.NewUserRepository(dep.DB)
 		vehicleRepo := repository.NewVehicleRepository(dep.DB)
+
 		authService := service.NewAuthService(userRepo, dep.Config.BcryptCost)
-		authHandler := handler.NewAuthHandler(authService)
-		vehicleHandler := handler.NewVehicleHandler(vehicleRepo, slog.Default())
+
+		authHandler := handler.NewAuthHandler(authService, log)
+		vehicleHandler := handler.NewVehicleHandler(vehicleRepo, log)
 
 		api := r.Group("/api")
 		{
