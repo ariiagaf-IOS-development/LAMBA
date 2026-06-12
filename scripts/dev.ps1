@@ -67,7 +67,7 @@ try {
     $swag = Resolve-Swag
 
     Write-Host "Regenerating Swagger docs..."
-    & $swag init -g main.go -d cmd/api,internal/handler -o docs --parseInternal
+    & $swag init -g main.go -d cmd/api,internal/handler,internal/domain -o docs --parseInternal
 
     Write-Host ""
     Write-Host "Starting API at http://localhost:8080"
