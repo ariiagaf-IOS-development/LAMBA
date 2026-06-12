@@ -11,15 +11,23 @@ import (
 	"gitlab.pg.innopolis.university/lamba/LAMBA/internal/domain"
 )
 
+const postgresUniqueViolationCode = "23505"
+
 type VehicleRepository struct {
 	db *sql.DB
+}
+
+// VIN uses NullableStringUpdate because PATCH requests must distinguish between "not provided" and "clear value"
+type NullableStringUpdate struct {
+	Set   bool
+	Value *string
 }
 
 type VehicleUpdate struct {
 	Brand     *string
 	Model     *string
 	Year      *int
-	VIN       *string
+	VIN       NullableStringUpdate
 	MileageKM *int
 }
 
@@ -33,11 +41,12 @@ func (r *VehicleRepository) Create(ctx context.Context, vehicle domain.Vehicle) 
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, user_id, brand, model, year, vin, mileage_km, created_at, updated_at
 	`, vehicle.UserID, vehicle.Brand, vehicle.Model, vehicle.Year, vehicle.VIN, vehicle.MileageKM))
-	if isUniqueViolation(err) {
-		return domain.Vehicle{}, ErrConflict
-	}
 	if err != nil {
-		return domain.Vehicle{}, err
+		if isUniqueViolation(err) {
+			return domain.Vehicle{}, ErrConflict
+		}
+
+		return domain.Vehicle{}, fmt.Errorf("create vehicle: %w", err)
 	}
 
 	return created, nil
@@ -51,7 +60,7 @@ func (r *VehicleRepository) ListByUser(ctx context.Context, userID int64) ([]dom
 		ORDER BY id
 	`, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list vehicles by user: %w", err)
 	}
 	defer rows.Close()
 
@@ -59,12 +68,13 @@ func (r *VehicleRepository) ListByUser(ctx context.Context, userID int64) ([]dom
 	for rows.Next() {
 		vehicle, err := scanVehicle(rows)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("scan vehicle: %w", err)
 		}
 		vehicles = append(vehicles, vehicle)
 	}
+
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("iterate vehicles: %w", err)
 	}
 
 	return vehicles, nil
@@ -80,7 +90,7 @@ func (r *VehicleRepository) GetByIDForUser(ctx context.Context, userID, id int64
 		return domain.Vehicle{}, ErrNotFound
 	}
 	if err != nil {
-		return domain.Vehicle{}, err
+		return domain.Vehicle{}, fmt.Errorf("get vehicle by id for user: %w", err)
 	}
 
 	return vehicle, nil
@@ -91,24 +101,19 @@ func (r *VehicleRepository) Update(ctx context.Context, userID, id int64, update
 	args := []any{userID, id}
 
 	if update.Brand != nil {
-		args = append(args, *update.Brand)
-		sets = append(sets, fmt.Sprintf("brand = $%d", len(args)))
+		sets, args = appendSet(sets, args, "brand", *update.Brand)
 	}
 	if update.Model != nil {
-		args = append(args, *update.Model)
-		sets = append(sets, fmt.Sprintf("model = $%d", len(args)))
+		sets, args = appendSet(sets, args, "model", *update.Model)
 	}
 	if update.Year != nil {
-		args = append(args, *update.Year)
-		sets = append(sets, fmt.Sprintf("year = $%d", len(args)))
+		sets, args = appendSet(sets, args, "year", *update.Year)
 	}
-	if update.VIN != nil {
-		args = append(args, nullableTrimmedString(*update.VIN))
-		sets = append(sets, fmt.Sprintf("vin = $%d", len(args)))
+	if update.VIN.Set {
+		sets, args = appendSet(sets, args, "vin", update.VIN.Value)
 	}
 	if update.MileageKM != nil {
-		args = append(args, *update.MileageKM)
-		sets = append(sets, fmt.Sprintf("mileage_km = $%d", len(args)))
+		sets, args = appendSet(sets, args, "mileage_km", *update.MileageKM)
 	}
 
 	if len(sets) == 0 {
@@ -116,6 +121,7 @@ func (r *VehicleRepository) Update(ctx context.Context, userID, id int64, update
 	}
 
 	sets = append(sets, "updated_at = NOW()")
+
 	query := fmt.Sprintf(`
 		UPDATE vehicles
 		SET %s
@@ -127,11 +133,12 @@ func (r *VehicleRepository) Update(ctx context.Context, userID, id int64, update
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Vehicle{}, ErrNotFound
 	}
-	if isUniqueViolation(err) {
-		return domain.Vehicle{}, ErrConflict
-	}
 	if err != nil {
-		return domain.Vehicle{}, err
+		if isUniqueViolation(err) {
+			return domain.Vehicle{}, ErrConflict
+		}
+
+		return domain.Vehicle{}, fmt.Errorf("update vehicle: %w", err)
 	}
 
 	return vehicle, nil
@@ -143,12 +150,12 @@ func (r *VehicleRepository) Delete(ctx context.Context, userID, id int64) error 
 		WHERE user_id = $1 AND id = $2
 	`, userID, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("delete vehicle: %w", err)
 	}
 
 	count, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("get deleted vehicles count: %w", err)
 	}
 	if count == 0 {
 		return ErrNotFound
@@ -179,6 +186,7 @@ func scanVehicle(scanner rowScanner) (domain.Vehicle, error) {
 	if err != nil {
 		return domain.Vehicle{}, err
 	}
+
 	if vin.Valid {
 		vehicle.VIN = &vin.String
 	}
@@ -186,20 +194,14 @@ func scanVehicle(scanner rowScanner) (domain.Vehicle, error) {
 	return vehicle, nil
 }
 
-func nullableTrimmedString(value string) any {
-	trimmed := strings.TrimSpace(value)
-	if trimmed == "" {
-		return nil
-	}
+func appendSet(sets []string, args []any, column string, value any) ([]string, []any) {
+	args = append(args, value)
+	sets = append(sets, fmt.Sprintf("%s = $%d", column, len(args)))
 
-	return trimmed
+	return sets, args
 }
 
 func isUniqueViolation(err error) bool {
-	if err == nil {
-		return false
-	}
-
 	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+	return errors.As(err, &pgErr) && pgErr.Code == postgresUniqueViolationCode
 }

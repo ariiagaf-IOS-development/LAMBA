@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,8 +14,16 @@ import (
 	"gitlab.pg.innopolis.university/lamba/LAMBA/internal/repository"
 )
 
+var (
+	errBrandRequired  = errors.New("brand is required")
+	errModelRequired  = errors.New("model is required")
+	errInvalidMileage = errors.New("mileage_km must be greater than or equal to 0")
+	errInvalidYear    = errors.New("year must be between 1886 and next calendar year")
+)
+
 type VehicleHandler struct {
 	vehicles *repository.VehicleRepository
+	log      *slog.Logger
 }
 
 type vehicleRequest struct {
@@ -37,11 +46,18 @@ type vehicleListResponse struct {
 	Vehicles []domain.Vehicle `json:"vehicles"`
 }
 
-func NewVehicleHandler(vehicles *repository.VehicleRepository) *VehicleHandler {
-	return &VehicleHandler{vehicles: vehicles}
+func NewVehicleHandler(vehicles *repository.VehicleRepository, log *slog.Logger) *VehicleHandler {
+	if log == nil {
+		log = slog.Default()
+	}
+
+	return &VehicleHandler{
+		vehicles: vehicles,
+		log:      log,
+	}
 }
 
-// Create godoc
+// CreateVehicle godoc
 // @Summary Create a vehicle
 // @Description Creates a vehicle owned by the authenticated user.
 // @Tags vehicles
@@ -55,7 +71,7 @@ func NewVehicleHandler(vehicles *repository.VehicleRepository) *VehicleHandler {
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/vehicles [post]
-func (h *VehicleHandler) Create(c *gin.Context) {
+func (h *VehicleHandler) CreateVehicle(c *gin.Context) {
 	user, ok := middleware.CurrentUser(c)
 	if !ok {
 		errorJSON(c, http.StatusUnauthorized, "authentication required")
@@ -68,29 +84,24 @@ func (h *VehicleHandler) Create(c *gin.Context) {
 		return
 	}
 
-	brand, model, vin, err := validateVehicle(req.Brand, req.Model, req.Year, req.MileageKM, req.VIN)
+	newVehicle, err := newVehicleFromRequest(req)
 	if err != nil {
 		errorJSON(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	vehicle, err := h.vehicles.Create(c.Request.Context(), domain.Vehicle{
-		UserID:    user.ID,
-		Brand:     brand,
-		Model:     model,
-		Year:      req.Year,
-		VIN:       vin,
-		MileageKM: req.MileageKM,
-	})
+	newVehicle.UserID = user.ID
+
+	vehicle, err := h.vehicles.Create(c.Request.Context(), newVehicle)
 	if err != nil {
-		handleVehicleError(c, err)
+		h.handleVehicleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, vehicle)
 }
 
-// List godoc
+// ListVehicle godoc
 // @Summary List vehicles
 // @Description Lists vehicles owned by the authenticated user.
 // @Tags vehicles
@@ -100,7 +111,7 @@ func (h *VehicleHandler) Create(c *gin.Context) {
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/vehicles [get]
-func (h *VehicleHandler) List(c *gin.Context) {
+func (h *VehicleHandler) ListVehicle(c *gin.Context) {
 	user, ok := middleware.CurrentUser(c)
 	if !ok {
 		errorJSON(c, http.StatusUnauthorized, "authentication required")
@@ -109,14 +120,14 @@ func (h *VehicleHandler) List(c *gin.Context) {
 
 	vehicles, err := h.vehicles.ListByUser(c.Request.Context(), user.ID)
 	if err != nil {
-		handleVehicleError(c, err)
+		h.handleVehicleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, vehicleListResponse{Vehicles: vehicles})
 }
 
-// Get godoc
+// GetVehicle godoc
 // @Summary Get a vehicle
 // @Description Gets a vehicle owned by the authenticated user.
 // @Tags vehicles
@@ -129,7 +140,7 @@ func (h *VehicleHandler) List(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/vehicles/{id} [get]
-func (h *VehicleHandler) Get(c *gin.Context) {
+func (h *VehicleHandler) GetVehicle(c *gin.Context) {
 	user, ok := middleware.CurrentUser(c)
 	if !ok {
 		errorJSON(c, http.StatusUnauthorized, "authentication required")
@@ -143,14 +154,14 @@ func (h *VehicleHandler) Get(c *gin.Context) {
 
 	vehicle, err := h.vehicles.GetByIDForUser(c.Request.Context(), user.ID, id)
 	if err != nil {
-		handleVehicleError(c, err)
+		h.handleVehicleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, vehicle)
 }
 
-// Update godoc
+// UpdateVehicle godoc
 // @Summary Update a vehicle
 // @Description Updates a vehicle owned by the authenticated user.
 // @Tags vehicles
@@ -166,7 +177,7 @@ func (h *VehicleHandler) Get(c *gin.Context) {
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/vehicles/{id} [patch]
-func (h *VehicleHandler) Update(c *gin.Context) {
+func (h *VehicleHandler) UpdateVehicle(c *gin.Context) {
 	user, ok := middleware.CurrentUser(c)
 	if !ok {
 		errorJSON(c, http.StatusUnauthorized, "authentication required")
@@ -192,14 +203,14 @@ func (h *VehicleHandler) Update(c *gin.Context) {
 
 	vehicle, err := h.vehicles.Update(c.Request.Context(), user.ID, id, update)
 	if err != nil {
-		handleVehicleError(c, err)
+		h.handleVehicleError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, vehicle)
 }
 
-// Delete godoc
+// DeleteVehicle godoc
 // @Summary Delete a vehicle
 // @Description Deletes a vehicle owned by the authenticated user.
 // @Tags vehicles
@@ -211,7 +222,7 @@ func (h *VehicleHandler) Update(c *gin.Context) {
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/vehicles/{id} [delete]
-func (h *VehicleHandler) Delete(c *gin.Context) {
+func (h *VehicleHandler) DeleteVehicle(c *gin.Context) {
 	user, ok := middleware.CurrentUser(c)
 	if !ok {
 		errorJSON(c, http.StatusUnauthorized, "authentication required")
@@ -224,7 +235,7 @@ func (h *VehicleHandler) Delete(c *gin.Context) {
 	}
 
 	if err := h.vehicles.Delete(c.Request.Context(), user.ID, id); err != nil {
-		handleVehicleError(c, err)
+		h.handleVehicleError(c, err)
 		return
 	}
 
@@ -241,23 +252,32 @@ func vehicleIDParam(c *gin.Context) (int64, bool) {
 	return id, true
 }
 
-func validateVehicle(brand, model string, year, mileageKM int, vin *string) (string, string, *string, error) {
-	brand = strings.TrimSpace(brand)
-	model = strings.TrimSpace(model)
+func newVehicleFromRequest(req vehicleRequest) (domain.Vehicle, error) {
+	brand := strings.TrimSpace(req.Brand)
 	if brand == "" {
-		return "", "", nil, errors.New("brand is required")
-	}
-	if model == "" {
-		return "", "", nil, errors.New("model is required")
-	}
-	if err := validateYear(year); err != nil {
-		return "", "", nil, err
-	}
-	if mileageKM < 0 {
-		return "", "", nil, errors.New("mileage_km must be greater than or equal to 0")
+		return domain.Vehicle{}, errBrandRequired
 	}
 
-	return brand, model, normalizeVIN(vin), nil
+	model := strings.TrimSpace(req.Model)
+	if model == "" {
+		return domain.Vehicle{}, errModelRequired
+	}
+
+	if err := validateYear(req.Year); err != nil {
+		return domain.Vehicle{}, err
+	}
+
+	if req.MileageKM < 0 {
+		return domain.Vehicle{}, errInvalidMileage
+	}
+
+	return domain.Vehicle{
+		Brand:     brand,
+		Model:     model,
+		Year:      req.Year,
+		VIN:       normalizeVIN(req.VIN),
+		MileageKM: req.MileageKM,
+	}, nil
 }
 
 func validateVehicleUpdate(req vehicleUpdateRequest) (repository.VehicleUpdate, error) {
@@ -266,7 +286,7 @@ func validateVehicleUpdate(req vehicleUpdateRequest) (repository.VehicleUpdate, 
 	if req.Brand != nil {
 		brand := strings.TrimSpace(*req.Brand)
 		if brand == "" {
-			return repository.VehicleUpdate{}, errors.New("brand is required")
+			return update, errBrandRequired
 		}
 		update.Brand = &brand
 	}
@@ -274,26 +294,30 @@ func validateVehicleUpdate(req vehicleUpdateRequest) (repository.VehicleUpdate, 
 	if req.Model != nil {
 		model := strings.TrimSpace(*req.Model)
 		if model == "" {
-			return repository.VehicleUpdate{}, errors.New("model is required")
+			return update, errModelRequired
 		}
 		update.Model = &model
 	}
 
 	if req.Year != nil {
 		if err := validateYear(*req.Year); err != nil {
-			return repository.VehicleUpdate{}, err
+			return update, err
 		}
 		update.Year = req.Year
 	}
 
 	if req.VIN != nil {
+		update.VIN.Set = true
+
 		vin := strings.TrimSpace(*req.VIN)
-		update.VIN = &vin
+		if vin != "" {
+			update.VIN.Value = &vin
+		}
 	}
 
 	if req.MileageKM != nil {
 		if *req.MileageKM < 0 {
-			return repository.VehicleUpdate{}, errors.New("mileage_km must be greater than or equal to 0")
+			return update, errInvalidMileage
 		}
 		update.MileageKM = req.MileageKM
 	}
@@ -304,7 +328,7 @@ func validateVehicleUpdate(req vehicleUpdateRequest) (repository.VehicleUpdate, 
 func validateYear(year int) error {
 	currentMax := time.Now().Year() + 1
 	if year < 1886 || year > currentMax {
-		return errors.New("year must be between 1886 and next calendar year")
+		return errInvalidYear
 	}
 
 	return nil
@@ -323,13 +347,21 @@ func normalizeVIN(vin *string) *string {
 	return &trimmed
 }
 
-func handleVehicleError(c *gin.Context, err error) {
+func (h *VehicleHandler) handleVehicleError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, repository.ErrNotFound):
 		errorJSON(c, http.StatusNotFound, "vehicle not found")
 	case errors.Is(err, repository.ErrConflict):
 		errorJSON(c, http.StatusConflict, "vehicle conflicts with existing data")
 	default:
+		h.log.ErrorContext(
+			c.Request.Context(),
+			"vehicle request failed",
+			slog.String("method", c.Request.Method),
+			slog.String("path", c.FullPath()),
+			slog.String("error", err.Error()),
+		)
+
 		errorJSON(c, http.StatusInternalServerError, "internal server error")
 	}
 }

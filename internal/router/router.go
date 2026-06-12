@@ -2,6 +2,7 @@ package router
 
 import (
 	"database/sql"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -16,12 +17,18 @@ import (
 type Dependencies struct {
 	Config config.Config
 	DB     *sql.DB
+	Logger *slog.Logger
 }
 
 func New(deps ...Dependencies) *gin.Engine {
 	var dep Dependencies
 	if len(deps) > 0 {
 		dep = deps[0]
+	}
+
+	log := dep.Logger
+	if log == nil {
+		log = slog.Default()
 	}
 
 	r := gin.New()
@@ -36,7 +43,7 @@ func New(deps ...Dependencies) *gin.Engine {
 		vehicleRepo := repository.NewVehicleRepository(dep.DB)
 		authService := service.NewAuthService(userRepo, dep.Config.BcryptCost)
 		authHandler := handler.NewAuthHandler(authService)
-		vehicleHandler := handler.NewVehicleHandler(vehicleRepo)
+		vehicleHandler := handler.NewVehicleHandler(vehicleRepo, slog.Default())
 
 		api := r.Group("/api")
 		{
@@ -47,11 +54,11 @@ func New(deps ...Dependencies) *gin.Engine {
 			protected := api.Group("")
 			protected.Use(middleware.BasicAuth(authService))
 			protected.GET("/me", authHandler.Me)
-			protected.POST("/vehicles", vehicleHandler.Create)
-			protected.GET("/vehicles", vehicleHandler.List)
-			protected.GET("/vehicles/:id", vehicleHandler.Get)
-			protected.PATCH("/vehicles/:id", vehicleHandler.Update)
-			protected.DELETE("/vehicles/:id", vehicleHandler.Delete)
+			protected.POST("/vehicles", vehicleHandler.CreateVehicle)
+			protected.GET("/vehicles", vehicleHandler.ListVehicle)
+			protected.GET("/vehicles/:id", vehicleHandler.GetVehicle)
+			protected.PATCH("/vehicles/:id", vehicleHandler.UpdateVehicle)
+			protected.DELETE("/vehicles/:id", vehicleHandler.DeleteVehicle)
 		}
 	}
 
