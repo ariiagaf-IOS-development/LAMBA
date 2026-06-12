@@ -11,17 +11,33 @@ struct LoginView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("LAMBA")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+        ZStack {
+            AppTheme.background
+                .ignoresSafeArea()
 
-            Text("Login screen")
+            VStack(spacing: 24) {
+                Text("LAMBA")
+                    .font(.system(size: 42, weight: .black))
+                    .foregroundStyle(AppTheme.foreground)
 
-            Button("Login") {
-                appViewModel.login()
+                AppCard {
+                    VStack(spacing: 16) {
+                        Text("Digital vehicle twin")
+                            .font(.title3)
+                            .fontWeight(.black)
+
+                        Text("Track trips, refueling, repairs and predicted part health in one place.")
+                            .font(.subheadline)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(AppTheme.mutedForeground)
+
+                        PrimaryButton("Continue", icon: "arrow.right") {
+                            appViewModel.login()
+                        }
+                    }
+                }
             }
-            .buttonStyle(.borderedProminent)
+            .padding(24)
         }
     }
 }
