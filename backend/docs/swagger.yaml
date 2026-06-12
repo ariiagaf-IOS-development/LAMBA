@@ -1,0 +1,418 @@
+basePath: /
+definitions:
+  domain.Vehicle:
+    properties:
+      brand:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      mileage_km:
+        type: integer
+      model:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      vin:
+        type: string
+      year:
+        type: integer
+    type: object
+  handler.ErrorResponse:
+    properties:
+      error:
+        example: invalid request
+        type: string
+    type: object
+  handler.HealthResponse:
+    properties:
+      checks:
+        additionalProperties:
+          type: string
+        type: object
+      service:
+        example: lamba-api
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
+  handler.authRequest:
+    properties:
+      email:
+        example: driver@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handler.authResponse:
+    properties:
+      token:
+        example: ZHJpdmVyQGV4YW1wbGUuY29tOnBhc3N3b3JkMTIz
+        type: string
+      token_type:
+        example: Basic
+        type: string
+      user:
+        $ref: '#/definitions/handler.userResponse'
+    type: object
+  handler.userResponse:
+    properties:
+      created_at:
+        example: "2026-06-12T12:00:00Z"
+        type: string
+      email:
+        example: driver@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+    type: object
+  handler.vehicleListResponse:
+    properties:
+      vehicles:
+        items:
+          $ref: '#/definitions/domain.Vehicle'
+        type: array
+    type: object
+  handler.vehicleRequest:
+    properties:
+      brand:
+        example: Toyota
+        type: string
+      mileage_km:
+        example: 42000
+        type: integer
+      model:
+        example: Camry
+        type: string
+      vin:
+        example: JTDBE32K620123456
+        type: string
+      year:
+        example: 2020
+        type: integer
+    required:
+    - brand
+    - model
+    - year
+    type: object
+  handler.vehicleUpdateRequest:
+    properties:
+      brand:
+        example: Toyota
+        type: string
+      mileage_km:
+        example: 45000
+        type: integer
+      model:
+        example: Camry
+        type: string
+      vin:
+        example: JTDBE32K620123456
+        type: string
+      year:
+        example: 2021
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Backend API for the LAMBA vehicle maintenance MVP.
+  title: LAMBA Backend API
+  version: 0.1.0
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Validates credentials and returns an HTTP Basic token payload.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.authRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.authResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Log in
+      tags:
+      - auth
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a user account and returns an HTTP Basic token payload.
+      parameters:
+      - description: Registration credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.authRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.authResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Register a user
+      tags:
+      - auth
+  /api/me:
+    get:
+      description: Returns the user authenticated by HTTP Basic credentials.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.userResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get current user
+      tags:
+      - auth
+  /api/vehicles:
+    get:
+      description: Lists vehicles owned by the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehicleListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: List vehicles
+      tags:
+      - vehicles
+    post:
+      consumes:
+      - application/json
+      description: Creates a vehicle owned by the authenticated user.
+      parameters:
+      - description: Vehicle payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.vehicleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Vehicle'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Create a vehicle
+      tags:
+      - vehicles
+  /api/vehicles/{id}:
+    delete:
+      description: Deletes a vehicle owned by the authenticated user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a vehicle
+      tags:
+      - vehicles
+    get:
+      description: Gets a vehicle owned by the authenticated user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Vehicle'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get a vehicle
+      tags:
+      - vehicles
+    patch:
+      consumes:
+      - application/json
+      description: Updates a vehicle owned by the authenticated user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Vehicle patch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.vehicleUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Vehicle'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Update a vehicle
+      tags:
+      - vehicles
+  /health:
+    get:
+      description: Returns API liveness information and database readiness when configured.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handler.HealthResponse'
+      summary: Check API health
+      tags:
+      - health
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"

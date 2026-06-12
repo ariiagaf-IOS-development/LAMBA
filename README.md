@@ -1,6 +1,129 @@
-# Git Workflow
+# LAMBA
 
-## Purpose
+## Development Setup
+
+Project dependencies are declared in:
+
+- `go.mod` / `go.sum` for application dependencies.
+- `tools/tools.go` for Go-based developer tools such as `swag`.
+- `scripts/` for repeatable local setup, development, and test commands.
+
+Required local tools:
+
+- Go 1.22+
+- PowerShell
+- `make` is optional
+
+Current helper scripts are Windows/PowerShell-first. The Go application itself is cross-platform, but Linux/macOS helper scripts should be added when the team actually needs those environments.
+
+First-time setup on Windows:
+
+```powershell
+.\scripts\setup.ps1
+```
+
+If PowerShell blocks script execution:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+```
+
+The setup script downloads Go module dependencies and installs the pinned `swag` CLI version.
+
+If `make` is available, the same setup can be started with:
+
+```powershell
+make setup
+```
+
+## Daily Development
+
+Start the backend with Swagger regeneration:
+
+```powershell
+.\scripts\dev.ps1
+```
+
+Or, if `make` is available:
+
+```powershell
+make dev
+```
+
+`make` targets call the same PowerShell scripts, so they are also intended for the current Windows development setup.
+
+Run checks:
+
+```powershell
+.\scripts\test.ps1
+```
+
+Or:
+
+```powershell
+make test
+```
+
+## Backend Quick Start
+
+The backend is initialized as a Go + Gin API.
+
+```powershell
+.\scripts\dev.ps1
+```
+
+Default API address:
+
+```text
+http://localhost:8080
+```
+
+Health check:
+
+```bash
+curl http://localhost:8080/health
+```
+
+## Swagger
+
+Swagger UI is enabled at:
+
+```text
+http://localhost:8080/swagger/index.html
+```
+
+Raw OpenAPI JSON is available at:
+
+```text
+http://localhost:8080/swagger/doc.json
+```
+
+Run the API and regenerate Swagger docs:
+
+```powershell
+.\scripts\dev.ps1
+```
+
+Then open `http://localhost:8080/swagger/index.html` in your browser.
+
+After changing Swagger comments in Go code, regenerate docs:
+
+```powershell
+.\scripts\dev.ps1
+```
+
+Or, if `make` is available:
+
+```powershell
+make swagger
+make dev
+```
+
+`make dev` runs `scripts/dev.ps1`, which regenerates Swagger docs and starts the API.
+
+## Git Workflow
+
+### Purpose
 
 This document defines the current development flow for the project.
 
@@ -161,4 +284,3 @@ git pull --rebase
 git branch -d feature/task-name
 git push origin --delete feature/task-name
 ```
-
