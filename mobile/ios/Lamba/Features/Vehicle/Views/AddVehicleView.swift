@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+import SwiftUI
+
 struct AddVehicleView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
 
@@ -25,15 +27,16 @@ struct AddVehicleView: View {
                 topBar
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 36) {
+                    VStack(alignment: .leading, spacing: 32) {
                         header
                         form
                         bottomAction
                     }
                     .padding(.horizontal, 24)
-                    .padding(.top, 40)
+                    .padding(.top, 28)
                     .padding(.bottom, 32)
                 }
+                .scrollIndicators(.hidden)
             }
         }
     }
@@ -46,34 +49,29 @@ struct AddVehicleView: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .black))
                     .foregroundStyle(AppTheme.primary)
-                    .frame(width: 48, height: 48)
-                    .background(AppTheme.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 18)
-                            .stroke(AppTheme.muted, lineWidth: 1)
-                    }
-                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+                    .frame(width: 44, height: 44)
+                    .background(AppTheme.background)
+                    .clipShape(RoundedRectangle(cornerRadius: 15))
             }
 
             Spacer()
 
             Text("Add Vehicle")
-                .font(.system(size: 20, weight: .black))
+                .font(.system(size: 18, weight: .black))
                 .foregroundStyle(AppTheme.foreground)
 
             Spacer()
 
             Color.clear
-                .frame(width: 48, height: 48)
+                .frame(width: 44, height: 44)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, 18)
-        .background(AppTheme.card.opacity(0.82))
+        .padding(.top, 12)
+        .padding(.bottom, 14)
+        .background(AppTheme.card)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(AppTheme.primary.opacity(0.05))
+                .fill(AppTheme.primary.opacity(0.06))
                 .frame(height: 1)
         }
     }
@@ -83,21 +81,22 @@ struct AddVehicleView: View {
             Capsule()
                 .fill(AppTheme.primary)
                 .frame(width: 80, height: 8)
-                .padding(.bottom, 2)
+                .padding(.bottom, 4)
 
-            Text("Create Your")
-                .font(.system(size: 34, weight: .black))
-                .foregroundStyle(AppTheme.foreground)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Create Your")
+                    .font(.system(size: 32, weight: .black))
+                    .foregroundStyle(AppTheme.foreground)
 
-            Text("Digital Twin")
-                .font(.system(size: 34, weight: .black))
-                .foregroundStyle(AppTheme.primary)
+                Text("Digital Twin")
+                    .font(.system(size: 32, weight: .black))
+                    .foregroundStyle(AppTheme.primary)
+            }
 
             Text("Enter your vehicle's DNA to initialize the LAMBA AI sync.")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.mutedForeground)
                 .lineSpacing(4)
-                .padding(.top, 2)
         }
     }
 
@@ -125,7 +124,6 @@ struct AddVehicleView: View {
                     icon: "calendar",
                     text: $year
                 )
-                .keyboardType(.numberPad)
 
                 AppTextField(
                     title: "Mileage (km)",
@@ -133,7 +131,6 @@ struct AddVehicleView: View {
                     icon: "speedometer",
                     text: $mileage
                 )
-                .keyboardType(.numberPad)
             }
 
             AppTextField(
