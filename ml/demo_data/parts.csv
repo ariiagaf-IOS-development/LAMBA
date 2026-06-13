@@ -1,0 +1,121 @@
+id,vehicle_id,name,category,installed_at_mileage_km,last_service_mileage_km,source,source_id
+1,1,Engine oil,fluids,75733,85733,Kaggle vehicle-maintenance-data (normalized),1
+2,1,Brake pads,brakes,55733,85733,Kaggle vehicle-maintenance-data (normalized),Good
+3,1,Timing belt,engine,25733,85733,Kaggle vehicle-maintenance-data (normalized),Good
+4,1,Power Train,reported component,,48280,NHTSA complaints/recalls API,11743602
+5,2,Engine oil,fluids,61128,71128,Kaggle vehicle-maintenance-data (normalized),2
+6,2,Brake pads,brakes,41128,71128,Kaggle vehicle-maintenance-data (normalized),New
+7,2,Timing belt,engine,11128,71128,Kaggle vehicle-maintenance-data (normalized),Poor
+8,2,Air Bags,reported component,,71128,NHTSA complaints/recalls API,11735650
+9,3,Engine oil,fluids,54195,64195,Kaggle vehicle-maintenance-data (normalized),3
+10,3,Brake pads,brakes,34195,64195,Kaggle vehicle-maintenance-data (normalized),New
+11,3,Timing belt,engine,4195,64195,Kaggle vehicle-maintenance-data (normalized),Good
+12,3,Structure,reported component,,64195,NHTSA complaints/recalls API,11743023
+13,4,Engine oil,fluids,41152,51152,Kaggle vehicle-maintenance-data (normalized),4
+14,4,Brake pads,brakes,21152,51152,Kaggle vehicle-maintenance-data (normalized),Good
+15,4,Timing belt,engine,0,51152,Kaggle vehicle-maintenance-data (normalized),Poor
+16,4,Visibility/Wiper,reported component,,51152,NHTSA complaints/recalls API,11740234
+17,5,Engine oil,fluids,70856,80856,Kaggle vehicle-maintenance-data (normalized),5
+18,5,Brake pads,brakes,50856,80856,Kaggle vehicle-maintenance-data (normalized),Worn Out
+19,5,Timing belt,engine,20856,80856,Kaggle vehicle-maintenance-data (normalized),Poor
+20,5,Unknown Or Other,reported component,,80856,NHTSA complaints/recalls API,11743625
+21,6,Engine oil,fluids,53280,63280,Kaggle vehicle-maintenance-data (normalized),6
+22,6,Brake pads,brakes,33280,63280,Kaggle vehicle-maintenance-data (normalized),Good
+23,6,Timing belt,engine,3280,63280,Kaggle vehicle-maintenance-data (normalized),Average
+24,6,Electrical System,reported component,,63280,NHTSA complaints/recalls API,11743053
+25,7,Engine oil,fluids,61423,71423,Kaggle vehicle-maintenance-data (normalized),7
+26,7,Brake pads,brakes,50467,71423,Kaggle vehicle-maintenance-data (normalized),Worn Out
+27,7,Timing belt,engine,20467,71423,Kaggle vehicle-maintenance-data (normalized),Poor
+28,7,Engine,reported component,,80467,NHTSA complaints/recalls API,11743235
+29,8,Engine oil,fluids,39957,49957,Kaggle vehicle-maintenance-data (normalized),8
+30,8,Brake pads,brakes,103575,49957,Kaggle vehicle-maintenance-data (normalized),New
+31,8,Timing belt,engine,73575,49957,Kaggle vehicle-maintenance-data (normalized),Good
+32,8,Power Train,reported component,,133575,NHTSA complaints/recalls API,11742946
+33,9,Engine oil,fluids,131901,141901,Kaggle vehicle-maintenance-data (normalized),9
+34,9,Brake pads,brakes,111901,141901,Kaggle vehicle-maintenance-data (normalized),Good
+35,9,Timing belt,engine,81901,141901,Kaggle vehicle-maintenance-data (normalized),Poor
+36,9,Engine,reported component,,141901,NHTSA complaints/recalls API,11739704
+37,10,Engine oil,fluids,139954,149954,Kaggle vehicle-maintenance-data (normalized),10
+38,10,Brake pads,brakes,150246,149954,Kaggle vehicle-maintenance-data (normalized),Good
+39,10,Timing belt,engine,120246,149954,Kaggle vehicle-maintenance-data (normalized),Good
+40,10,Service Brakes,reported component,,180246,NHTSA complaints/recalls API,11743438
+41,11,Engine oil,fluids,23202,33202,Kaggle vehicle-maintenance-data (normalized),11
+42,11,Brake pads,brakes,3202,33202,Kaggle vehicle-maintenance-data (normalized),Worn Out
+43,11,Timing belt,engine,0,33202,Kaggle vehicle-maintenance-data (normalized),Poor
+44,11,Electrical System,reported component,,33202,NHTSA complaints/recalls API,11742162
+45,12,Engine oil,fluids,56067,66067,Kaggle vehicle-maintenance-data (normalized),12
+46,12,Brake pads,brakes,36067,66067,Kaggle vehicle-maintenance-data (normalized),New
+47,12,Timing belt,engine,6067,66067,Kaggle vehicle-maintenance-data (normalized),Good
+48,12,Engine,reported component,,66067,NHTSA complaints/recalls API,11741510
+49,13,Engine oil,fluids,120759,130759,Kaggle vehicle-maintenance-data (normalized),13
+50,13,Brake pads,brakes,100759,130759,Kaggle vehicle-maintenance-data (normalized),Worn Out
+51,13,Timing belt,engine,70759,130759,Kaggle vehicle-maintenance-data (normalized),Average
+52,13,Electrical System,reported component,,130759,NHTSA complaints/recalls API,11741421
+53,14,Engine oil,fluids,97864,107864,Kaggle vehicle-maintenance-data (normalized),14
+54,14,Brake pads,brakes,77864,107864,Kaggle vehicle-maintenance-data (normalized),Good
+55,14,Timing belt,engine,47864,107864,Kaggle vehicle-maintenance-data (normalized),Average
+56,14,Electrical System,reported component,,107864,NHTSA complaints/recalls API,11740834
+57,15,Engine oil,fluids,119292,129292,Kaggle vehicle-maintenance-data (normalized),15
+58,15,Brake pads,brakes,99292,129292,Kaggle vehicle-maintenance-data (normalized),New
+59,15,Timing belt,engine,69292,129292,Kaggle vehicle-maintenance-data (normalized),Poor
+60,15,Suspension,reported component,,129292,NHTSA complaints/recalls API,11738925
+61,16,Engine oil,fluids,65317,75317,Kaggle vehicle-maintenance-data (normalized),16
+62,16,Brake pads,brakes,45317,75317,Kaggle vehicle-maintenance-data (normalized),New
+63,16,Timing belt,engine,15317,75317,Kaggle vehicle-maintenance-data (normalized),Poor
+64,16,Power Train,reported component,,75317,NHTSA complaints/recalls API,11743622
+65,17,Engine oil,fluids,52035,62035,Kaggle vehicle-maintenance-data (normalized),17
+66,17,Brake pads,brakes,32035,62035,Kaggle vehicle-maintenance-data (normalized),Good
+67,17,Timing belt,engine,2035,62035,Kaggle vehicle-maintenance-data (normalized),Poor
+68,17,Power Train,reported component,,49188,NHTSA complaints/recalls API,11742932
+69,18,Engine oil,fluids,91551,101551,Kaggle vehicle-maintenance-data (normalized),18
+70,18,Brake pads,brakes,71551,101551,Kaggle vehicle-maintenance-data (normalized),Good
+71,18,Timing belt,engine,41551,101551,Kaggle vehicle-maintenance-data (normalized),Good
+72,18,Power Train,reported component,,64374,NHTSA complaints/recalls API,11740933
+73,19,Engine oil,fluids,66781,76781,Kaggle vehicle-maintenance-data (normalized),19
+74,19,Brake pads,brakes,46781,76781,Kaggle vehicle-maintenance-data (normalized),Worn Out
+75,19,Timing belt,engine,16781,76781,Kaggle vehicle-maintenance-data (normalized),Poor
+76,19,Engine,reported component,,76781,NHTSA complaints/recalls API,11739472
+77,20,Engine oil,fluids,51001,61001,Kaggle vehicle-maintenance-data (normalized),20
+78,20,Brake pads,brakes,31001,61001,Kaggle vehicle-maintenance-data (normalized),Good
+79,20,Timing belt,engine,1001,61001,Kaggle vehicle-maintenance-data (normalized),Poor
+80,20,Lane Departure,reported component,,61001,NHTSA complaints/recalls API,11743068
+81,21,Engine oil,fluids,128062,138062,Kaggle vehicle-maintenance-data (normalized),21
+82,21,Brake pads,brakes,108062,138062,Kaggle vehicle-maintenance-data (normalized),New
+83,21,Timing belt,engine,78062,138062,Kaggle vehicle-maintenance-data (normalized),Good
+84,21,Power Train,reported component,,138062,NHTSA complaints/recalls API,11741669
+85,22,Engine oil,fluids,40978,50978,Kaggle vehicle-maintenance-data (normalized),22
+86,22,Brake pads,brakes,20978,50978,Kaggle vehicle-maintenance-data (normalized),Good
+87,22,Timing belt,engine,0,50978,Kaggle vehicle-maintenance-data (normalized),Good
+88,22,Electrical System,reported component,,50978,NHTSA complaints/recalls API,11742778
+89,23,Engine oil,fluids,67026,77026,Kaggle vehicle-maintenance-data (normalized),23
+90,23,Brake pads,brakes,47026,77026,Kaggle vehicle-maintenance-data (normalized),Worn Out
+91,23,Timing belt,engine,17026,77026,Kaggle vehicle-maintenance-data (normalized),Poor
+92,23,Unknown Or Other,reported component,,77026,NHTSA complaints/recalls API,11743149
+93,24,Engine oil,fluids,35688,45688,Kaggle vehicle-maintenance-data (normalized),24
+94,24,Brake pads,brakes,15688,45688,Kaggle vehicle-maintenance-data (normalized),Worn Out
+95,24,Timing belt,engine,0,45688,Kaggle vehicle-maintenance-data (normalized),Poor
+96,24,Electrical System,reported component,,45688,NHTSA complaints/recalls API,11741923
+97,25,Engine oil,fluids,68209,78209,Kaggle vehicle-maintenance-data (normalized),25
+98,25,Brake pads,brakes,129186,78209,Kaggle vehicle-maintenance-data (normalized),New
+99,25,Timing belt,engine,99186,78209,Kaggle vehicle-maintenance-data (normalized),Average
+100,25,Power Train,reported component,,159186,NHTSA complaints/recalls API,11742164
+101,26,Engine oil,fluids,112153,122153,Kaggle vehicle-maintenance-data (normalized),26
+102,26,Brake pads,brakes,92153,122153,Kaggle vehicle-maintenance-data (normalized),Worn Out
+103,26,Timing belt,engine,62153,122153,Kaggle vehicle-maintenance-data (normalized),Good
+104,26,Engine,reported component,,101388,NHTSA complaints/recalls API,11714720
+105,27,Engine oil,fluids,39535,49535,Kaggle vehicle-maintenance-data (normalized),27
+106,27,Brake pads,brakes,19535,49535,Kaggle vehicle-maintenance-data (normalized),Good
+107,27,Timing belt,engine,0,49535,Kaggle vehicle-maintenance-data (normalized),Good
+108,27,Air Bags,reported component,,49535,NHTSA complaints/recalls API,11489978
+109,28,Engine oil,fluids,35925,45925,Kaggle vehicle-maintenance-data (normalized),28
+110,28,Brake pads,brakes,15925,45925,Kaggle vehicle-maintenance-data (normalized),New
+111,28,Timing belt,engine,0,45925,Kaggle vehicle-maintenance-data (normalized),Poor
+112,28,Power Train,reported component,,45925,NHTSA complaints/recalls API,11736752
+113,29,Engine oil,fluids,124871,134871,Kaggle vehicle-maintenance-data (normalized),29
+114,29,Brake pads,brakes,104871,134871,Kaggle vehicle-maintenance-data (normalized),New
+115,29,Timing belt,engine,74871,134871,Kaggle vehicle-maintenance-data (normalized),Good
+116,29,Unknown Or Other,reported component,,134871,NHTSA complaints/recalls API,11738249
+117,30,Engine oil,fluids,40109,50109,Kaggle vehicle-maintenance-data (normalized),30
+118,30,Brake pads,brakes,20109,50109,Kaggle vehicle-maintenance-data (normalized),Good
+119,30,Timing belt,engine,0,50109,Kaggle vehicle-maintenance-data (normalized),Average
+120,30,Visibility/Wiper,reported component,,50109,NHTSA complaints/recalls API,11734220
