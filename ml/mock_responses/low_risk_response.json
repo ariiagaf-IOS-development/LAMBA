@@ -1,0 +1,12 @@
+{
+  "model_version": "mock-maintenance-v0.1",
+  "predictions": [
+    {
+      "part_name": "Brake pads",
+      "risk_level": "low",
+      "remaining_km": 12000,
+      "probability": 0.21,
+      "recommendation": "No critical maintenance risk detected"
+    }
+  ]
+}
