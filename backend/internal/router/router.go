@@ -41,11 +41,13 @@ func New(deps ...Dependencies) *gin.Engine {
 	if dep.DB != nil {
 		userRepo := repository.NewUserRepository(dep.DB)
 		vehicleRepo := repository.NewVehicleRepository(dep.DB)
+		eventRepo := repository.NewVehicleEventRepository(dep.DB)
 
 		authService := service.NewAuthService(userRepo, dep.Config.BcryptCost)
 
 		authHandler := handler.NewAuthHandler(authService, log)
 		vehicleHandler := handler.NewVehicleHandler(vehicleRepo, log)
+		eventHandler := handler.NewVehicleEventHandler(eventRepo, log)
 
 		api := r.Group("/api")
 		{
@@ -61,6 +63,12 @@ func New(deps ...Dependencies) *gin.Engine {
 			protected.GET("/vehicles/:id", vehicleHandler.GetVehicle)
 			protected.PATCH("/vehicles/:id", vehicleHandler.UpdateVehicle)
 			protected.DELETE("/vehicles/:id", vehicleHandler.DeleteVehicle)
+
+			protected.POST("/vehicles/:id/events", eventHandler.CreateEvent)
+			protected.GET("/vehicles/:id/events", eventHandler.ListEvents)
+			protected.GET("/vehicles/:id/timeline", eventHandler.GetTimeline)
+			protected.PATCH("/vehicles/:id/events/:eventId", eventHandler.UpdateEvent)
+			protected.DELETE("/vehicles/:id/events/:eventId", eventHandler.DeleteEvent)
 		}
 	}
 

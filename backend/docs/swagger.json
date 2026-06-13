@@ -1,13 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Backend API for the LAMBA vehicle maintenance MVP.",
-        "title": "LAMBA Backend API",
-        "contact": {},
-        "version": "0.1.0"
+        "contact": {}
     },
-    "host": "localhost:8080",
-    "basePath": "/",
     "paths": {
         "/api/auth/login": {
             "post": {
@@ -424,6 +419,324 @@
                 }
             }
         },
+        "/api/vehicles/{id}/events": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Lists lifecycle events for a vehicle owned by the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vehicle-events"
+                ],
+                "summary": "List vehicle events",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.vehicleEventsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Creates a lifecycle event for a vehicle owned by the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vehicle-events"
+                ],
+                "summary": "Create a vehicle event",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Vehicle event payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.vehicleEventRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.VehicleEvent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/vehicles/{id}/events/{eventId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Deletes a lifecycle event for a vehicle owned by the authenticated user.",
+                "tags": [
+                    "vehicle-events"
+                ],
+                "summary": "Delete a vehicle event",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "eventId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Updates a lifecycle event for a vehicle owned by the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vehicle-events"
+                ],
+                "summary": "Update a vehicle event",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Event ID",
+                        "name": "eventId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Vehicle event patch payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.vehicleEventUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.VehicleEvent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/vehicles/{id}/timeline": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Returns the basic vehicle timeline based on lifecycle events.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vehicle-events"
+                ],
+                "summary": "Get vehicle timeline",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.vehicleTimelineResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Returns API liveness information and database readiness when configured.",
@@ -452,6 +765,21 @@
         }
     },
     "definitions": {
+        "domain.EventType": {
+            "type": "string",
+            "enum": [
+                "trip",
+                "refuel",
+                "repair",
+                "service"
+            ],
+            "x-enum-varnames": [
+                "EventTypeTrip",
+                "EventTypeRefuel",
+                "EventTypeRepair",
+                "EventTypeService"
+            ]
+        },
         "domain.Vehicle": {
             "type": "object",
             "properties": {
@@ -480,6 +808,38 @@
                     "type": "string"
                 },
                 "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.VehicleEvent": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "event_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mileage_km": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/domain.EventType"
+                },
+                "vehicle_id": {
                     "type": "integer"
                 }
             }
@@ -562,6 +922,97 @@
                 }
             }
         },
+        "handler.vehicleEventRequest": {
+            "type": "object",
+            "required": [
+                "event_date",
+                "title",
+                "type"
+            ],
+            "properties": {
+                "cost": {
+                    "type": "number",
+                    "example": 7500
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Масло 5W-30, фильтр"
+                },
+                "event_date": {
+                    "type": "string",
+                    "example": "2026-06-03T12:00:00Z"
+                },
+                "mileage_km": {
+                    "type": "integer",
+                    "example": 124500
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Замена масла"
+                },
+                "type": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.EventType"
+                        }
+                    ],
+                    "example": "repair"
+                }
+            }
+        },
+        "handler.vehicleEventUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number",
+                    "example": 7500
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Масло 5W-30, фильтр"
+                },
+                "event_date": {
+                    "type": "string",
+                    "example": "2026-06-03T12:00:00Z"
+                },
+                "mileage_km": {
+                    "type": "integer",
+                    "example": 124500
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Замена масла"
+                },
+                "type": {
+                    "enum": [
+                        "trip",
+                        "refuel",
+                        "repair",
+                        "service"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/domain.EventType"
+                        }
+                    ],
+                    "example": "repair"
+                }
+            }
+        },
+        "handler.vehicleEventsResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.VehicleEvent"
+                    }
+                },
+                "vehicle_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "handler.vehicleListResponse": {
             "type": "object",
             "properties": {
@@ -603,6 +1054,20 @@
                 }
             }
         },
+        "handler.vehicleTimelineResponse": {
+            "type": "object",
+            "properties": {
+                "timeline": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.VehicleEvent"
+                    }
+                },
+                "vehicle_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "handler.vehicleUpdateRequest": {
             "type": "object",
             "properties": {
@@ -627,11 +1092,6 @@
                     "example": 2021
                 }
             }
-        }
-    },
-    "securityDefinitions": {
-        "BasicAuth": {
-            "type": "basic"
         }
     }
 }

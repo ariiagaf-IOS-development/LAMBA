@@ -1,5 +1,16 @@
-basePath: /
 definitions:
+  domain.EventType:
+    enum:
+    - trip
+    - refuel
+    - repair
+    - service
+    type: string
+    x-enum-varnames:
+    - EventTypeTrip
+    - EventTypeRefuel
+    - EventTypeRepair
+    - EventTypeService
   domain.Vehicle:
     properties:
       brand:
@@ -19,6 +30,27 @@ definitions:
       vin:
         type: string
       year:
+        type: integer
+    type: object
+  domain.VehicleEvent:
+    properties:
+      cost:
+        type: number
+      created_at:
+        type: string
+      description:
+        type: string
+      event_date:
+        type: string
+      id:
+        type: integer
+      mileage_km:
+        type: integer
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/domain.EventType'
+      vehicle_id:
         type: integer
     type: object
   handler.ErrorResponse:
@@ -75,6 +107,68 @@ definitions:
         example: 1
         type: integer
     type: object
+  handler.vehicleEventRequest:
+    properties:
+      cost:
+        example: 7500
+        type: number
+      description:
+        example: Масло 5W-30, фильтр
+        type: string
+      event_date:
+        example: "2026-06-03T12:00:00Z"
+        type: string
+      mileage_km:
+        example: 124500
+        type: integer
+      title:
+        example: Замена масла
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/domain.EventType'
+        example: repair
+    required:
+    - event_date
+    - title
+    - type
+    type: object
+  handler.vehicleEventUpdateRequest:
+    properties:
+      cost:
+        example: 7500
+        type: number
+      description:
+        example: Масло 5W-30, фильтр
+        type: string
+      event_date:
+        example: "2026-06-03T12:00:00Z"
+        type: string
+      mileage_km:
+        example: 124500
+        type: integer
+      title:
+        example: Замена масла
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/domain.EventType'
+        enum:
+        - trip
+        - refuel
+        - repair
+        - service
+        example: repair
+    type: object
+  handler.vehicleEventsResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/domain.VehicleEvent'
+        type: array
+      vehicle_id:
+        type: integer
+    type: object
   handler.vehicleListResponse:
     properties:
       vehicles:
@@ -104,6 +198,15 @@ definitions:
     - model
     - year
     type: object
+  handler.vehicleTimelineResponse:
+    properties:
+      timeline:
+        items:
+          $ref: '#/definitions/domain.VehicleEvent'
+        type: array
+      vehicle_id:
+        type: integer
+    type: object
   handler.vehicleUpdateRequest:
     properties:
       brand:
@@ -122,12 +225,8 @@ definitions:
         example: 2021
         type: integer
     type: object
-host: localhost:8080
 info:
   contact: {}
-  description: Backend API for the LAMBA vehicle maintenance MVP.
-  title: LAMBA Backend API
-  version: 0.1.0
 paths:
   /api/auth/login:
     post:
@@ -395,6 +494,215 @@ paths:
       summary: Update a vehicle
       tags:
       - vehicles
+  /api/vehicles/{id}/events:
+    get:
+      description: Lists lifecycle events for a vehicle owned by the authenticated
+        user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehicleEventsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: List vehicle events
+      tags:
+      - vehicle-events
+    post:
+      consumes:
+      - application/json
+      description: Creates a lifecycle event for a vehicle owned by the authenticated
+        user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Vehicle event payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.vehicleEventRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.VehicleEvent'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Create a vehicle event
+      tags:
+      - vehicle-events
+  /api/vehicles/{id}/events/{eventId}:
+    delete:
+      description: Deletes a lifecycle event for a vehicle owned by the authenticated
+        user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a vehicle event
+      tags:
+      - vehicle-events
+    patch:
+      consumes:
+      - application/json
+      description: Updates a lifecycle event for a vehicle owned by the authenticated
+        user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: integer
+      - description: Vehicle event patch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.vehicleEventUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.VehicleEvent'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Update a vehicle event
+      tags:
+      - vehicle-events
+  /api/vehicles/{id}/timeline:
+    get:
+      description: Returns the basic vehicle timeline based on lifecycle events.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehicleTimelineResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get vehicle timeline
+      tags:
+      - vehicle-events
   /health:
     get:
       description: Returns API liveness information and database readiness when configured.
@@ -412,7 +720,4 @@ paths:
       summary: Check API health
       tags:
       - health
-securityDefinitions:
-  BasicAuth:
-    type: basic
 swagger: "2.0"
