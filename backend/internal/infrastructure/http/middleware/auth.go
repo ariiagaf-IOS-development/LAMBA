@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/application/service"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/domain"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/service"
 )
 
 const UserContextKey = "authenticated_user"

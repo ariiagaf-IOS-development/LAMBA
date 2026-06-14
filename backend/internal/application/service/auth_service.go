@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/domain"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/repository"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -72,6 +72,10 @@ func (s *AuthService) Authenticate(ctx context.Context, email, password string) 
 		return domain.User{}, ErrInvalidCredentials
 	}
 
+	if strings.TrimSpace(password) == "" {
+		return domain.User{}, ErrInvalidCredentials
+	}
+
 	user, err := s.users.FindByEmail(ctx, normalizedEmail)
 	if errors.Is(err, repository.ErrNotFound) {
 		return domain.User{}, ErrInvalidCredentials
@@ -106,7 +110,7 @@ func normalizeEmail(email string) (string, error) {
 }
 
 func validatePassword(password string) error {
-	if len(password) < 8 {
+	if len(strings.TrimSpace(password)) < 8 {
 		return ErrWeakPassword
 	}
 
