@@ -7,8 +7,8 @@ import (
 
 	_ "gitlab.pg.innopolis.university/lamba/LAMBA/backend/docs"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/config"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/db"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/router"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/db"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/http/router"
 )
 
 func main() {

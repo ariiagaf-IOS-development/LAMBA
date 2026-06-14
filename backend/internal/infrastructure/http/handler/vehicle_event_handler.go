@@ -5,26 +5,19 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/application/service"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/domain"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/middleware"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/repository"
-)
-
-var (
-	errInvalidEventType  = errors.New("event type must be one of: trip, refuel, repair, service")
-	errEventTitleEmpty   = errors.New("title is required")
-	errEventMileage      = errors.New("mileage_km must be greater than or equal to 0")
-	errEventCost         = errors.New("cost must be greater than or equal to 0")
-	errEventDateRequired = errors.New("event_date is required")
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/http/middleware"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/repository"
 )
 
 type VehicleEventHandler struct {
-	events *repository.VehicleEventRepository
-	log    *slog.Logger
+	events   *service.VehicleEventService
+	timeline *service.TimelineService
+	log      *slog.Logger
 }
 
 type vehicleEventRequest struct {
@@ -34,6 +27,17 @@ type vehicleEventRequest struct {
 	MileageKM   int              `json:"mileage_km" example:"124500"`
 	Cost        float64          `json:"cost" example:"7500"`
 	EventDate   time.Time        `json:"event_date" binding:"required" example:"2026-06-03T12:00:00Z"`
+	Metadata    map[string]any   `json:"metadata,omitempty"`
+}
+
+type vehicleEventUpdateRequest struct {
+	Type        *domain.EventType `json:"type" example:"repair" enums:"trip,refuel,repair,service"`
+	Title       *string           `json:"title" example:"Замена масла"`
+	Description *string           `json:"description" example:"Масло 5W-30, фильтр"`
+	MileageKM   *int              `json:"mileage_km" example:"124500"`
+	Cost        *float64          `json:"cost" example:"7500"`
+	EventDate   *time.Time        `json:"event_date" example:"2026-06-03T12:00:00Z"`
+	Metadata    map[string]any    `json:"metadata,omitempty"`
 }
 
 type vehicleEventsResponse struct {
@@ -46,17 +50,9 @@ type vehicleTimelineResponse struct {
 	Timeline  []domain.VehicleEvent `json:"timeline"`
 }
 
-type vehicleEventUpdateRequest struct {
-	Type        *domain.EventType `json:"type" example:"repair" enums:"trip,refuel,repair,service"`
-	Title       *string           `json:"title" example:"Замена масла"`
-	Description *string           `json:"description" example:"Масло 5W-30, фильтр"`
-	MileageKM   *int              `json:"mileage_km" example:"124500"`
-	Cost        *float64          `json:"cost" example:"7500"`
-	EventDate   *time.Time        `json:"event_date" example:"2026-06-03T12:00:00Z"`
-}
-
 func NewVehicleEventHandler(
-	events *repository.VehicleEventRepository,
+	events *service.VehicleEventService,
+	timeline *service.TimelineService,
 	log *slog.Logger,
 ) *VehicleEventHandler {
 	if log == nil {
@@ -64,8 +60,9 @@ func NewVehicleEventHandler(
 	}
 
 	return &VehicleEventHandler{
-		events: events,
-		log:    log,
+		events:   events,
+		timeline: timeline,
+		log:      log,
 	}
 }
 
@@ -102,13 +99,15 @@ func (h *VehicleEventHandler) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	event, err := newVehicleEventFromRequest(vehicleID, req)
-	if err != nil {
-		errorJSON(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	event, err = h.events.CreateForUser(c.Request.Context(), user.ID, event)
+	event, err := h.events.Create(c.Request.Context(), user.ID, vehicleID, service.CreateVehicleEventInput{
+		Type:        req.Type,
+		Title:       req.Title,
+		Description: req.Description,
+		MileageKM:   req.MileageKM,
+		Cost:        req.Cost,
+		EventDate:   req.EventDate,
+		Metadata:    req.Metadata,
+	})
 	if err != nil {
 		h.handleVehicleEventError(c, err)
 		return
@@ -142,7 +141,7 @@ func (h *VehicleEventHandler) ListEvents(c *gin.Context) {
 		return
 	}
 
-	events, err := h.events.ListByVehicleForUser(c.Request.Context(), user.ID, vehicleID)
+	events, err := h.events.List(c.Request.Context(), user.ID, vehicleID)
 	if err != nil {
 		h.handleVehicleEventError(c, err)
 		return
@@ -179,7 +178,7 @@ func (h *VehicleEventHandler) GetTimeline(c *gin.Context) {
 		return
 	}
 
-	events, err := h.events.ListByVehicleForUser(c.Request.Context(), user.ID, vehicleID)
+	timeline, err := h.timeline.GetByVehicle(c.Request.Context(), user.ID, vehicleID)
 	if err != nil {
 		h.handleVehicleEventError(c, err)
 		return
@@ -187,7 +186,7 @@ func (h *VehicleEventHandler) GetTimeline(c *gin.Context) {
 
 	c.JSON(http.StatusOK, vehicleTimelineResponse{
 		VehicleID: vehicleID,
-		Timeline:  events,
+		Timeline:  timeline,
 	})
 }
 
@@ -230,13 +229,15 @@ func (h *VehicleEventHandler) UpdateEvent(c *gin.Context) {
 		return
 	}
 
-	update, err := validateVehicleEventUpdate(req)
-	if err != nil {
-		errorJSON(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	event, err := h.events.UpdateForUser(c.Request.Context(), user.ID, vehicleID, eventID, update)
+	event, err := h.events.Update(c.Request.Context(), user.ID, vehicleID, eventID, service.UpdateVehicleEventInput{
+		Type:        req.Type,
+		Title:       req.Title,
+		Description: req.Description,
+		MileageKM:   req.MileageKM,
+		Cost:        req.Cost,
+		EventDate:   req.EventDate,
+		Metadata:    req.Metadata,
+	})
 	if err != nil {
 		h.handleVehicleEventError(c, err)
 		return
@@ -275,7 +276,7 @@ func (h *VehicleEventHandler) DeleteEvent(c *gin.Context) {
 		return
 	}
 
-	if err := h.events.DeleteForUser(c.Request.Context(), user.ID, vehicleID, eventID); err != nil {
+	if err := h.events.Delete(c.Request.Context(), user.ID, vehicleID, eventID); err != nil {
 		h.handleVehicleEventError(c, err)
 		return
 	}
@@ -283,71 +284,18 @@ func (h *VehicleEventHandler) DeleteEvent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func newVehicleEventFromRequest(
-	vehicleID int64,
-	req vehicleEventRequest,
-) (domain.VehicleEvent, error) {
-	if !isValidEventType(req.Type) {
-		return domain.VehicleEvent{}, errInvalidEventType
-	}
-
-	title := strings.TrimSpace(req.Title)
-	if title == "" {
-		return domain.VehicleEvent{}, errEventTitleEmpty
-	}
-
-	if req.MileageKM < 0 {
-		return domain.VehicleEvent{}, errEventMileage
-	}
-
-	if req.Cost < 0 {
-		return domain.VehicleEvent{}, errEventCost
-	}
-
-	if req.EventDate.IsZero() {
-		return domain.VehicleEvent{}, errEventDateRequired
-	}
-
-	return domain.VehicleEvent{
-		VehicleID:   vehicleID,
-		Type:        req.Type,
-		Title:       title,
-		Description: normalizeOptionalString(req.Description),
-		MileageKM:   req.MileageKM,
-		Cost:        req.Cost,
-		EventDate:   req.EventDate,
-	}, nil
-}
-
-func isValidEventType(eventType domain.EventType) bool {
-	switch eventType {
-	case domain.EventTypeTrip,
-		domain.EventTypeRefuel,
-		domain.EventTypeRepair,
-		domain.EventTypeService:
-		return true
-	default:
-		return false
-	}
-}
-
-func normalizeOptionalString(value *string) *string {
-	if value == nil {
-		return nil
-	}
-
-	trimmed := strings.TrimSpace(*value)
-	if trimmed == "" {
-		return nil
-	}
-
-	return &trimmed
-}
-
 func (h *VehicleEventHandler) handleVehicleEventError(c *gin.Context, err error) {
 	switch {
+	case errors.Is(err, service.ErrVehicleEventInvalidType),
+		errors.Is(err, service.ErrVehicleEventTitleEmpty),
+		errors.Is(err, service.ErrVehicleEventMileage),
+		errors.Is(err, service.ErrVehicleEventCost),
+		errors.Is(err, service.ErrVehicleEventDateRequired):
+		errorJSON(c, http.StatusBadRequest, err.Error())
+
 	case errors.Is(err, repository.ErrNotFound):
 		errorJSON(c, http.StatusNotFound, "vehicle not found")
+
 	default:
 		h.log.ErrorContext(
 			c.Request.Context(),
@@ -369,57 +317,4 @@ func eventIDParam(c *gin.Context) (int64, bool) {
 	}
 
 	return id, true
-}
-
-func validateVehicleEventUpdate(
-	req vehicleEventUpdateRequest,
-) (repository.VehicleEventUpdate, error) {
-	var update repository.VehicleEventUpdate
-
-	if req.Type != nil {
-		if !isValidEventType(*req.Type) {
-			return update, errInvalidEventType
-		}
-		update.Type = req.Type
-	}
-
-	if req.Title != nil {
-		title := strings.TrimSpace(*req.Title)
-		if title == "" {
-			return update, errEventTitleEmpty
-		}
-		update.Title = &title
-	}
-
-	if req.Description != nil {
-		update.Description.Set = true
-
-		description := strings.TrimSpace(*req.Description)
-		if description != "" {
-			update.Description.Value = &description
-		}
-	}
-
-	if req.MileageKM != nil {
-		if *req.MileageKM < 0 {
-			return update, errEventMileage
-		}
-		update.MileageKM = req.MileageKM
-	}
-
-	if req.Cost != nil {
-		if *req.Cost < 0 {
-			return update, errEventCost
-		}
-		update.Cost = req.Cost
-	}
-
-	if req.EventDate != nil {
-		if req.EventDate.IsZero() {
-			return update, errEventDateRequired
-		}
-		update.EventDate = req.EventDate
-	}
-
-	return update, nil
 }

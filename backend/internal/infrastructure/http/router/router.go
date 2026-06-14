@@ -7,11 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/application/service"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/config"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/handler"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/middleware"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/repository"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/service"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/http/handler"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/http/middleware"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/repository"
 )
 
 type Dependencies struct {
@@ -44,10 +44,13 @@ func New(deps ...Dependencies) *gin.Engine {
 		eventRepo := repository.NewVehicleEventRepository(dep.DB)
 
 		authService := service.NewAuthService(userRepo, dep.Config.BcryptCost)
+		vehicleService := service.NewVehicleService(vehicleRepo)
+		eventService := service.NewVehicleEventService(eventRepo)
+		timelineService := service.NewTimelineService(eventService)
 
 		authHandler := handler.NewAuthHandler(authService, log)
-		vehicleHandler := handler.NewVehicleHandler(vehicleRepo, log)
-		eventHandler := handler.NewVehicleEventHandler(eventRepo, log)
+		vehicleHandler := handler.NewVehicleHandler(vehicleService, log)
+		eventHandler := handler.NewVehicleEventHandler(eventService, timelineService, log)
 
 		api := r.Group("/api")
 		{

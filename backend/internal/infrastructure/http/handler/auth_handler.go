@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/application/service"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/domain"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/middleware"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/service"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/http/middleware"
 )
 
 type AuthHandler struct {

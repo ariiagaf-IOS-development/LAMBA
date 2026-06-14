@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/domain"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/repository"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 

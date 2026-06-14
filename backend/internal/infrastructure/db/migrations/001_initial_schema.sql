@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS vehicle_events (
 	mileage_km INTEGER NOT NULL,
 	cost NUMERIC(12, 2) NOT NULL DEFAULT 0,
 	event_date TIMESTAMPTZ NOT NULL,
+	metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	CONSTRAINT vehicle_events_type_allowed CHECK (type IN ('trip', 'refuel', 'repair', 'service')),
 	CONSTRAINT vehicle_events_title_not_blank CHECK (length(btrim(title)) > 0),
@@ -85,6 +86,7 @@ CREATE INDEX IF NOT EXISTS predictions_vehicle_id_idx ON predictions (vehicle_id
 
 CREATE TABLE IF NOT EXISTS chat_messages (
 	id BIGSERIAL PRIMARY KEY,
+	user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
 	vehicle_id BIGINT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
 	role TEXT NOT NULL,
 	message TEXT NOT NULL,

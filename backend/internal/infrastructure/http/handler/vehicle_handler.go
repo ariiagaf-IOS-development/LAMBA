@@ -5,24 +5,16 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/application/service"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/domain"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/middleware"
-	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/repository"
-)
-
-var (
-	errBrandRequired  = errors.New("brand is required")
-	errModelRequired  = errors.New("model is required")
-	errInvalidMileage = errors.New("mileage_km must be greater than or equal to 0")
-	errInvalidYear    = errors.New("year must be between 1886 and next calendar year")
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/http/middleware"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/repository"
 )
 
 type VehicleHandler struct {
-	vehicles *repository.VehicleRepository
+	vehicles *service.VehicleService
 	log      *slog.Logger
 }
 
@@ -46,7 +38,7 @@ type vehicleListResponse struct {
 	Vehicles []domain.Vehicle `json:"vehicles"`
 }
 
-func NewVehicleHandler(vehicles *repository.VehicleRepository, log *slog.Logger) *VehicleHandler {
+func NewVehicleHandler(vehicles *service.VehicleService, log *slog.Logger) *VehicleHandler {
 	if log == nil {
 		log = slog.Default()
 	}
@@ -84,15 +76,13 @@ func (h *VehicleHandler) CreateVehicle(c *gin.Context) {
 		return
 	}
 
-	newVehicle, err := newVehicleFromRequest(req)
-	if err != nil {
-		errorJSON(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	newVehicle.UserID = user.ID
-
-	vehicle, err := h.vehicles.Create(c.Request.Context(), newVehicle)
+	vehicle, err := h.vehicles.Create(c.Request.Context(), user.ID, service.CreateVehicleInput{
+		Brand:     req.Brand,
+		Model:     req.Model,
+		Year:      req.Year,
+		VIN:       req.VIN,
+		MileageKM: req.MileageKM,
+	})
 	if err != nil {
 		h.handleVehicleError(c, err)
 		return
@@ -118,7 +108,7 @@ func (h *VehicleHandler) ListVehicle(c *gin.Context) {
 		return
 	}
 
-	vehicles, err := h.vehicles.ListByUser(c.Request.Context(), user.ID)
+	vehicles, err := h.vehicles.List(c.Request.Context(), user.ID)
 	if err != nil {
 		h.handleVehicleError(c, err)
 		return
@@ -152,7 +142,7 @@ func (h *VehicleHandler) GetVehicle(c *gin.Context) {
 		return
 	}
 
-	vehicle, err := h.vehicles.GetByIDForUser(c.Request.Context(), user.ID, id)
+	vehicle, err := h.vehicles.Get(c.Request.Context(), user.ID, id)
 	if err != nil {
 		h.handleVehicleError(c, err)
 		return
@@ -195,13 +185,13 @@ func (h *VehicleHandler) UpdateVehicle(c *gin.Context) {
 		return
 	}
 
-	update, err := validateVehicleUpdate(req)
-	if err != nil {
-		errorJSON(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	vehicle, err := h.vehicles.Update(c.Request.Context(), user.ID, id, update)
+	vehicle, err := h.vehicles.Update(c.Request.Context(), user.ID, id, service.UpdateVehicleInput{
+		Brand:     req.Brand,
+		Model:     req.Model,
+		Year:      req.Year,
+		VIN:       req.VIN,
+		MileageKM: req.MileageKM,
+	})
 	if err != nil {
 		h.handleVehicleError(c, err)
 		return
@@ -252,107 +242,20 @@ func vehicleIDParam(c *gin.Context) (int64, bool) {
 	return id, true
 }
 
-func newVehicleFromRequest(req vehicleRequest) (domain.Vehicle, error) {
-	brand := strings.TrimSpace(req.Brand)
-	if brand == "" {
-		return domain.Vehicle{}, errBrandRequired
-	}
-
-	model := strings.TrimSpace(req.Model)
-	if model == "" {
-		return domain.Vehicle{}, errModelRequired
-	}
-
-	if err := validateYear(req.Year); err != nil {
-		return domain.Vehicle{}, err
-	}
-
-	if req.MileageKM < 0 {
-		return domain.Vehicle{}, errInvalidMileage
-	}
-
-	return domain.Vehicle{
-		Brand:     brand,
-		Model:     model,
-		Year:      req.Year,
-		VIN:       normalizeVIN(req.VIN),
-		MileageKM: req.MileageKM,
-	}, nil
-}
-
-func validateVehicleUpdate(req vehicleUpdateRequest) (repository.VehicleUpdate, error) {
-	var update repository.VehicleUpdate
-
-	if req.Brand != nil {
-		brand := strings.TrimSpace(*req.Brand)
-		if brand == "" {
-			return update, errBrandRequired
-		}
-		update.Brand = &brand
-	}
-
-	if req.Model != nil {
-		model := strings.TrimSpace(*req.Model)
-		if model == "" {
-			return update, errModelRequired
-		}
-		update.Model = &model
-	}
-
-	if req.Year != nil {
-		if err := validateYear(*req.Year); err != nil {
-			return update, err
-		}
-		update.Year = req.Year
-	}
-
-	if req.VIN != nil {
-		update.VIN.Set = true
-
-		vin := strings.TrimSpace(*req.VIN)
-		if vin != "" {
-			update.VIN.Value = &vin
-		}
-	}
-
-	if req.MileageKM != nil {
-		if *req.MileageKM < 0 {
-			return update, errInvalidMileage
-		}
-		update.MileageKM = req.MileageKM
-	}
-
-	return update, nil
-}
-
-func validateYear(year int) error {
-	currentMax := time.Now().Year() + 1
-	if year < 1886 || year > currentMax {
-		return errInvalidYear
-	}
-
-	return nil
-}
-
-func normalizeVIN(vin *string) *string {
-	if vin == nil {
-		return nil
-	}
-
-	trimmed := strings.TrimSpace(*vin)
-	if trimmed == "" {
-		return nil
-	}
-
-	return &trimmed
-}
-
 func (h *VehicleHandler) handleVehicleError(c *gin.Context, err error) {
 	switch {
+	case errors.Is(err, service.ErrVehicleBrandRequired),
+		errors.Is(err, service.ErrVehicleModelRequired),
+		errors.Is(err, service.ErrVehicleInvalidMileage),
+		errors.Is(err, service.ErrVehicleInvalidYear):
+		errorJSON(c, http.StatusBadRequest, err.Error())
+
 	case errors.Is(err, repository.ErrNotFound):
 		errorJSON(c, http.StatusNotFound, "vehicle not found")
+
 	case errors.Is(err, repository.ErrConflict):
 		errorJSON(c, http.StatusConflict, "vehicle conflicts with existing data")
+
 	default:
 		h.log.ErrorContext(
 			c.Request.Context(),
