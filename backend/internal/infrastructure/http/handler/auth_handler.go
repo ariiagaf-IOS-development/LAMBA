@@ -131,15 +131,7 @@ func (h *AuthHandler) handleAuthError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrInvalidCredentials):
 		errorJSON(c, http.StatusUnauthorized, "invalid credentials")
 	default:
-		h.log.ErrorContext(
-			c.Request.Context(),
-			"auth request failed",
-			slog.String("method", c.Request.Method),
-			slog.String("path", c.FullPath()),
-			slog.String("error", err.Error()),
-		)
-
-		errorJSON(c, http.StatusInternalServerError, "internal server error")
+		internalErrorJSON(c, h.log, "auth request failed", err)
 	}
 }
 

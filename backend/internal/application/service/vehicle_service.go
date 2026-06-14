@@ -15,6 +15,7 @@ var (
 	ErrVehicleModelRequired  = errors.New("model is required")
 	ErrVehicleInvalidMileage = errors.New("mileage_km must be greater than or equal to 0")
 	ErrVehicleInvalidYear    = errors.New("year must be between 1886 and next calendar year")
+	ErrVehicleInvalidVIN     = errors.New("vin must be 17 characters")
 )
 
 type VehicleService struct {
@@ -112,11 +113,16 @@ func newVehicleFromInput(input CreateVehicleInput) (domain.Vehicle, error) {
 		return domain.Vehicle{}, ErrVehicleInvalidMileage
 	}
 
+	normalizedVIN, err := normalizeVIN(input.VIN)
+	if err != nil {
+		return domain.Vehicle{}, err
+	}
+
 	return domain.Vehicle{
 		Brand:     brand,
 		Model:     model,
 		Year:      input.Year,
-		VIN:       normalizeVIN(input.VIN),
+		VIN:       normalizedVIN,
 		MileageKM: input.MileageKM,
 	}, nil
 }
@@ -151,8 +157,13 @@ func newVehicleUpdateFromInput(input UpdateVehicleInput) (repository.VehicleUpda
 	}
 
 	if input.VIN != nil {
+		vin, err := normalizeVIN(input.VIN)
+		if err != nil {
+			return update, err
+		}
+
 		update.VIN.Set = true
-		update.VIN.Value = normalizeVIN(input.VIN)
+		update.VIN.Value = vin
 	}
 
 	if input.MileageKM != nil {
@@ -175,15 +186,19 @@ func validateVehicleYear(year int) error {
 	return nil
 }
 
-func normalizeVIN(vin *string) *string {
+func normalizeVIN(vin *string) (*string, error) {
 	if vin == nil {
-		return nil
+		return nil, nil
 	}
 
-	trimmed := strings.TrimSpace(*vin)
+	trimmed := strings.ToUpper(strings.TrimSpace(*vin))
 	if trimmed == "" {
-		return nil
+		return nil, nil
 	}
 
-	return &trimmed
+	if len(trimmed) != 17 {
+		return nil, ErrVehicleInvalidVIN
+	}
+
+	return &trimmed, nil
 }

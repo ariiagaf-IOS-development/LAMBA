@@ -247,7 +247,8 @@ func (h *VehicleHandler) handleVehicleError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrVehicleBrandRequired),
 		errors.Is(err, service.ErrVehicleModelRequired),
 		errors.Is(err, service.ErrVehicleInvalidMileage),
-		errors.Is(err, service.ErrVehicleInvalidYear):
+		errors.Is(err, service.ErrVehicleInvalidYear),
+		errors.Is(err, service.ErrVehicleInvalidVIN):
 		errorJSON(c, http.StatusBadRequest, err.Error())
 
 	case errors.Is(err, repository.ErrNotFound):
@@ -257,14 +258,6 @@ func (h *VehicleHandler) handleVehicleError(c *gin.Context, err error) {
 		errorJSON(c, http.StatusConflict, "vehicle conflicts with existing data")
 
 	default:
-		h.log.ErrorContext(
-			c.Request.Context(),
-			"vehicle request failed",
-			slog.String("method", c.Request.Method),
-			slog.String("path", c.FullPath()),
-			slog.String("error", err.Error()),
-		)
-
-		errorJSON(c, http.StatusInternalServerError, "internal server error")
+		internalErrorJSON(c, h.log, "vehicle request failed", err)
 	}
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -57,7 +58,12 @@ func (s *VehicleEventService) Create(
 		return domain.VehicleEvent{}, err
 	}
 
-	return s.events.CreateForUser(ctx, userID, event)
+	created, err := s.events.CreateForUser(ctx, userID, event)
+	if err != nil {
+		return domain.VehicleEvent{}, fmt.Errorf("create vehicle event: %w", err)
+	}
+
+	return created, nil
 }
 
 func (s *VehicleEventService) List(
@@ -65,7 +71,12 @@ func (s *VehicleEventService) List(
 	userID int64,
 	vehicleID int64,
 ) ([]domain.VehicleEvent, error) {
-	return s.events.ListByVehicleForUser(ctx, userID, vehicleID)
+	events, err := s.events.ListByVehicleForUser(ctx, userID, vehicleID)
+	if err != nil {
+		return nil, fmt.Errorf("list vehicle events: %w", err)
+	}
+
+	return events, nil
 }
 
 func (s *VehicleEventService) Get(
@@ -74,7 +85,12 @@ func (s *VehicleEventService) Get(
 	vehicleID int64,
 	eventID int64,
 ) (domain.VehicleEvent, error) {
-	return s.events.GetByIDForUser(ctx, userID, vehicleID, eventID)
+	event, err := s.events.GetByIDForUser(ctx, userID, vehicleID, eventID)
+	if err != nil {
+		return domain.VehicleEvent{}, fmt.Errorf("get vehicle event: %w", err)
+	}
+
+	return event, nil
 }
 
 func (s *VehicleEventService) Update(
@@ -89,7 +105,12 @@ func (s *VehicleEventService) Update(
 		return domain.VehicleEvent{}, err
 	}
 
-	return s.events.UpdateForUser(ctx, userID, vehicleID, eventID, update)
+	event, err := s.events.UpdateForUser(ctx, userID, vehicleID, eventID, update)
+	if err != nil {
+		return domain.VehicleEvent{}, fmt.Errorf("update vehicle event: %w", err)
+	}
+
+	return event, nil
 }
 
 func (s *VehicleEventService) Delete(
@@ -98,7 +119,11 @@ func (s *VehicleEventService) Delete(
 	vehicleID int64,
 	eventID int64,
 ) error {
-	return s.events.DeleteForUser(ctx, userID, vehicleID, eventID)
+	if err := s.events.DeleteForUser(ctx, userID, vehicleID, eventID); err != nil {
+		return fmt.Errorf("delete vehicle event: %w", err)
+	}
+
+	return nil
 }
 
 func newVehicleEventFromInput(

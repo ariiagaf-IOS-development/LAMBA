@@ -40,6 +40,10 @@ func (r *VehicleEventRepository) CreateForUser(
 	userID int64,
 	event domain.VehicleEvent,
 ) (domain.VehicleEvent, error) {
+	metadata, err := marshalJSONB(event.Metadata)
+	if err != nil {
+		return domain.VehicleEvent{}, err
+	}
 	created, err := scanVehicleEvent(r.db.QueryRowContext(ctx, `
 		INSERT INTO vehicle_events (
 			vehicle_id,
@@ -77,7 +81,7 @@ func (r *VehicleEventRepository) CreateForUser(
 		event.MileageKM,
 		event.Cost,
 		event.EventDate,
-		mustMarshalJSONB(event.Metadata),
+		metadata,
 	))
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.VehicleEvent{}, ErrNotFound
@@ -172,7 +176,12 @@ func (r *VehicleEventRepository) UpdateForUser(
 		sets, args = appendSet(sets, args, "event_date", *update.EventDate)
 	}
 	if update.Metadata.Set {
-		sets, args = appendSet(sets, args, "metadata", mustMarshalJSONB(update.Metadata.Value))
+		metadata, err := marshalJSONB(update.Metadata.Value)
+		if err != nil {
+			return domain.VehicleEvent{}, err
+		}
+
+		sets, args = appendSet(sets, args, "metadata", metadata)
 	}
 
 	if len(sets) == 0 {
@@ -333,15 +342,15 @@ func scanVehicleEvent(scanner rowScanner) (domain.VehicleEvent, error) {
 	return event, nil
 }
 
-func mustMarshalJSONB(value map[string]any) []byte {
+func marshalJSONB(value map[string]any) ([]byte, error) {
 	if value == nil {
 		value = map[string]any{}
 	}
 
 	data, err := json.Marshal(value)
 	if err != nil {
-		return []byte(`{}`)
+		return nil, fmt.Errorf("marshal jsonb: %w", err)
 	}
 
-	return data
+	return data, nil
 }

@@ -294,18 +294,13 @@ func (h *VehicleEventHandler) handleVehicleEventError(c *gin.Context, err error)
 		errorJSON(c, http.StatusBadRequest, err.Error())
 
 	case errors.Is(err, repository.ErrNotFound):
-		errorJSON(c, http.StatusNotFound, "vehicle not found")
+		errorJSON(c, http.StatusNotFound, "vehicle or event not found")
+
+	case errors.Is(err, repository.ErrConflict):
+		errorJSON(c, http.StatusConflict, "vehicle event conflicts with existing data")
 
 	default:
-		h.log.ErrorContext(
-			c.Request.Context(),
-			"vehicle event request failed",
-			slog.String("method", c.Request.Method),
-			slog.String("path", c.FullPath()),
-			slog.String("error", err.Error()),
-		)
-
-		errorJSON(c, http.StatusInternalServerError, "internal server error")
+		internalErrorJSON(c, h.log, "vehicle event request failed", err)
 	}
 }
 
