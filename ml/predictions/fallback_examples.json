@@ -1,0 +1,74 @@
+{
+    "timeout_scenario": {
+      "trigger": "ML service does not respond within the configured timeout.",
+      "backend_action": "Switch to fallback prediction flow.",
+      "response_schema": "PredictionResponseSchema",
+      "example_response": {
+        "vehicle_id": 1,
+        "model_version": "fallback-maintenance-v1.0.0",
+        "predictions": [
+          {
+            "part_category": "engine_oil",
+            "part_name": "Engine oil",
+            "risk_level": "medium",
+            "risk_score": 65,
+            "remaining_km": 1500,
+            "remaining_days": 45,
+            "predicted_next_mileage": 130000,
+            "predicted_next_date": "2026-08-01",
+            "probability": 0.65,
+            "recommendation": "Maintenance will be required soon.",
+            "explanation": "Fallback response is used because ML service timeout occurred."
+          }
+        ]
+      }
+    },
+    "service_unavailable_scenario": {
+      "trigger": "ML service returns 503 or is unreachable.",
+      "backend_action": "Switch to fallback prediction flow.",
+      "response_schema": "PredictionResponseSchema",
+      "example_response": {
+        "vehicle_id": 1,
+        "model_version": "fallback-maintenance-v1.0.0",
+        "predictions": [
+          {
+            "part_category": "engine_oil",
+            "part_name": "Engine oil",
+            "risk_level": "medium",
+            "risk_score": 65,
+            "remaining_km": 1500,
+            "remaining_days": 45,
+            "predicted_next_mileage": 130000,
+            "predicted_next_date": "2026-08-01",
+            "probability": 0.65,
+            "recommendation": "Maintenance will be required soon.",
+            "explanation": "Fallback response is used because ML service is unavailable."
+          }
+        ]
+      }
+    },
+    "invalid_ml_response_scenario": {
+      "trigger": "ML service returns response that does not match prediction contract.",
+      "backend_action": "Reject invalid ML response and switch to fallback prediction flow.",
+      "response_schema": "PredictionResponseSchema",
+      "example_response": {
+        "vehicle_id": 1,
+        "model_version": "fallback-maintenance-v1.0.0",
+        "predictions": [
+          {
+            "part_category": "engine_oil",
+            "part_name": "Engine oil",
+            "risk_level": "medium",
+            "risk_score": 65,
+            "remaining_km": 1500,
+            "remaining_days": 45,
+            "predicted_next_mileage": 130000,
+            "predicted_next_date": "2026-08-01",
+            "probability": 0.65,
+            "recommendation": "Maintenance will be required soon.",
+            "explanation": "Fallback response is used because ML response validation failed."
+          }
+        ]
+      }
+    }
+  }
