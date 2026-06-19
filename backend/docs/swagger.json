@@ -737,6 +737,76 @@
                 }
             }
         },
+        "/api/vehicles/{id}/predictions": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Returns latest predictions for vehicle parts. If predictions do not exist, backend generates and stores them.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "predictions"
+                ],
+                "summary": "Get vehicle predictions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.predictionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/vehicles/{id}/timeline": {
             "get": {
                 "security": [
@@ -840,6 +910,88 @@
                 "EventTypeDiagnostic",
                 "EventTypePartReplacement",
                 "EventTypeNote"
+            ]
+        },
+        "domain.Prediction": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "explanation": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "model_version": {
+                    "type": "string"
+                },
+                "part_category": {
+                    "type": "string"
+                },
+                "part_code": {
+                    "type": "string"
+                },
+                "part_name": {
+                    "type": "string"
+                },
+                "predicted_next_date": {
+                    "type": "string"
+                },
+                "predicted_next_mileage": {
+                    "type": "integer"
+                },
+                "probability": {
+                    "type": "number"
+                },
+                "recommendation": {
+                    "type": "string"
+                },
+                "remaining_days": {
+                    "type": "integer"
+                },
+                "remaining_km": {
+                    "type": "integer"
+                },
+                "risk_level": {
+                    "$ref": "#/definitions/domain.RiskLevel"
+                },
+                "risk_score": {
+                    "type": "integer"
+                },
+                "source": {
+                    "$ref": "#/definitions/domain.PredictionSource"
+                },
+                "vehicle_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.PredictionSource": {
+            "type": "string",
+            "enum": [
+                "rule_based",
+                "mock",
+                "ml_service"
+            ],
+            "x-enum-varnames": [
+                "PredictionSourceRuleBased",
+                "PredictionSourceMock",
+                "PredictionSourceMLService"
+            ]
+        },
+        "domain.RiskLevel": {
+            "type": "string",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ],
+            "x-enum-varnames": [
+                "RiskLevelLow",
+                "RiskLevelMedium",
+                "RiskLevelHigh"
             ]
         },
         "domain.Vehicle": {
@@ -999,6 +1151,20 @@
                 },
                 "user": {
                     "$ref": "#/definitions/handler.userResponse"
+                }
+            }
+        },
+        "handler.predictionsResponse": {
+            "type": "object",
+            "properties": {
+                "predictions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Prediction"
+                    }
+                },
+                "vehicle_id": {
+                    "type": "integer"
                 }
             }
         },

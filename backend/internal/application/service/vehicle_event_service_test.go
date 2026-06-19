@@ -9,7 +9,7 @@ import (
 )
 
 func TestVehicleEventService_Create_InvalidType(t *testing.T) {
-	service := NewVehicleEventService(nil)
+	service := NewVehicleEventService(nil, nil, nil)
 
 	_, err := service.Create(context.Background(), 1, 1, CreateVehicleEventInput{
 		Type:      domain.EventType("invalid"),
@@ -25,7 +25,7 @@ func TestVehicleEventService_Create_InvalidType(t *testing.T) {
 }
 
 func TestVehicleEventService_Create_EmptyTitle(t *testing.T) {
-	service := NewVehicleEventService(nil)
+	service := NewVehicleEventService(nil, nil, nil)
 
 	_, err := service.Create(context.Background(), 1, 1, CreateVehicleEventInput{
 		Type:      domain.EventTypeRepair,
@@ -41,7 +41,7 @@ func TestVehicleEventService_Create_EmptyTitle(t *testing.T) {
 }
 
 func TestVehicleEventService_Create_NegativeMileage(t *testing.T) {
-	service := NewVehicleEventService(nil)
+	service := NewVehicleEventService(nil, nil, nil)
 
 	_, err := service.Create(context.Background(), 1, 1, CreateVehicleEventInput{
 		Type:      domain.EventTypeRepair,
@@ -57,7 +57,7 @@ func TestVehicleEventService_Create_NegativeMileage(t *testing.T) {
 }
 
 func TestVehicleEventService_Create_NegativeCost(t *testing.T) {
-	service := NewVehicleEventService(nil)
+	service := NewVehicleEventService(nil, nil, nil)
 
 	_, err := service.Create(context.Background(), 1, 1, CreateVehicleEventInput{
 		Type:      domain.EventTypeRepair,
@@ -73,7 +73,7 @@ func TestVehicleEventService_Create_NegativeCost(t *testing.T) {
 }
 
 func TestVehicleEventService_Create_EmptyDate(t *testing.T) {
-	service := NewVehicleEventService(nil)
+	service := NewVehicleEventService(nil, nil, nil)
 
 	_, err := service.Create(context.Background(), 1, 1, CreateVehicleEventInput{
 		Type:      domain.EventTypeRepair,

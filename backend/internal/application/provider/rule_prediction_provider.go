@@ -14,6 +14,10 @@ const (
 
 	mediumRiskUsageRatio = 0.75
 	highRiskUsageRatio   = 0.95
+
+	hoursPerDay    = 24
+	maxRiskScore   = 100
+	percentDivider = 100
 )
 
 type RuleBasedPredictionProvider struct {
@@ -73,7 +77,7 @@ func (p *RuleBasedPredictionProvider) Predict(
 
 		predictedNextMileage := input.Vehicle.MileageKM + remainingKM
 		predictedNextDate := now.AddDate(0, 0, remainingDays)
-		probability := float64(riskScore) / 100
+		probability := float64(riskScore) / percentDivider
 
 		predictions = append(predictions, domain.Prediction{
 			VehicleID:            input.Vehicle.ID,
@@ -133,7 +137,7 @@ func estimateRemainingDays(
 		return minInt(daysByMileage, catalogItem.DefaultLifetimeDays)
 	}
 
-	daysSinceService := int(now.Sub(*part.LastServiceDate).Hours() / 24)
+	daysSinceService := int(now.Sub(*part.LastServiceDate).Hours() / hoursPerDay)
 	if daysSinceService < 0 {
 		daysSinceService = 0
 	}
@@ -141,6 +145,10 @@ func estimateRemainingDays(
 	daysByTime := catalogItem.DefaultLifetimeDays - daysSinceService
 	if daysByTime < 0 {
 		daysByTime = 0
+	}
+
+	if usedMileage == 0 && daysSinceService == 0 {
+		return catalogItem.DefaultLifetimeDays
 	}
 
 	return minInt(daysByMileage, daysByTime)
@@ -158,12 +166,12 @@ func riskLevelFromUsageRatio(ratio float64) domain.RiskLevel {
 }
 
 func riskScoreFromUsageRatio(ratio float64) int {
-	score := int(math.Round(ratio * 100))
+	score := int(math.Round(ratio * maxRiskScore))
 	if score < 0 {
 		return 0
 	}
-	if score > 100 {
-		return 100
+	if score > maxRiskScore {
+		return maxRiskScore
 	}
 
 	return score

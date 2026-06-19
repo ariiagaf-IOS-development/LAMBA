@@ -15,6 +15,63 @@ definitions:
     - EventTypeDiagnostic
     - EventTypePartReplacement
     - EventTypeNote
+  domain.Prediction:
+    properties:
+      created_at:
+        type: string
+      explanation:
+        type: string
+      id:
+        type: integer
+      model_version:
+        type: string
+      part_category:
+        type: string
+      part_code:
+        type: string
+      part_name:
+        type: string
+      predicted_next_date:
+        type: string
+      predicted_next_mileage:
+        type: integer
+      probability:
+        type: number
+      recommendation:
+        type: string
+      remaining_days:
+        type: integer
+      remaining_km:
+        type: integer
+      risk_level:
+        $ref: '#/definitions/domain.RiskLevel'
+      risk_score:
+        type: integer
+      source:
+        $ref: '#/definitions/domain.PredictionSource'
+      vehicle_id:
+        type: integer
+    type: object
+  domain.PredictionSource:
+    enum:
+    - rule_based
+    - mock
+    - ml_service
+    type: string
+    x-enum-varnames:
+    - PredictionSourceRuleBased
+    - PredictionSourceMock
+    - PredictionSourceMLService
+  domain.RiskLevel:
+    enum:
+    - low
+    - medium
+    - high
+    type: string
+    x-enum-varnames:
+    - RiskLevelLow
+    - RiskLevelMedium
+    - RiskLevelHigh
   domain.Vehicle:
     properties:
       brand:
@@ -121,6 +178,15 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/handler.userResponse'
+    type: object
+  handler.predictionsResponse:
+    properties:
+      predictions:
+        items:
+          $ref: '#/definitions/domain.Prediction'
+        type: array
+      vehicle_id:
+        type: integer
     type: object
   handler.userResponse:
     properties:
@@ -755,6 +821,52 @@ paths:
       summary: Get vehicle event statistics
       tags:
       - vehicle-events
+  /api/vehicles/{id}/predictions:
+    get:
+      description: Returns latest predictions for vehicle parts. If predictions do
+        not exist, backend generates and stores them.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.predictionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BasicAuth: []
+      summary: Get vehicle predictions
+      tags:
+      - predictions
   /api/vehicles/{id}/timeline:
     get:
       description: Returns the basic vehicle timeline based on lifecycle events.

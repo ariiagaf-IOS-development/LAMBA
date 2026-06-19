@@ -368,7 +368,7 @@ func (h *VehicleEventHandler) handleVehicleEventError(c *gin.Context, err error)
 }
 
 func eventIDParam(c *gin.Context) (int64, bool) {
-	id, err := strconv.ParseInt(c.Param("eventId"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("eventId"), migrationVersionBase, migrationVersionBit)
 	if err != nil || id <= 0 {
 		errorJSON(c, http.StatusBadRequest, "invalid event id")
 		return 0, false

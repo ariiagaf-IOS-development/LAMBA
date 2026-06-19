@@ -233,7 +233,7 @@ func (h *VehicleHandler) DeleteVehicle(c *gin.Context) {
 }
 
 func vehicleIDParam(c *gin.Context) (int64, bool) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), migrationVersionBase, migrationVersionBit)
 	if err != nil || id <= 0 {
 		errorJSON(c, http.StatusBadRequest, "invalid vehicle id")
 		return 0, false
