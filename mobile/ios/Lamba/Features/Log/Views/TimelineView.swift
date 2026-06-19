@@ -1,16 +1,16 @@
 //
-//  VehicleProfileView.swift
+//  TimelineView.swift
 //  Lamba
 //
-//  Created by Арина Агафонова on 12.06.2026.
+//  Created by Арина Агафонова on 18.06.2026.
 //
 
 import SwiftUI
 
-struct VehicleProfileView: View {
+struct TimelineView: View {
     var body: some View {
         VStack {
-            Text("TWIN")
+            Text("LOG")
                 .font(.largeTitle)
                 .bold()
         }

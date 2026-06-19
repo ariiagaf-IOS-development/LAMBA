@@ -8,22 +8,17 @@
 import SwiftUI
 
 struct AppCard<Content: View>: View {
+    
     let content: Content
-
+    
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-
+    
     var body: some View {
         content
-            .padding(18)
-            .background(AppTheme.card)
-            .clipShape(RoundedRectangle(cornerRadius: AppTheme.largeRadius))
-            .shadow(
-                color: AppTheme.primary.opacity(0.08),
-                radius: 18,
-                x: 0,
-                y: 10
-            )
+            .padding(16)
+            .background(Color(.systemGray6))
+            .cornerRadius(18)
     }
 }
