@@ -8,15 +8,43 @@
 import SwiftUI
 
 struct RootView: View {
-    @EnvironmentObject private var appViewModel: AppViewModel
-
+    
+    @State private var showSplash = true
+    
+    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var vehicleViewModel = VehicleViewModel()
+    
     var body: some View {
         Group {
-            if appViewModel.isAuthenticated == false {
+            
+            if showSplash {
+                SplashView()
+                    .transition(.opacity)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                            withAnimation(.easeInOut(duration: 0.4)) {
+                                showSplash = false
+                            }
+                        }
+                    }
+            }
+            
+            // 1. NOT LOGGED IN
+            else if !authViewModel.isLoggedIn {
                 LoginView()
-            } else if appViewModel.hasVehicle == false {
+                    .environmentObject(authViewModel)
+                
+            }
+            
+            // 2. NO VEHICLE
+            else if !vehicleViewModel.hasVehicle {
                 AddVehicleView()
-            } else {
+                    .environmentObject(vehicleViewModel)
+                
+            }
+            
+            // 3. MAIN APP
+            else {
                 MainTabView()
             }
         }

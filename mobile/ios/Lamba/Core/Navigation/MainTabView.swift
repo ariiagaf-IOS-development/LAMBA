@@ -8,37 +8,29 @@
 import SwiftUI
 
 struct MainTabView: View {
+    
     var body: some View {
         TabView {
-            DashboardView()
+            
+            AIChatView()
                 .tabItem {
-                    Image(systemName: "square.grid.2x2.fill")
-                    Text("Dashboard")
+                    Label("AI", systemImage: "message.fill")
                 }
-
+            
             TimelineView()
                 .tabItem {
-                    Image(systemName: "clock.fill")
-                    Text("Timeline")
+                    Label("LOG", systemImage: "clock.fill")
                 }
-
+            
             VehicleProfileView()
                 .tabItem {
-                    Image(systemName: "car.fill")
-                    Text("Vehicle")
+                    Label("VEHICLE", systemImage: "car.fill")
                 }
-
-            ChatView()
+            
+            CareOverviewView()
                 .tabItem {
-                    Image(systemName: "message.fill")
-                    Text("Chat")
+                    Label("CARE", systemImage: "heart.fill")
                 }
-
-            PredictionsView()
-                .tabItem {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                    Text("Predictions")
-                }
-        }
+        }.tint(AppColors.primary)
     }
 }

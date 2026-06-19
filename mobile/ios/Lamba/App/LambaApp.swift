@@ -8,13 +8,10 @@
 import SwiftUI
 
 @main
-struct LAMBAApp: App {
-    @StateObject private var appViewModel = AppViewModel()
-
+struct LambaApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environmentObject(appViewModel)
         }
     }
 }
