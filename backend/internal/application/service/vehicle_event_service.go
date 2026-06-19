@@ -26,7 +26,9 @@ const (
 )
 
 type VehicleEventService struct {
-	events *repository.VehicleEventRepository
+	events      *repository.VehicleEventRepository
+	parts       *repository.PartRepository
+	predictions *PredictionService
 }
 
 type CreateVehicleEventInput struct {
@@ -55,8 +57,16 @@ type ListVehicleEventsInput struct {
 	Offset int
 }
 
-func NewVehicleEventService(events *repository.VehicleEventRepository) *VehicleEventService {
-	return &VehicleEventService{events: events}
+func NewVehicleEventService(
+	events *repository.VehicleEventRepository,
+	parts *repository.PartRepository,
+	predictions *PredictionService,
+) *VehicleEventService {
+	return &VehicleEventService{
+		events:      events,
+		parts:       parts,
+		predictions: predictions,
+	}
 }
 
 func (s *VehicleEventService) Create(
@@ -81,7 +91,7 @@ func (s *VehicleEventService) Create(
 		return domain.VehicleEvent{}, ErrVehicleEventDateRequired
 	}
 
-	return s.events.CreateForUser(ctx, userID, domain.VehicleEvent{
+	created, err := s.events.CreateForUser(ctx, userID, domain.VehicleEvent{
 		VehicleID:   vehicleID,
 		Type:        input.Type,
 		Title:       strings.TrimSpace(input.Title),
@@ -91,6 +101,28 @@ func (s *VehicleEventService) Create(
 		EventDate:   input.EventDate,
 		Metadata:    input.Metadata,
 	})
+	if err != nil {
+		return domain.VehicleEvent{}, err
+	}
+
+	if s.shouldRecalculatePredictions(created.Type) {
+		if partCode, ok := affectedPartCode(created.Metadata); ok && s.parts != nil {
+			_, _ = s.parts.UpsertServiceByCatalogCodeForUser(
+				ctx,
+				userID,
+				vehicleID,
+				partCode,
+				created.MileageKM,
+				created.EventDate,
+			)
+		}
+
+		if s.predictions != nil {
+			_, _ = s.predictions.RecalculateForVehicle(ctx, userID, vehicleID)
+		}
+	}
+
+	return created, nil
 }
 
 func (s *VehicleEventService) List(
@@ -217,4 +249,31 @@ func validateVehicleEventType(eventType domain.EventType) error {
 	}
 
 	return nil
+}
+
+func (s *VehicleEventService) shouldRecalculatePredictions(eventType domain.EventType) bool {
+	switch eventType {
+	case domain.EventTypeMaintenance,
+		domain.EventTypeRepair,
+		domain.EventTypePartReplacement:
+		return true
+	default:
+		return false
+	}
+}
+
+func affectedPartCode(metadata map[string]any) (string, bool) {
+	for _, key := range []string{"part_code", "part_category", "part"} {
+		value, ok := metadata[key]
+		if !ok {
+			continue
+		}
+
+		partCode, ok := value.(string)
+		if ok && strings.TrimSpace(partCode) != "" {
+			return strings.TrimSpace(partCode), true
+		}
+	}
+
+	return "", false
 }

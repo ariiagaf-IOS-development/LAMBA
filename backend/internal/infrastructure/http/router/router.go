@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/application/provider"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/application/service"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/config"
 	"gitlab.pg.innopolis.university/lamba/LAMBA/backend/internal/infrastructure/http/handler"
@@ -42,14 +43,35 @@ func New(deps ...Dependencies) *gin.Engine {
 		userRepo := repository.NewUserRepository(dep.DB)
 		vehicleRepo := repository.NewVehicleRepository(dep.DB)
 		eventRepo := repository.NewVehicleEventRepository(dep.DB)
+		partRepo := repository.NewPartRepository(dep.DB)
+		predictionRepo := repository.NewPredictionRepository(dep.DB)
+
+		var predictionProvider provider.PredictionProvider
+
+		switch dep.Config.PredictionProvider {
+		case config.PredictionProviderMock:
+			predictionProvider = provider.NewMockPredictionProvider()
+		default:
+			predictionProvider = provider.NewRuleBasedPredictionProvider()
+		}
+
+		log.Info("prediction provider selected", slog.String("provider", string(dep.Config.PredictionProvider)))
 
 		authService := service.NewAuthService(userRepo, dep.Config.BcryptCost)
 		vehicleService := service.NewVehicleService(vehicleRepo)
-		eventService := service.NewVehicleEventService(eventRepo)
+		predictionService := service.NewPredictionService(
+			vehicleRepo,
+			eventRepo,
+			partRepo,
+			predictionRepo,
+			predictionProvider,
+		)
+		eventService := service.NewVehicleEventService(eventRepo, partRepo, predictionService)
 
 		authHandler := handler.NewAuthHandler(authService, log)
 		vehicleHandler := handler.NewVehicleHandler(vehicleService, log)
 		eventHandler := handler.NewVehicleEventHandler(eventService, log)
+		predictionHandler := handler.NewPredictionHandler(predictionService)
 
 		api := r.Group("/api")
 		{
@@ -72,6 +94,7 @@ func New(deps ...Dependencies) *gin.Engine {
 			protected.GET("/vehicles/:id/timeline", eventHandler.GetTimeline)
 			protected.PATCH("/vehicles/:id/events/:eventId", eventHandler.UpdateEvent)
 			protected.DELETE("/vehicles/:id/events/:eventId", eventHandler.DeleteEvent)
+			protected.GET("/vehicles/:id/predictions", predictionHandler.GetByVehicle)
 		}
 	}
 

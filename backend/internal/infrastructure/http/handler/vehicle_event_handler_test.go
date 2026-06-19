@@ -101,7 +101,7 @@ func TestVehicleEventHandler_ListEvents_Unauthorized(t *testing.T) {
 	defer db.Close()
 
 	eventRepo := repository.NewVehicleEventRepository(db)
-	eventService := service.NewVehicleEventService(eventRepo)
+	eventService := service.NewVehicleEventService(eventRepo, nil, nil)
 	h := NewVehicleEventHandler(eventService, nil)
 
 	r := gin.New()
@@ -127,7 +127,7 @@ func TestVehicleEventHandler_GetEventStats_Unauthorized(t *testing.T) {
 	defer db.Close()
 
 	eventRepo := repository.NewVehicleEventRepository(db)
-	eventService := service.NewVehicleEventService(eventRepo)
+	eventService := service.NewVehicleEventService(eventRepo, nil, nil)
 	h := NewVehicleEventHandler(eventService, nil)
 
 	r := gin.New()

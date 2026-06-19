@@ -11,6 +11,16 @@ import (
 	"strings"
 )
 
+const (
+	migrationsDir        = "migrations"
+	sqlFileExtension     = ".sql"
+	migrationNameSep     = "_"
+	migrationNameParts   = 2
+	migrationVersionBase = 10
+	migrationVersionBit  = 64
+	minMigrationVersion  = 0
+)
+
 //go:embed migrations/*.sql
 var migrationFiles embed.FS
 
@@ -25,7 +35,7 @@ func Migrate(ctx context.Context, conn *sql.DB) error {
 		return fmt.Errorf("create schema_migrations table: %w", err)
 	}
 
-	entries, err := migrationFiles.ReadDir("migrations")
+	entries, err := migrationFiles.ReadDir(migrationsDir)
 	if err != nil {
 		return fmt.Errorf("read migrations: %w", err)
 	}
@@ -35,7 +45,7 @@ func Migrate(ctx context.Context, conn *sql.DB) error {
 	})
 
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), sqlFileExtension) {
 			continue
 		}
 
@@ -61,7 +71,7 @@ func Migrate(ctx context.Context, conn *sql.DB) error {
 }
 
 func applyMigration(ctx context.Context, conn *sql.DB, name string, version int64) error {
-	contents, err := migrationFiles.ReadFile(path.Join("migrations", name))
+	contents, err := migrationFiles.ReadFile(path.Join(migrationsDir, name))
 	if err != nil {
 		return fmt.Errorf("read migration %s: %w", name, err)
 	}
@@ -92,17 +102,21 @@ func applyMigration(ctx context.Context, conn *sql.DB, name string, version int6
 }
 
 func migrationVersion(name string) (int64, error) {
-	parts := strings.SplitN(name, "_", 2)
-	if len(parts) != 2 {
+	parts := strings.SplitN(name, migrationNameSep, migrationNameParts)
+	if len(parts) != migrationNameParts {
 		return 0, fmt.Errorf("invalid migration name %q", name)
 	}
 
-	version, err := strconv.ParseInt(parts[0], 10, 64)
+	version, err := strconv.ParseInt(
+		parts[0],
+		migrationVersionBase,
+		migrationVersionBit,
+	)
 	if err != nil {
 		return 0, fmt.Errorf("invalid migration version in %q: %w", name, err)
 	}
 
-	if version <= 0 {
+	if version <= minMigrationVersion {
 		return 0, fmt.Errorf("migration version must be positive in %q", name)
 	}
 

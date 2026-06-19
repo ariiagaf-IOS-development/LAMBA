@@ -9,27 +9,37 @@ import (
 )
 
 type Config struct {
-	HTTPAddr    string
-	DatabaseURL string
-	BcryptCost  int
+	HTTPAddr           string
+	DatabaseURL        string
+	BcryptCost         int
+	PredictionProvider PredictionProviderType
 }
 
 const (
-	envHTTPAddr    = "HTTP_ADDR"
-	envPort        = "PORT"
-	envDatabaseURL = "DATABASE_URL"
-	envBcryptCost  = "BCRYPT_COST"
+	envHTTPAddr           = "HTTP_ADDR"
+	envPort               = "PORT"
+	envDatabaseURL        = "DATABASE_URL"
+	envBcryptCost         = "BCRYPT_COST"
+	envPredictionProvider = "PREDICTION_PROVIDER"
 )
 
 const (
-	defaultPort        = "8080"
-	defaultDatabaseURL = "postgres://lamba:lamba@localhost:5432/lamba?sslmode=disable"
-	defaultBcryptCost  = 12
+	defaultPort               = "8080"
+	defaultDatabaseURL        = "postgres://lamba:lamba@localhost:5432/lamba?sslmode=disable"
+	defaultBcryptCost         = 12
+	defaultPredictionProvider = "rule_based"
 )
 
 const (
 	minBcryptCost = 4
 	maxBcryptCost = 31
+)
+
+type PredictionProviderType string
+
+const (
+	PredictionProviderRuleBased PredictionProviderType = "rule_based"
+	PredictionProviderMock      PredictionProviderType = "mock"
 )
 
 func MustLoad() Config {
@@ -38,9 +48,10 @@ func MustLoad() Config {
 	}
 
 	return Config{
-		HTTPAddr:    loadHTTPAddr(),
-		DatabaseURL: getEnv(envDatabaseURL, defaultDatabaseURL),
-		BcryptCost:  getEnvIntInRange(envBcryptCost, defaultBcryptCost, minBcryptCost, maxBcryptCost),
+		HTTPAddr:           loadHTTPAddr(),
+		DatabaseURL:        getEnv(envDatabaseURL, defaultDatabaseURL),
+		BcryptCost:         getEnvIntInRange(envBcryptCost, defaultBcryptCost, minBcryptCost, maxBcryptCost),
+		PredictionProvider: loadPredictionProvider(),
 	}
 }
 
@@ -77,4 +88,22 @@ func getEnvIntInRange(key string, defaultValue, minValue, maxValue int) int {
 	}
 
 	return parsed
+}
+
+func loadPredictionProvider() PredictionProviderType {
+	value := os.Getenv(envPredictionProvider)
+
+	if value == "" {
+		value = defaultPredictionProvider
+	}
+
+	switch value {
+	case "rule_based":
+		return PredictionProviderRuleBased
+	case "mock":
+		return PredictionProviderMock
+	default:
+		log.Fatalf("invalid PREDICTION_PROVIDER: %s", value)
+		return PredictionProviderRuleBased
+	}
 }
