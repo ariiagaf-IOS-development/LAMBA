@@ -1,16 +1,20 @@
 definitions:
   domain.EventType:
     enum:
-    - trip
-    - refuel
+    - maintenance
     - repair
-    - service
+    - fuel
+    - diagnostic
+    - part_replacement
+    - note
     type: string
     x-enum-varnames:
-    - EventTypeTrip
-    - EventTypeRefuel
+    - EventTypeMaintenance
     - EventTypeRepair
-    - EventTypeService
+    - EventTypeFuel
+    - EventTypeDiagnostic
+    - EventTypePartReplacement
+    - EventTypeNote
   domain.Vehicle:
     properties:
       brand:
@@ -44,6 +48,9 @@ definitions:
         type: string
       id:
         type: integer
+      metadata:
+        additionalProperties: {}
+        type: object
       mileage_km:
         type: integer
       title:
@@ -53,10 +60,30 @@ definitions:
       vehicle_id:
         type: integer
     type: object
+  domain.VehicleEventStats:
+    properties:
+      by_type:
+        items:
+          $ref: '#/definitions/domain.VehicleEventTypeStats'
+        type: array
+      total_cost:
+        type: number
+      total_events:
+        type: integer
+    type: object
+  domain.VehicleEventTypeStats:
+    properties:
+      cost:
+        type: number
+      count:
+        type: integer
+      type:
+        $ref: '#/definitions/domain.EventType'
+    type: object
   handler.ErrorResponse:
     properties:
       error:
-        example: invalid request
+        example: internal server error
         type: string
     type: object
   handler.HealthResponse:
@@ -118,6 +145,9 @@ definitions:
       event_date:
         example: "2026-06-03T12:00:00Z"
         type: string
+      metadata:
+        additionalProperties: {}
+        type: object
       mileage_km:
         example: 124500
         type: integer
@@ -133,6 +163,13 @@ definitions:
     - title
     - type
     type: object
+  handler.vehicleEventStatsResponse:
+    properties:
+      stats:
+        $ref: '#/definitions/domain.VehicleEventStats'
+      vehicle_id:
+        type: integer
+    type: object
   handler.vehicleEventUpdateRequest:
     properties:
       cost:
@@ -144,6 +181,9 @@ definitions:
       event_date:
         example: "2026-06-03T12:00:00Z"
         type: string
+      metadata:
+        additionalProperties: {}
+        type: object
       mileage_km:
         example: 124500
         type: integer
@@ -162,10 +202,16 @@ definitions:
     type: object
   handler.vehicleEventsResponse:
     properties:
+      count:
+        type: integer
       events:
         items:
           $ref: '#/definitions/domain.VehicleEvent'
         type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
       vehicle_id:
         type: integer
     type: object
@@ -200,6 +246,12 @@ definitions:
     type: object
   handler.vehicleTimelineResponse:
     properties:
+      count:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
       timeline:
         items:
           $ref: '#/definitions/domain.VehicleEvent'
@@ -664,6 +716,43 @@ paths:
       security:
       - BasicAuth: []
       summary: Update a vehicle event
+      tags:
+      - vehicle-events
+  /api/vehicles/{id}/events/stats:
+    get:
+      description: Returns aggregated statistics for vehicle events.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehicleEventStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get vehicle event statistics
       tags:
       - vehicle-events
   /api/vehicles/{id}/timeline:

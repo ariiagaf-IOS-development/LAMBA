@@ -556,6 +556,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/vehicles/{id}/events/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Returns aggregated statistics for vehicle events.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vehicle-events"
+                ],
+                "summary": "Get vehicle event statistics",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.vehicleEventStatsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/vehicles/{id}/events/{eventId}": {
             "delete": {
                 "security": [
@@ -779,16 +837,20 @@ const docTemplate = `{
         "domain.EventType": {
             "type": "string",
             "enum": [
-                "trip",
-                "refuel",
+                "maintenance",
                 "repair",
-                "service"
+                "fuel",
+                "diagnostic",
+                "part_replacement",
+                "note"
             ],
             "x-enum-varnames": [
-                "EventTypeTrip",
-                "EventTypeRefuel",
+                "EventTypeMaintenance",
                 "EventTypeRepair",
-                "EventTypeService"
+                "EventTypeFuel",
+                "EventTypeDiagnostic",
+                "EventTypePartReplacement",
+                "EventTypeNote"
             ]
         },
         "domain.Vehicle": {
@@ -841,6 +903,10 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
                 "mileage_km": {
                     "type": "integer"
                 },
@@ -855,12 +921,43 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.VehicleEventStats": {
+            "type": "object",
+            "properties": {
+                "by_type": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.VehicleEventTypeStats"
+                    }
+                },
+                "total_cost": {
+                    "type": "number"
+                },
+                "total_events": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.VehicleEventTypeStats": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "type": {
+                    "$ref": "#/definitions/domain.EventType"
+                }
+            }
+        },
         "handler.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
                     "type": "string",
-                    "example": "invalid request"
+                    "example": "internal server error"
                 }
             }
         },
@@ -953,6 +1050,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2026-06-03T12:00:00Z"
                 },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
                 "mileage_km": {
                     "type": "integer",
                     "example": 124500
@@ -971,6 +1072,17 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.vehicleEventStatsResponse": {
+            "type": "object",
+            "properties": {
+                "stats": {
+                    "$ref": "#/definitions/domain.VehicleEventStats"
+                },
+                "vehicle_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "handler.vehicleEventUpdateRequest": {
             "type": "object",
             "properties": {
@@ -985,6 +1097,10 @@ const docTemplate = `{
                 "event_date": {
                     "type": "string",
                     "example": "2026-06-03T12:00:00Z"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
                 },
                 "mileage_km": {
                     "type": "integer",
@@ -1013,11 +1129,20 @@ const docTemplate = `{
         "handler.vehicleEventsResponse": {
             "type": "object",
             "properties": {
+                "count": {
+                    "type": "integer"
+                },
                 "events": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/domain.VehicleEvent"
                     }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
                 },
                 "vehicle_id": {
                     "type": "integer"
@@ -1068,6 +1193,15 @@ const docTemplate = `{
         "handler.vehicleTimelineResponse": {
             "type": "object",
             "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
                 "timeline": {
                     "type": "array",
                     "items": {
