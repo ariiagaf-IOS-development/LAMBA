@@ -8,11 +8,15 @@
 import Foundation
 import Combine
 
-class AuthViewModel: ObservableObject {
+final class AuthViewModel: ObservableObject {
     
     @Published var isLoggedIn: Bool = false
     
     func login() {
         isLoggedIn = true
+    }
+    
+    func logout() {
+        isLoggedIn = false
     }
 }

@@ -27,33 +27,33 @@ struct AIChatView: View {
                     
                     Text("LAMBA AI")
                         .font(AppTypography.menu)
-                        .foregroundColor(Color(hex: "111827"))
+                        .foregroundStyle(AppColors.textPrimary)
                     
                     Spacer()
                     
                     HStack(spacing: 6) {
                         
                         Circle()
-                            .fill(Color(hex: "00BC7D"))
+                            .fill(AppColors.green)
                             .frame(width: 6, height: 6)
-                        
+
                         Text("LINK ACTIVE")
                             .font(.system(size: 10, weight: .black))
-                            .foregroundColor(Color(hex: "00BC7D"))
+                            .foregroundStyle(AppColors.green)
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(Color(hex: "ECFDF5"))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 999)
+                        RoundedRectangle(cornerRadius: AppRadius.pill)
                             .stroke(Color(hex: "D0FAE5"), lineWidth: 1)
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 999))
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.pill))
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
                 .frame(height: 65)
-                .background(Color.white)
+                .background(AppColors.card)
                 
                 // ================= HERO =================
                 VStack(alignment: .leading, spacing: 6) {
@@ -77,9 +77,19 @@ struct AIChatView: View {
                 Spacer().frame(height: 20)
                 
                 // ================= MAIN CARD =================
-                AIInsightCard(
-                    text: "Your vehicle looks stable today. Brake pads are healthy, but the next service check is recommended in 1,240 km."
-                )
+                VStack(alignment: .leading, spacing: 14) {
+                    AIInsightCard(
+                        text: "Your vehicle looks stable today. Brake pads are healthy, but the next service check is recommended in 1,240 km."
+                    )
+                    
+                    ActionCard(
+                        iconName: "waveform.path.ecg",
+                        title: "View detailed health report",
+                        subtitle: "Open full vehicle health overview"
+                    ) {
+                        print("Open health report")
+                    }
+                }
                 .padding(.horizontal, AppSpacing.lg)
                 
                 Spacer()
@@ -89,46 +99,9 @@ struct AIChatView: View {
             VStack {
                 Spacer()
                 
-                HStack(spacing: AppSpacing.sm) {
-                    
-                    Circle()
-                        .fill(Color(hex: "F1F5F9"))
-                        .frame(width: 44, height: 44)
-                        .overlay(
-                            Image(systemName: "plus")
-                                .foregroundColor(AppColors.textSecondary)
-                        )
-                    
-                    TextField("Ask LAMBA AI...", text: $messageText)
-                        .font(AppTypography.subtitle)
-                    
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    AppColors.primary,
-                                    Color(hex: "393B8B")
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .frame(width: 44, height: 44)
-                        .overlay(
-                            Image(systemName: "arrow.up")
-                                .foregroundColor(.white)
-                        )
-                }
-                .padding(10)
-                .background(Color.white)
-                .cornerRadius(28)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28)
-                        .stroke(Color(hex: "E2E8F0"), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
+                AIInputBar(text: $messageText)
+                    .padding(.horizontal, AppSpacing.lg)
+                    .padding(.bottom, 10)
             }
         }
     }

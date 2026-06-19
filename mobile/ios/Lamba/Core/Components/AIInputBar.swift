@@ -12,46 +12,36 @@ struct AIInputBar: View {
     @Binding var text: String
     
     var body: some View {
-        
-        HStack(spacing: 12) {
+        HStack(spacing: AppSpacing.sm) {
             
             Circle()
-                .fill(Color(hex: "F1F5F9"))
+                .fill(AppColors.background)
                 .frame(width: 44, height: 44)
                 .overlay(
                     Image(systemName: "plus")
-                        .foregroundColor(Color(hex: "64748B"))
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(AppColors.textSecondary)
                 )
             
             TextField("Ask LAMBA AI...", text: $text)
-                .font(.system(size: 16))
-                .foregroundColor(Color(hex: "111827"))
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppColors.textPrimary)
             
             Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: "6366F1"),
-                            Color(hex: "393B8B")
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                .fill(AppColors.primary)
                 .frame(width: 44, height: 44)
                 .overlay(
                     Image(systemName: "arrow.up")
-                        .foregroundColor(.white)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
                 )
         }
         .padding(10)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .background(AppColors.card)
         .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(Color(hex: "E2E8F0"), lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppRadius.xxl)
+                .stroke(AppColors.bubbleBorder, lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
-        .padding(.horizontal, 20)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xxl))
     }
 }
