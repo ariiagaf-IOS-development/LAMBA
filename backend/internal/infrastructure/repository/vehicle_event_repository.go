@@ -26,6 +26,12 @@ type VehicleEventUpdate struct {
 	Metadata    JSONBUpdate
 }
 
+type VehicleEventFilter struct {
+	Type   *domain.EventType
+	Limit  int
+	Offset int
+}
+
 type JSONBUpdate struct {
 	Set   bool
 	Value map[string]any
@@ -97,8 +103,26 @@ func (r *VehicleEventRepository) ListByVehicleForUser(
 	ctx context.Context,
 	userID int64,
 	vehicleID int64,
+	filter VehicleEventFilter,
 ) ([]domain.VehicleEvent, error) {
-	rows, err := r.db.QueryContext(ctx, `
+	args := []any{vehicleID, userID}
+	where := []string{
+		"ve.vehicle_id = $1",
+		"v.user_id = $2",
+	}
+
+	if filter.Type != nil {
+		args = append(args, *filter.Type)
+		where = append(where, fmt.Sprintf("ve.type = $%d", len(args)))
+	}
+
+	args = append(args, filter.Limit)
+	limitPlaceholder := fmt.Sprintf("$%d", len(args))
+
+	args = append(args, filter.Offset)
+	offsetPlaceholder := fmt.Sprintf("$%d", len(args))
+
+	query := fmt.Sprintf(`
 		SELECT
 			ve.id,
 			ve.vehicle_id,
@@ -112,9 +136,12 @@ func (r *VehicleEventRepository) ListByVehicleForUser(
 			ve.created_at
 		FROM vehicle_events ve
 		JOIN vehicles v ON v.id = ve.vehicle_id
-		WHERE ve.vehicle_id = $1 AND v.user_id = $2
+		WHERE %s
 		ORDER BY ve.event_date DESC, ve.id DESC
-	`, vehicleID, userID)
+		LIMIT %s OFFSET %s
+	`, strings.Join(where, " AND "), limitPlaceholder, offsetPlaceholder)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list vehicle events: %w", err)
 	}
@@ -249,6 +276,64 @@ func (r *VehicleEventRepository) DeleteForUser(
 	}
 
 	return nil
+}
+
+func (r *VehicleEventRepository) GetStatsByVehicleForUser(
+	ctx context.Context,
+	userID int64,
+	vehicleID int64,
+) (domain.VehicleEventStats, error) {
+	exists, err := r.vehicleBelongsToUser(ctx, userID, vehicleID)
+	if err != nil {
+		return domain.VehicleEventStats{}, err
+	}
+	if !exists {
+		return domain.VehicleEventStats{}, ErrNotFound
+	}
+
+	var stats domain.VehicleEventStats
+
+	err = r.db.QueryRowContext(ctx, `
+		SELECT
+			COUNT(*),
+			COALESCE(SUM(cost), 0)
+		FROM vehicle_events
+		WHERE vehicle_id = $1
+	`, vehicleID).Scan(&stats.TotalEvents, &stats.TotalCost)
+	if err != nil {
+		return domain.VehicleEventStats{}, fmt.Errorf("get vehicle event stats: %w", err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			type,
+			COUNT(*),
+			COALESCE(SUM(cost), 0)
+		FROM vehicle_events
+		WHERE vehicle_id = $1
+		GROUP BY type
+		ORDER BY type
+	`, vehicleID)
+	if err != nil {
+		return domain.VehicleEventStats{}, fmt.Errorf("get vehicle event stats by type: %w", err)
+	}
+	defer rows.Close()
+
+	stats.ByType = make([]domain.VehicleEventTypeStats, 0)
+	for rows.Next() {
+		var item domain.VehicleEventTypeStats
+		if err := rows.Scan(&item.Type, &item.Count, &item.Cost); err != nil {
+			return domain.VehicleEventStats{}, fmt.Errorf("scan vehicle event stats: %w", err)
+		}
+
+		stats.ByType = append(stats.ByType, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return domain.VehicleEventStats{}, fmt.Errorf("iterate vehicle event stats: %w", err)
+	}
+
+	return stats, nil
 }
 
 func (r *VehicleEventRepository) GetByIDForUser(

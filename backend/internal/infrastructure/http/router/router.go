@@ -46,11 +46,10 @@ func New(deps ...Dependencies) *gin.Engine {
 		authService := service.NewAuthService(userRepo, dep.Config.BcryptCost)
 		vehicleService := service.NewVehicleService(vehicleRepo)
 		eventService := service.NewVehicleEventService(eventRepo)
-		timelineService := service.NewTimelineService(eventService)
 
 		authHandler := handler.NewAuthHandler(authService, log)
 		vehicleHandler := handler.NewVehicleHandler(vehicleService, log)
-		eventHandler := handler.NewVehicleEventHandler(eventService, timelineService, log)
+		eventHandler := handler.NewVehicleEventHandler(eventService, log)
 
 		api := r.Group("/api")
 		{
@@ -69,6 +68,7 @@ func New(deps ...Dependencies) *gin.Engine {
 
 			protected.POST("/vehicles/:id/events", eventHandler.CreateEvent)
 			protected.GET("/vehicles/:id/events", eventHandler.ListEvents)
+			protected.GET("/vehicles/:id/events/stats", eventHandler.GetEventStats)
 			protected.GET("/vehicles/:id/timeline", eventHandler.GetTimeline)
 			protected.PATCH("/vehicles/:id/events/:eventId", eventHandler.UpdateEvent)
 			protected.DELETE("/vehicles/:id/events/:eventId", eventHandler.DeleteEvent)

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -12,11 +11,18 @@ import (
 )
 
 var (
-	ErrVehicleEventInvalidType  = errors.New("event type must be one of: trip, refuel, repair, service")
-	ErrVehicleEventTitleEmpty   = errors.New("title is required")
-	ErrVehicleEventMileage      = errors.New("mileage_km must be greater than or equal to 0")
-	ErrVehicleEventCost         = errors.New("cost must be greater than or equal to 0")
-	ErrVehicleEventDateRequired = errors.New("event_date is required")
+	ErrVehicleEventInvalidType  = errors.New("invalid vehicle event type")
+	ErrVehicleEventTitleEmpty   = errors.New("vehicle event title cannot be empty")
+	ErrVehicleEventMileage      = errors.New("vehicle event mileage cannot be negative")
+	ErrVehicleEventCost         = errors.New("vehicle event cost cannot be negative")
+	ErrVehicleEventDateRequired = errors.New("vehicle event date is required")
+	ErrVehicleEventLimit        = errors.New("vehicle event limit must be positive")
+	ErrVehicleEventOffset       = errors.New("vehicle event offset cannot be negative")
+)
+
+const (
+	DefaultVehicleEventLimit = 20
+	MaxVehicleEventLimit     = 100
 )
 
 type VehicleEventService struct {
@@ -43,6 +49,12 @@ type UpdateVehicleEventInput struct {
 	Metadata    map[string]any
 }
 
+type ListVehicleEventsInput struct {
+	Type   *domain.EventType
+	Limit  int
+	Offset int
+}
+
 func NewVehicleEventService(events *repository.VehicleEventRepository) *VehicleEventService {
 	return &VehicleEventService{events: events}
 }
@@ -53,44 +65,46 @@ func (s *VehicleEventService) Create(
 	vehicleID int64,
 	input CreateVehicleEventInput,
 ) (domain.VehicleEvent, error) {
-	event, err := newVehicleEventFromInput(vehicleID, input)
-	if err != nil {
+	if err := validateVehicleEventType(input.Type); err != nil {
 		return domain.VehicleEvent{}, err
 	}
-
-	created, err := s.events.CreateForUser(ctx, userID, event)
-	if err != nil {
-		return domain.VehicleEvent{}, fmt.Errorf("create vehicle event: %w", err)
+	if strings.TrimSpace(input.Title) == "" {
+		return domain.VehicleEvent{}, ErrVehicleEventTitleEmpty
+	}
+	if input.MileageKM < 0 {
+		return domain.VehicleEvent{}, ErrVehicleEventMileage
+	}
+	if input.Cost < 0 {
+		return domain.VehicleEvent{}, ErrVehicleEventCost
+	}
+	if input.EventDate.IsZero() {
+		return domain.VehicleEvent{}, ErrVehicleEventDateRequired
 	}
 
-	return created, nil
+	return s.events.CreateForUser(ctx, userID, domain.VehicleEvent{
+		VehicleID:   vehicleID,
+		Type:        input.Type,
+		Title:       strings.TrimSpace(input.Title),
+		Description: input.Description,
+		MileageKM:   input.MileageKM,
+		Cost:        input.Cost,
+		EventDate:   input.EventDate,
+		Metadata:    input.Metadata,
+	})
 }
 
 func (s *VehicleEventService) List(
 	ctx context.Context,
 	userID int64,
 	vehicleID int64,
+	input ListVehicleEventsInput,
 ) ([]domain.VehicleEvent, error) {
-	events, err := s.events.ListByVehicleForUser(ctx, userID, vehicleID)
+	filter, err := normalizeVehicleEventFilter(input)
 	if err != nil {
-		return nil, fmt.Errorf("list vehicle events: %w", err)
+		return nil, err
 	}
 
-	return events, nil
-}
-
-func (s *VehicleEventService) Get(
-	ctx context.Context,
-	userID int64,
-	vehicleID int64,
-	eventID int64,
-) (domain.VehicleEvent, error) {
-	event, err := s.events.GetByIDForUser(ctx, userID, vehicleID, eventID)
-	if err != nil {
-		return domain.VehicleEvent{}, fmt.Errorf("get vehicle event: %w", err)
-	}
-
-	return event, nil
+	return s.events.ListByVehicleForUser(ctx, userID, vehicleID, filter)
 }
 
 func (s *VehicleEventService) Update(
@@ -100,17 +114,55 @@ func (s *VehicleEventService) Update(
 	eventID int64,
 	input UpdateVehicleEventInput,
 ) (domain.VehicleEvent, error) {
-	update, err := newVehicleEventUpdateFromInput(input)
-	if err != nil {
-		return domain.VehicleEvent{}, err
+	update := repository.VehicleEventUpdate{}
+
+	if input.Type != nil {
+		if err := validateVehicleEventType(*input.Type); err != nil {
+			return domain.VehicleEvent{}, err
+		}
+		update.Type = input.Type
 	}
 
-	event, err := s.events.UpdateForUser(ctx, userID, vehicleID, eventID, update)
-	if err != nil {
-		return domain.VehicleEvent{}, fmt.Errorf("update vehicle event: %w", err)
+	if input.Title != nil {
+		title := strings.TrimSpace(*input.Title)
+		if title == "" {
+			return domain.VehicleEvent{}, ErrVehicleEventTitleEmpty
+		}
+		update.Title = &title
 	}
 
-	return event, nil
+	if input.Description != nil {
+		update.Description.Set = true
+		update.Description.Value = input.Description
+	}
+
+	if input.MileageKM != nil {
+		if *input.MileageKM < 0 {
+			return domain.VehicleEvent{}, ErrVehicleEventMileage
+		}
+		update.MileageKM = input.MileageKM
+	}
+
+	if input.Cost != nil {
+		if *input.Cost < 0 {
+			return domain.VehicleEvent{}, ErrVehicleEventCost
+		}
+		update.Cost = input.Cost
+	}
+
+	if input.EventDate != nil {
+		if input.EventDate.IsZero() {
+			return domain.VehicleEvent{}, ErrVehicleEventDateRequired
+		}
+		update.EventDate = input.EventDate
+	}
+
+	if input.Metadata != nil {
+		update.Metadata.Set = true
+		update.Metadata.Value = input.Metadata
+	}
+
+	return s.events.UpdateForUser(ctx, userID, vehicleID, eventID, update)
 }
 
 func (s *VehicleEventService) Delete(
@@ -119,138 +171,50 @@ func (s *VehicleEventService) Delete(
 	vehicleID int64,
 	eventID int64,
 ) error {
-	if err := s.events.DeleteForUser(ctx, userID, vehicleID, eventID); err != nil {
-		return fmt.Errorf("delete vehicle event: %w", err)
-	}
-
-	return nil
+	return s.events.DeleteForUser(ctx, userID, vehicleID, eventID)
 }
 
-func newVehicleEventFromInput(
+func (s *VehicleEventService) Stats(
+	ctx context.Context,
+	userID int64,
 	vehicleID int64,
-	input CreateVehicleEventInput,
-) (domain.VehicleEvent, error) {
-	if !isValidEventType(input.Type) {
-		return domain.VehicleEvent{}, ErrVehicleEventInvalidType
+) (domain.VehicleEventStats, error) {
+	return s.events.GetStatsByVehicleForUser(ctx, userID, vehicleID)
+}
+
+func normalizeVehicleEventFilter(input ListVehicleEventsInput) (repository.VehicleEventFilter, error) {
+	if input.Type != nil {
+		if err := validateVehicleEventType(*input.Type); err != nil {
+			return repository.VehicleEventFilter{}, err
+		}
 	}
 
-	title := strings.TrimSpace(input.Title)
-	if title == "" {
-		return domain.VehicleEvent{}, ErrVehicleEventTitleEmpty
+	limit := input.Limit
+	if limit == 0 {
+		limit = DefaultVehicleEventLimit
+	}
+	if limit < 0 {
+		return repository.VehicleEventFilter{}, ErrVehicleEventLimit
+	}
+	if limit > MaxVehicleEventLimit {
+		limit = MaxVehicleEventLimit
 	}
 
-	if input.MileageKM < 0 {
-		return domain.VehicleEvent{}, ErrVehicleEventMileage
+	if input.Offset < 0 {
+		return repository.VehicleEventFilter{}, ErrVehicleEventOffset
 	}
 
-	if input.Cost < 0 {
-		return domain.VehicleEvent{}, ErrVehicleEventCost
-	}
-
-	if input.EventDate.IsZero() {
-		return domain.VehicleEvent{}, ErrVehicleEventDateRequired
-	}
-
-	return domain.VehicleEvent{
-		VehicleID:   vehicleID,
-		Type:        input.Type,
-		Title:       title,
-		Description: normalizeOptionalString(input.Description),
-		MileageKM:   input.MileageKM,
-		Cost:        input.Cost,
-		EventDate:   input.EventDate,
-		Metadata:    normalizeMetadata(input.Metadata),
+	return repository.VehicleEventFilter{
+		Type:   input.Type,
+		Limit:  limit,
+		Offset: input.Offset,
 	}, nil
 }
 
-func newVehicleEventUpdateFromInput(
-	input UpdateVehicleEventInput,
-) (repository.VehicleEventUpdate, error) {
-	var update repository.VehicleEventUpdate
-
-	if input.Type != nil {
-		if !isValidEventType(*input.Type) {
-			return update, ErrVehicleEventInvalidType
-		}
-
-		update.Type = input.Type
+func validateVehicleEventType(eventType domain.EventType) error {
+	if !eventType.IsValid() {
+		return ErrVehicleEventInvalidType
 	}
 
-	if input.Title != nil {
-		title := strings.TrimSpace(*input.Title)
-		if title == "" {
-			return update, ErrVehicleEventTitleEmpty
-		}
-
-		update.Title = &title
-	}
-
-	if input.Description != nil {
-		update.Description.Set = true
-		update.Description.Value = normalizeOptionalString(input.Description)
-	}
-
-	if input.MileageKM != nil {
-		if *input.MileageKM < 0 {
-			return update, ErrVehicleEventMileage
-		}
-
-		update.MileageKM = input.MileageKM
-	}
-
-	if input.Cost != nil {
-		if *input.Cost < 0 {
-			return update, ErrVehicleEventCost
-		}
-
-		update.Cost = input.Cost
-	}
-
-	if input.EventDate != nil {
-		if input.EventDate.IsZero() {
-			return update, ErrVehicleEventDateRequired
-		}
-
-		update.EventDate = input.EventDate
-	}
-
-	if input.Metadata != nil {
-		update.Metadata.Set = true
-		update.Metadata.Value = normalizeMetadata(input.Metadata)
-	}
-
-	return update, nil
-}
-
-func isValidEventType(eventType domain.EventType) bool {
-	switch eventType {
-	case domain.EventTypeTrip,
-		domain.EventTypeRefuel,
-		domain.EventTypeRepair,
-		domain.EventTypeService:
-		return true
-	default:
-		return false
-	}
-}
-
-func normalizeOptionalString(value *string) *string {
-	if value == nil {
-		return nil
-	}
-
-	trimmed := strings.TrimSpace(*value)
-	if trimmed == "" {
-		return nil
-	}
-
-	return &trimmed
-}
-
-func normalizeMetadata(metadata map[string]any) map[string]any {
-	if metadata == nil {
-		return map[string]any{}
-	}
-
-	return metadata
+	return nil
 }
