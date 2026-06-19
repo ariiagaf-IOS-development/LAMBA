@@ -9,16 +9,32 @@ import SwiftUI
 
 struct AppCard<Content: View>: View {
     
-    let content: Content
+    var padding: CGFloat = 20
+    var cornerRadius: CGFloat = AppRadius.xxl
     
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
+    @ViewBuilder let content: Content
     
     var body: some View {
         content
-            .padding(16)
-            .background(Color(.systemGray6))
-            .cornerRadius(18)
+            .appCard(
+                padding: padding,
+                cornerRadius: cornerRadius
+            )
+    }
+}
+
+extension View {
+    func appCard(
+        padding: CGFloat = 20,
+        cornerRadius: CGFloat = AppRadius.xxl
+    ) -> some View {
+        self
+            .padding(padding)
+            .background(AppColors.card)
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(AppColors.bubbleBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 }

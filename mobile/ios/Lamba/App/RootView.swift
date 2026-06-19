@@ -21,7 +21,7 @@ struct RootView: View {
                 SplashView()
                     .transition(.opacity)
                     .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                             withAnimation(.easeInOut(duration: 0.4)) {
                                 showSplash = false
                             }
@@ -40,7 +40,7 @@ struct RootView: View {
             else if !vehicleViewModel.hasVehicle {
                 AddVehicleView()
                     .environmentObject(vehicleViewModel)
-                
+                    .environmentObject(authViewModel)
             }
             
             // 3. MAIN APP

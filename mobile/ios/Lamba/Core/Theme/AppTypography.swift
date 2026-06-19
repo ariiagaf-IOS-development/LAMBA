@@ -12,6 +12,7 @@ enum AppTypography {
     // Headers (111827, black 60 feel)
     static let h1 = Font.system(size: 40, weight: .black)
     static let h2 = Font.system(size: 20, weight: .bold)
+    static let h3 = Font.system(size: 16, weight: .medium)
     
     static let menu = Font.system(size: 14, weight: .bold)
     

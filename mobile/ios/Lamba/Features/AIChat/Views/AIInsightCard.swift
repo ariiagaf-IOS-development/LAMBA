@@ -12,29 +12,29 @@ struct AIInsightCard: View {
     let text: String
     
     var body: some View {
-        
-        Text(text)
-            .font(.system(size: 17, weight: .medium))
-            .foregroundColor(AppColors.textPrimary)
-            .lineSpacing(6)
-            .padding(.vertical, 28)
-            .padding(.horizontal, 20)
-            .frame(minHeight: 120)
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color.white,
-                        Color(hex: "F1F5F9")
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(Color(hex: "E2E8F0"), lineWidth: 1)
-            )
-            .cornerRadius(28)
-            .shadow(color: .black.opacity(0.02), radius: 20, x: 0, y: 10)
+        HStack(alignment: .top, spacing: 10) {
+            
+            ZStack {
+                Circle()
+                    .fill(AppColors.card)
+                    .frame(width: 30, height: 30)
+                    .overlay(
+                        Circle()
+                            .stroke(AppColors.bubbleBorder, lineWidth: 1)
+                    )
+                
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(AppColors.primary)
+            }
+            .padding(.top, 10)
+            
+            Text(text)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(AppColors.textPrimary)
+                .lineSpacing(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .appCard()
+        }
     }
 }

@@ -73,7 +73,7 @@ struct SplashView: View {
            
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
                 progressWidth = 200
             }
         }
