@@ -46,7 +46,16 @@ func New(deps ...Dependencies) *gin.Engine {
 		partRepo := repository.NewPartRepository(dep.DB)
 		predictionRepo := repository.NewPredictionRepository(dep.DB)
 
-		predictionProvider := provider.NewRuleBasedPredictionProvider()
+		var predictionProvider provider.PredictionProvider
+
+		switch dep.Config.PredictionProvider {
+		case config.PredictionProviderMock:
+			predictionProvider = provider.NewMockPredictionProvider()
+		default:
+			predictionProvider = provider.NewRuleBasedPredictionProvider()
+		}
+
+		log.Info("prediction provider selected", slog.String("provider", string(dep.Config.PredictionProvider)))
 
 		authService := service.NewAuthService(userRepo, dep.Config.BcryptCost)
 		vehicleService := service.NewVehicleService(vehicleRepo)
