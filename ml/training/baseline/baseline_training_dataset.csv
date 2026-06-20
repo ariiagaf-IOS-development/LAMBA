@@ -1,0 +1,31 @@
+vehicle_id,maintenance_needed,vehicle_age_years,mileage_km,mileage_bucket,brand,model,body_class,fuel_type,transmission,maintenance_event_count,service_count_source,maintenance_history_quality,maintenance_history_score,km_since_last_maintenance,repair_event_count,km_since_last_repair,repair_cost_total,refuel_event_count,km_since_last_refuel,fuel_efficiency_km_per_liter,tracked_part_count,avg_part_age_km,avg_km_since_part_service
+1,1,8,85733,medium,Toyota,Camry,Sedan/Saloon,Gasoline,continuously variable-speed automatic,1,9,good,2,0,1,37453,0.0,1,500,11.56,4,33333.33,9363.25
+2,1,7,71128,medium,Toyota,Corolla,Sedan/Saloon,Gasoline,continuously variable-speed automatic,1,6,poor,0,0,1,0,0.0,1,500,16.39,4,33333.33,0.0
+3,1,6,64195,medium,Toyota,RAV4,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,8-speed shiftable automatic,1,3,good,2,0,1,0,0.0,1,500,11.61,4,33333.33,0.0
+4,1,6,51152,low,Honda,Civic,Sedan/Saloon,Gasoline,continuously variable-speed automatic,1,8,poor,0,0,1,0,0.0,1,500,16.34,4,30384.0,0.0
+5,1,7,80856,medium,Honda,Accord,Sedan/Saloon,Gasoline,continuously variable-speed automatic,1,4,poor,0,0,1,0,0.0,1,500,10.07,4,33333.33,0.0
+6,1,6,63280,medium,Honda,CR-V,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,continuously variable-speed automatic,1,6,average,1,0,1,0,0.0,1,500,10.74,4,33333.33,0.0
+7,1,7,80467,medium,Ford,Escape,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,6-speed shiftable automatic,1,6,poor,0,9044,1,0,0.0,1,9544,13.86,4,36348.0,6783.0
+8,1,6,133575,high,Ford,Explorer,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,10-speed shiftable automatic,1,8,good,2,83618,1,0,0.0,1,84118,17.04,4,61206.0,62713.5
+9,0,7,141901,high,Ford,Mustang,Coupe,Gasoline,6-speed manual,1,3,poor,0,0,1,0,0.0,1,500,11.28,4,33333.33,0.0
+10,1,6,180246,very_high,Chevrolet,Equinox,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,6-speed shiftable automatic,1,4,good,2,30292,1,0,0.0,1,30792,19.83,4,43430.67,22719.0
+11,1,7,33202,low,Chevrolet,Malibu,Sedan/Saloon,Gasoline,1-speed direct drive,1,2,poor,0,0,1,0,0.0,1,500,11.91,4,24400.67,0.0
+12,0,6,66067,medium,Chevrolet,Traverse,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,9-speed shiftable automatic,1,10,good,2,0,1,0,0.0,1,500,14.05,4,33333.33,0.0
+13,1,7,130759,high,Nissan,Rogue,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,continuously variable-speed automatic,1,9,average,1,0,1,0,0.0,1,500,12.11,4,33333.33,0.0
+14,0,6,107864,high,Nissan,Altima,Sedan/Saloon,Gasoline,continuously variable-speed automatic,1,6,average,1,0,1,0,0.0,1,500,19.54,4,33333.33,0.0
+15,1,7,129292,high,Nissan,Sentra,Sedan/Saloon,Gasoline,6-speed manual,1,3,poor,0,0,1,0,0.0,1,500,16.37,4,33333.33,0.0
+16,1,8,75317,medium,Hyundai,Sonata,Sedan/Saloon,Gasoline,7-speed automated manual,1,1,poor,0,0,1,0,0.0,1,500,12.78,4,33333.33,0.0
+17,1,6,62035,medium,Hyundai,Elantra,Sedan/Saloon,Gasoline,7-speed automated manual,1,8,poor,0,0,1,12847,0.0,1,500,17.35,4,33333.33,3211.75
+18,1,7,101551,high,Hyundai,Tucson,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,6-speed shiftable automatic,1,3,good,2,0,1,37177,0.0,1,500,18.15,4,33333.33,9294.25
+19,1,6,76781,medium,Kia,Sportage,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,6-speed shiftable automatic,1,10,poor,0,0,1,0,0.0,1,500,11.69,4,33333.33,0.0
+20,1,7,61001,medium,Kia,Optima,Sedan/Saloon,Gasoline,7-speed automated manual,1,9,poor,0,0,1,0,0.0,1,500,17.07,4,33333.33,0.0
+21,1,6,138062,high,Kia,Sorento,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,8-speed shiftable automatic,1,1,good,2,0,1,0,0.0,1,500,16.36,4,33333.33,0.0
+22,0,7,50978,low,Volkswagen,Jetta,Sedan/Saloon,Gasoline,6-speed manual,1,5,good,2,0,1,0,0.0,1,500,11.71,4,30326.0,0.0
+23,1,6,77026,medium,Volkswagen,Tiguan,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,8-speed shiftable automatic,1,10,poor,0,0,1,0,0.0,1,500,16.1,4,33333.33,0.0
+24,1,8,45688,low,Volkswagen,Passat,Sedan/Saloon,Gasoline,6-speed automated manual,1,9,poor,0,0,1,0,0.0,1,500,18.04,4,28562.67,0.0
+25,0,8,159186,very_high,Mazda,CX-5,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,6-speed shiftable automatic,1,3,average,1,80977,1,0,0.0,1,81477,14.3,4,60325.67,60732.75
+26,1,7,122153,high,Mazda,CX-9,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,6-speed shiftable automatic,1,1,good,2,0,1,20765,0.0,1,500,11.05,4,33333.33,5191.25
+27,0,6,49535,low,Mazda,CX-3,Wagon,Gasoline,6-speed shiftable automatic,1,5,good,2,0,1,0,0.0,1,500,18.5,4,29845.0,0.0
+28,1,6,45925,low,Subaru,Outback,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,continuously variable-speed automatic,1,8,poor,0,0,1,0,0.0,1,500,14.2,4,28641.67,0.0
+29,1,7,134871,high,Subaru,Forester,Sport Utility Vehicle [SUV]/Multipurpose Vehicle [MPV],Gasoline,continuously variable-speed automatic,1,4,good,2,0,1,0,0.0,1,500,18.28,4,33333.33,0.0
+30,0,6,50109,low,Subaru,Impreza,Hatchback/Liftback/Notchback,Gasoline,5-speed manual,1,4,average,1,0,1,0,0.0,1,500,14.01,4,30036.33,0.0
