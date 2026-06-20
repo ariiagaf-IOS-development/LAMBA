@@ -10,6 +10,8 @@ EVENT_TYPES = {
     "maintenance",
     "prediction",
     "diagnostic",
+    "part_replacement",
+    "note",
 }
 
 # parts that are currently used in mock responses

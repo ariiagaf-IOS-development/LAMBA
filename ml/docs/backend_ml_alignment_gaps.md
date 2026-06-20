@@ -6,70 +6,34 @@ This document captures current integration gaps between Backend and ML contracts
 
 ## Summary
 
-The ML-side taxonomy and parts health model are documented, but Backend is not fully synchronized yet. The biggest risk is that ML now documents event types that Backend currently rejects at validation or database constraint level.
+The timeline event type mismatch has been resolved in Backend: current Backend code accepts the ML timeline event types and also supports Backend-specific `part_replacement` and `note` types. Remaining gaps are now mostly about documentation, metadata placement, and future parts health integration.
 
 ## Timeline Event Type Gaps
 
-### Backend does not accept all ML timeline event types
+### Backend and ML event types are now aligned
 
-ML timeline taxonomy supports:
-
-```text
-trip, refuel, repair, inspection, accident, recall, warning, maintenance, prediction, diagnostic
-```
-
-Backend currently accepts:
+Shared canonical timeline types:
 
 ```text
-maintenance, repair, fuel, diagnostic, part_replacement, note
+trip, refuel, repair, inspection, accident, recall, warning, maintenance, prediction, diagnostic, part_replacement, note
 ```
 
-Impact:
+Resolved:
 
-- `inspection`, `accident`, `recall`, `warning`, and `prediction` events can be documented in ML but rejected by Backend.
-- AI Assistant context may be incomplete because these richer timeline events cannot be stored through the Backend API.
+- Backend domain enum includes these types.
+- Backend database migration updates legacy `fuel -> refuel` and `service -> maintenance`.
+- ML taxonomy now documents `part_replacement` and `note`.
 
 Relevant files:
 
 - `ml/timeline/event_types.py`
 - `ml/timeline/event_taxonomy.json`
 - `backend/internal/domain/vehicle_event.go`
-
-### Database constraint is also not aligned
-
-Backend database migration currently constrains `vehicle_events.type` to:
-
-```text
-maintenance, repair, fuel, diagnostic, part_replacement, note
-```
-
-Impact:
-
-- Updating only Go enum validation is not enough.
-- New timeline event types also need a database migration that updates the `vehicle_events_type_allowed` check constraint.
-
-Relevant file:
-
 - `backend/internal/infrastructure/db/migrations/002_extend_vehicle_events.sql`
 
 ### `fuel` vs `refuel`
 
-ML and demo data use:
-
-```text
-refuel
-```
-
-Backend uses:
-
-```text
-fuel
-```
-
-Recommended resolution:
-
-- Use `refuel` as the canonical type because it is more specific and already exists in ML demo data.
-- Keep `fuel` as a legacy alias if existing Backend/mobile clients already use it.
+Canonical value is now `refuel`. Backend migration converts legacy `fuel` rows to `refuel`.
 
 ### `service` vs `maintenance`
 
@@ -81,42 +45,29 @@ service -> maintenance
 
 as a legacy alias.
 
-Impact:
-
-- Historical demo data and older docs may still contain `service`.
-- Backend should either accept `service` as a legacy alias or migrate old events to `maintenance`.
-
-Recommended resolution:
-
-- Canonical type: `maintenance`.
-- Legacy alias: `service`.
+Backend migration converts legacy `service` rows to `maintenance`.
 
 ## Timeline Schema Gaps
 
-### `source` and `source_id` are documented in ML but not modeled directly in Backend
+### `source` and `source_id` live in `metadata`
 
-ML timeline examples include:
+ML timeline examples store source attribution inside `metadata`:
 
 ```json
 {
-  "source": "service_center",
-  "source_id": "inspection-7781"
+  "metadata": {
+    "source": "service_center",
+    "source_id": "inspection-7781"
+  }
 }
 ```
 
-Backend `VehicleEvent` currently has flexible `metadata`, but no explicit `source` or `source_id` fields.
-
-Impact:
-
-- Source attribution may be lost or inconsistently stored.
-- AI Assistant may not know whether an event came from an owner report, service center, recall feed, ML service, or diagnostic tool.
+Backend `VehicleEvent` has flexible `metadata`, but no explicit `source` or `source_id` fields. ML examples and taxonomy now follow the Backend-compatible approach and keep these values inside `metadata`.
 
 Recommended resolution options:
 
-- Add `source` and `source_id` columns to Backend `vehicle_events`.
-- Or define that `source` and `source_id` must live inside `metadata`.
-
-The first option is better for filtering, auditability, and UI display.
+- Current compatible approach: keep `source` and `source_id` inside `metadata`.
+- Future enhancement: add first-class `source` and `source_id` columns if filtering or audit requirements grow.
 
 ## Parts Health Integration Gaps
 
@@ -205,25 +156,21 @@ Fields that should remain aligned:
 - `explanation`
 - `model_version`
 
-## Recommended Backend Follow-up
+## Recommended Follow-up
 
-Create a Backend-focused follow-up task:
+Create an integration-focused follow-up task:
 
 ```text
-Backend: Align timeline event taxonomy and ML contracts
+Backend/ML: Integrate parts health and prediction contract mapping
 ```
 
 Suggested implementation scope:
 
-- Update Backend `EventType` enum.
-- Add aliases for `service -> maintenance` and optionally `fuel -> refuel`.
-- Add a new DB migration for the `vehicle_events_type_allowed` constraint.
-- Update Swagger docs.
-- Add tests for all canonical timeline event types.
-- Decide where `source` and `source_id` should live.
 - Add Backend mapper from `VehiclePart` to ML part schema.
 - Decide how `parts_health` is exposed to Digital Twin.
+- Decide whether parts health is computed on demand, stored, or returned by a future ML endpoint.
+- Keep timeline examples and Backend API docs synchronized when event metadata conventions change.
 
 ## Current Risk
 
-Until these follow-ups are complete, the ML taxonomy is documented, but Backend may reject or fail to persist some documented timeline events. Parts Health Model is also available in ML but not yet connected to Backend or Digital Twin responses.
+Timeline event types are now aligned between ML docs and Backend. Remaining risk is mainly that Parts Health Model is available in ML but not yet connected to Backend or Digital Twin responses.

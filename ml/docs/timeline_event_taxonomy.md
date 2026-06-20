@@ -29,6 +29,8 @@ Current demo data uses:
 | `maintenance` | Planned preventive service such as oil change, brake service, tire rotation, or scheduled replacement. |
 | `prediction` | ML-generated forecast about component risk, remaining distance, or recommended next action. |
 | `diagnostic` | Diagnostic scan, trouble code reading, test result, or technician finding. |
+| `part_replacement` | Specific component replacement event, usually created from service or repair workflows. |
+| `note` | Free-form owner, technician, or system note that adds context but does not fit a structured event type. |
 
 ## Timeline Schema Mapping
 
@@ -44,9 +46,10 @@ All event types use the same base timeline schema:
   "mileage_km": 128500,
   "cost": 85.0,
   "event_date": "2026-04-23T11:00:00Z",
-  "source": "service_center",
-  "source_id": "work-order-9912",
-  "metadata": {}
+  "metadata": {
+    "source": "service_center",
+    "source_id": "work-order-9912"
+  }
 }
 ```
 
@@ -67,24 +70,26 @@ Optional fields:
 | `description` | string or null | Longer event details for UI and AI context. |
 | `mileage_km` | integer or null | Odometer reading when known. |
 | `cost` | number or null | Event cost when known. |
-| `source` | string or null | Data source such as owner report, service center, ML service, or recall feed. |
-| `source_id` | string, integer, or null | External id from the source system. |
 | `metadata` | object or null | Type-specific structured details. |
+
+Backend currently stores only the base event fields plus flexible `metadata`. Therefore `source` and `source_id` should be stored inside `metadata`, not as top-level event fields.
 
 ## Type-Specific Metadata
 
 | Event type | Recommended metadata |
 | --- | --- |
-| `trip` | `distance_km`, `duration_minutes`, `route_type` |
-| `refuel` | `fuel_type`, `liters`, `price_per_liter`, `station_name` |
-| `repair` | `part_category`, `part_name`, `repair_shop`, `warranty_covered` |
-| `inspection` | `inspection_result`, `inspector`, `checked_components`, `next_check_due` |
-| `accident` | `severity`, `damage_area`, `airbags_deployed`, `insurance_claim_id` |
-| `recall` | `recall_id`, `status`, `component`, `remedy`, `manufacturer` |
-| `warning` | `warning_code`, `severity`, `system`, `is_active` |
-| `maintenance` | `service_name`, `part_category`, `parts_replaced`, `service_provider` |
-| `prediction` | `model_version`, `part_category`, `risk_level`, `probability`, `remaining_km` |
-| `diagnostic` | `dtc_codes`, `system`, `tool_name`, `result` |
+| `trip` | `source`, `source_id`, `distance_km`, `duration_minutes`, `route_type` |
+| `refuel` | `source`, `source_id`, `fuel_type`, `liters`, `price_per_liter`, `station_name` |
+| `repair` | `source`, `source_id`, `part_category`, `part_name`, `repair_shop`, `warranty_covered` |
+| `inspection` | `source`, `source_id`, `inspection_result`, `inspector`, `checked_components`, `next_check_due` |
+| `accident` | `source`, `source_id`, `severity`, `damage_area`, `airbags_deployed`, `insurance_claim_id` |
+| `recall` | `source`, `source_id`, `recall_id`, `status`, `component`, `remedy`, `manufacturer` |
+| `warning` | `source`, `source_id`, `warning_code`, `severity`, `system`, `is_active` |
+| `maintenance` | `source`, `source_id`, `service_name`, `part_category`, `parts_replaced`, `service_provider` |
+| `prediction` | `source`, `source_id`, `model_version`, `part_category`, `risk_level`, `probability`, `remaining_km` |
+| `diagnostic` | `source`, `source_id`, `dtc_codes`, `system`, `tool_name`, `result` |
+| `part_replacement` | `source`, `source_id`, `part_code`, `part_category`, `part_name`, `old_part_status`, `warranty_covered` |
+| `note` | `source`, `source_id`, `author`, `note_category` |
 
 ## Normalization Rules
 
@@ -111,6 +116,8 @@ The AI Assistant should use event types as context hints:
 | `maintenance` | Use as evidence that preventive service was completed. |
 | `prediction` | Explain model-generated risk and remaining distance. |
 | `diagnostic` | Ground answers in DTC codes, scan results, and test findings. |
+| `part_replacement` | Treat as direct evidence that a component lifecycle was reset. |
+| `note` | Use as low-confidence narrative context unless supported by structured events. |
 
 ## Backend Review Notes
 
@@ -120,6 +127,7 @@ Backend should validate:
 - `service` remains accepted only as a legacy alias.
 - `event_date` is an ISO 8601 datetime string.
 - `metadata` remains flexible because each event type has different structured details.
+- `source` and `source_id` are stored inside `metadata` for compatibility with Backend `VehicleEvent`.
 
 Machine-readable taxonomy is available in `ml/timeline/event_taxonomy.json`.
 Examples are available in `ml/timeline/example_timeline_events.json`.

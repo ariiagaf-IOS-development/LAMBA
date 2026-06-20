@@ -9,8 +9,6 @@
     "mileage_km": "integer | null",
     "cost": "number | null",
     "event_date": "datetime string",
-    "source": "string | null",
-    "source_id": "string | integer | null",
     "metadata": "object | null"
   },
   "legacy_aliases": {
@@ -23,7 +21,7 @@
       "timeline_use": "Shows vehicle usage and odometer progression.",
       "ai_context_use": "Helps estimate usage intensity and mileage-based wear.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["distance_km", "duration_minutes", "route_type"]
+      "recommended_metadata": ["source", "source_id", "distance_km", "duration_minutes", "route_type"]
     },
     "refuel": {
       "label": "Refuel",
@@ -31,7 +29,7 @@
       "timeline_use": "Shows fuel or energy usage history.",
       "ai_context_use": "Helps identify abnormal consumption patterns.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["fuel_type", "liters", "price_per_liter", "station_name"]
+      "recommended_metadata": ["source", "source_id", "fuel_type", "liters", "price_per_liter", "station_name"]
     },
     "repair": {
       "label": "Repair",
@@ -39,7 +37,7 @@
       "timeline_use": "Shows resolved issues and repair costs.",
       "ai_context_use": "Provides evidence of recurring failures and component reliability.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["part_category", "part_name", "repair_shop", "warranty_covered"]
+      "recommended_metadata": ["source", "source_id", "part_category", "part_name", "repair_shop", "warranty_covered"]
     },
     "inspection": {
       "label": "Inspection",
@@ -47,7 +45,7 @@
       "timeline_use": "Shows condition checks and inspection results.",
       "ai_context_use": "Adds factual observations before maintenance or diagnostics decisions.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["inspection_result", "inspector", "checked_components", "next_check_due"]
+      "recommended_metadata": ["source", "source_id", "inspection_result", "inspector", "checked_components", "next_check_due"]
     },
     "accident": {
       "label": "Accident",
@@ -55,7 +53,7 @@
       "timeline_use": "Highlights major damage and safety history.",
       "ai_context_use": "Explains later repairs, warnings, or degraded component health.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["severity", "damage_area", "airbags_deployed", "insurance_claim_id"]
+      "recommended_metadata": ["source", "source_id", "severity", "damage_area", "airbags_deployed", "insurance_claim_id"]
     },
     "recall": {
       "label": "Recall",
@@ -63,7 +61,7 @@
       "timeline_use": "Shows open and completed recall actions.",
       "ai_context_use": "Adds safety and manufacturer campaign context to assistant answers.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["recall_id", "status", "component", "remedy", "manufacturer"]
+      "recommended_metadata": ["source", "source_id", "recall_id", "status", "component", "remedy", "manufacturer"]
     },
     "warning": {
       "label": "Warning",
@@ -71,7 +69,7 @@
       "timeline_use": "Shows unresolved alerts and user-visible symptoms.",
       "ai_context_use": "Helps prioritize urgent recommendations and diagnostics.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["warning_code", "severity", "system", "is_active"]
+      "recommended_metadata": ["source", "source_id", "warning_code", "severity", "system", "is_active"]
     },
     "maintenance": {
       "label": "Maintenance",
@@ -79,7 +77,7 @@
       "timeline_use": "Shows routine service history and preventive work.",
       "ai_context_use": "Improves component health and maintenance interval reasoning.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["service_name", "part_category", "parts_replaced", "service_provider"]
+      "recommended_metadata": ["source", "source_id", "service_name", "part_category", "parts_replaced", "service_provider"]
     },
     "prediction": {
       "label": "Prediction",
@@ -87,7 +85,7 @@
       "timeline_use": "Shows generated future-looking insights.",
       "ai_context_use": "Lets the assistant explain why a recommendation was made.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["model_version", "part_category", "risk_level", "probability", "remaining_km"]
+      "recommended_metadata": ["source", "source_id", "model_version", "part_category", "risk_level", "probability", "remaining_km"]
     },
     "diagnostic": {
       "label": "Diagnostic",
@@ -95,7 +93,23 @@
       "timeline_use": "Shows technical fault evidence and measurements.",
       "ai_context_use": "Grounds assistant responses in fault codes and test results.",
       "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
-      "recommended_metadata": ["dtc_codes", "system", "tool_name", "result"]
+      "recommended_metadata": ["source", "source_id", "dtc_codes", "system", "tool_name", "result"]
+    },
+    "part_replacement": {
+      "label": "Part replacement",
+      "description": "Specific component replacement event, usually created from service or repair workflows.",
+      "timeline_use": "Shows exact part lifecycle changes and replacement mileage.",
+      "ai_context_use": "Helps calculate component age, service intervals, and recurring replacement patterns.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["source", "source_id", "part_code", "part_category", "part_name", "old_part_status", "warranty_covered"]
+    },
+    "note": {
+      "label": "Note",
+      "description": "Free-form owner, technician, or system note that adds context but does not fit a structured event type.",
+      "timeline_use": "Preserves contextual observations in the vehicle timeline.",
+      "ai_context_use": "Provides extra narrative context while keeping the event type low impact.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["source", "source_id", "author", "note_category"]
     }
   }
 }
