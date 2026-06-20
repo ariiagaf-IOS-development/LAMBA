@@ -419,6 +419,67 @@
                 }
             }
         },
+        "/api/vehicles/{id}/dashboard": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Aggregated vehicle data: stats, events, predictions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": "Get vehicle dashboard",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.VehicleDashboard"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/vehicles/{id}/events": {
             "get": {
                 "security": [
@@ -893,20 +954,113 @@
         }
     },
     "definitions": {
+        "domain.DashboardEventPreview": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "event_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mileage_km": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/domain.EventType"
+                }
+            }
+        },
+        "domain.DashboardPredictionSummary": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "model_version": {
+                    "type": "string"
+                },
+                "part_category": {
+                    "type": "string"
+                },
+                "part_name": {
+                    "type": "string"
+                },
+                "probability": {
+                    "type": "number"
+                },
+                "recommendation": {
+                    "type": "string"
+                },
+                "remaining_days": {
+                    "type": "integer"
+                },
+                "remaining_km": {
+                    "type": "integer"
+                },
+                "risk_level": {
+                    "$ref": "#/definitions/domain.RiskLevel"
+                },
+                "risk_score": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.DashboardVehicleSummary": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mileage_km": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "vin": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
         "domain.EventType": {
             "type": "string",
             "enum": [
-                "maintenance",
+                "trip",
+                "refuel",
                 "repair",
-                "fuel",
+                "inspection",
+                "accident",
+                "recall",
+                "warning",
+                "maintenance",
+                "prediction",
                 "diagnostic",
                 "part_replacement",
                 "note"
             ],
             "x-enum-varnames": [
-                "EventTypeMaintenance",
+                "EventTypeTrip",
+                "EventTypeRefuel",
                 "EventTypeRepair",
-                "EventTypeFuel",
+                "EventTypeInspection",
+                "EventTypeAccident",
+                "EventTypeRecall",
+                "EventTypeWarning",
+                "EventTypeMaintenance",
+                "EventTypePrediction",
                 "EventTypeDiagnostic",
                 "EventTypePartReplacement",
                 "EventTypeNote"
@@ -1023,6 +1177,38 @@
                 },
                 "year": {
                     "type": "integer"
+                }
+            }
+        },
+        "domain.VehicleDashboard": {
+            "type": "object",
+            "properties": {
+                "current_mileage": {
+                    "type": "integer"
+                },
+                "latest_events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.DashboardEventPreview"
+                    }
+                },
+                "prediction_summary": {
+                    "$ref": "#/definitions/domain.DashboardPredictionSummary"
+                },
+                "total_events_count": {
+                    "type": "integer"
+                },
+                "total_fuel_expenses": {
+                    "type": "number"
+                },
+                "total_maintenance_cost": {
+                    "type": "number"
+                },
+                "total_repairs_count": {
+                    "type": "integer"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/domain.DashboardVehicleSummary"
                 }
             }
         },
@@ -1270,7 +1456,15 @@
                         "trip",
                         "refuel",
                         "repair",
-                        "service"
+                        "inspection",
+                        "accident",
+                        "recall",
+                        "warning",
+                        "maintenance",
+                        "prediction",
+                        "diagnostic",
+                        "part_replacement",
+                        "note"
                     ],
                     "allOf": [
                         {

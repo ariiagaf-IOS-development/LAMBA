@@ -427,6 +427,42 @@ func scanVehicleEvent(scanner rowScanner) (domain.VehicleEvent, error) {
 	return event, nil
 }
 
+func (r *VehicleEventRepository) GetDashboardStatsByVehicleForUser(
+	ctx context.Context,
+	userID int64,
+	vehicleID int64,
+) (domain.DashboardEventStats, error) {
+	exists, err := r.vehicleBelongsToUser(ctx, userID, vehicleID)
+	if err != nil {
+		return domain.DashboardEventStats{}, err
+	}
+	if !exists {
+		return domain.DashboardEventStats{}, ErrNotFound
+	}
+
+	var stats domain.DashboardEventStats
+
+	err = r.db.QueryRowContext(ctx, `
+		SELECT
+			COALESCE(SUM(CASE WHEN type = 'maintenance' THEN cost ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN type = 'refuel' THEN cost ELSE 0 END), 0),
+			COUNT(CASE WHEN type = 'repair' THEN 1 END),
+			COUNT(*)
+		FROM vehicle_events
+		WHERE vehicle_id = $1
+	`, vehicleID).Scan(
+		&stats.TotalMaintenanceCost,
+		&stats.TotalFuelExpenses,
+		&stats.TotalRepairsCount,
+		&stats.TotalEventsCount,
+	)
+	if err != nil {
+		return domain.DashboardEventStats{}, fmt.Errorf("get dashboard event stats: %w", err)
+	}
+
+	return stats, nil
+}
+
 func marshalJSONB(value map[string]any) ([]byte, error) {
 	if value == nil {
 		value = map[string]any{}

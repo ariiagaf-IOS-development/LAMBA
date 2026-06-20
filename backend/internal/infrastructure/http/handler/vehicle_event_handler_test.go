@@ -19,7 +19,7 @@ import (
 func TestParseVehicleEventListQuery(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	req := httptest.NewRequest(http.MethodGet, "/events?type=fuel&limit=10&offset=20", nil)
+	req := httptest.NewRequest(http.MethodGet, "/events?type=refuel&limit=10&offset=20", nil)
 	rec := httptest.NewRecorder()
 
 	c, _ := gin.CreateTestContext(rec)
@@ -30,8 +30,8 @@ func TestParseVehicleEventListQuery(t *testing.T) {
 		t.Fatal("expected query to be parsed")
 	}
 
-	if input.Type == nil || *input.Type != domain.EventTypeFuel {
-		t.Fatalf("expected type fuel, got %#v", input.Type)
+	if input.Type == nil || *input.Type != domain.EventTypeRefuel {
+		t.Fatalf("expected type refuel, got %#v", input.Type)
 	}
 	if input.Limit != 10 {
 		t.Fatalf("expected limit 10, got %d", input.Limit)
