@@ -1,0 +1,269 @@
+{
+  "vehicle_id": 101,
+  "model_version": "parts-health-v0.1",
+  "parts_health": [
+    {
+      "model_version": "parts-health-v0.1",
+      "part_category": "engine_oil",
+      "part_name": "Engine oil",
+      "health_score": 70,
+      "risk_level": "medium",
+      "current_mileage_km": 128500,
+      "mileage_since_service_km": 8500,
+      "remaining_km": 1500,
+      "inputs": {
+        "mileage": {
+          "current_mileage_km": 128500,
+          "installed_at_mileage_km": null,
+          "last_service_mileage_km": 120000
+        },
+        "service_history": [],
+        "repair_history": [],
+        "prediction_outputs": [
+          {
+            "part_category": "engine_oil",
+            "probability": 0.72
+          }
+        ]
+      },
+      "score_breakdown": {
+        "mileage_score": 70,
+        "service_score": 100,
+        "repair_score": 100,
+        "prediction_score": 28,
+        "weights": {
+          "mileage": 0.4,
+          "service_history": 0.2,
+          "repair_history": 0.15,
+          "prediction_outputs": 0.25
+        }
+      },
+      "recommendation": "Oil replacement will be required soon."
+    },
+    {
+      "model_version": "parts-health-v0.1",
+      "part_category": "brake_pads",
+      "part_name": "Brake pads",
+      "health_score": 88,
+      "risk_level": "low",
+      "current_mileage_km": 128500,
+      "mileage_since_service_km": 28000,
+      "remaining_km": 12000,
+      "inputs": {
+        "mileage": {
+          "current_mileage_km": 128500,
+          "installed_at_mileage_km": null,
+          "last_service_mileage_km": 100500
+        },
+        "service_history": [],
+        "repair_history": [],
+        "prediction_outputs": [
+          {
+            "part_category": "brake_pads",
+            "probability": 0.21
+          }
+        ]
+      },
+      "score_breakdown": {
+        "mileage_score": 82,
+        "service_score": 100,
+        "repair_score": 100,
+        "prediction_score": 79,
+        "weights": {
+          "mileage": 0.4,
+          "service_history": 0.2,
+          "repair_history": 0.15,
+          "prediction_outputs": 0.25
+        }
+      },
+      "recommendation": "Brake pads are within normal wear range."
+    },
+    {
+      "model_version": "parts-health-v0.1",
+      "part_category": "timing_belt",
+      "part_name": "Timing belt",
+      "health_score": 32,
+      "risk_level": "high",
+      "current_mileage_km": 128500,
+      "mileage_since_service_km": 90500,
+      "remaining_km": -500,
+      "inputs": {
+        "mileage": {
+          "current_mileage_km": 128500,
+          "installed_at_mileage_km": 38000,
+          "last_service_mileage_km": null
+        },
+        "service_history": [],
+        "repair_history": [
+          {
+            "type": "repair",
+            "title": "Timing belt repair",
+            "mileage_km": 127000,
+            "metadata": {
+              "part_category": "timing_belt"
+            }
+          },
+          {
+            "type": "repair",
+            "title": "Timing belt repair",
+            "mileage_km": 125000,
+            "metadata": {
+              "part_category": "timing_belt"
+            }
+          }
+        ],
+        "prediction_outputs": [
+          {
+            "part_category": "timing_belt",
+            "probability": 0.98
+          }
+        ]
+      },
+      "score_breakdown": {
+        "mileage_score": 25,
+        "service_score": 60,
+        "repair_score": 64,
+        "prediction_score": 2,
+        "weights": {
+          "mileage": 0.4,
+          "service_history": 0.2,
+          "repair_history": 0.15,
+          "prediction_outputs": 0.25
+        }
+      },
+      "recommendation": "Immediate timing belt inspection and replacement are recommended."
+    },
+    {
+      "model_version": "parts-health-v0.1",
+      "part_category": "battery",
+      "part_name": "Battery",
+      "health_score": 75,
+      "risk_level": "low",
+      "current_mileage_km": 128500,
+      "mileage_since_service_km": 54000,
+      "remaining_km": 6000,
+      "inputs": {
+        "mileage": {
+          "current_mileage_km": 128500,
+          "installed_at_mileage_km": null,
+          "last_service_mileage_km": 74500
+        },
+        "service_history": [],
+        "repair_history": [
+          {
+            "type": "repair",
+            "title": "Battery repair",
+            "mileage_km": 126000,
+            "metadata": {
+              "part_category": "battery"
+            }
+          }
+        ],
+        "prediction_outputs": [
+          {
+            "part_category": "battery",
+            "risk_level": "medium"
+          }
+        ]
+      },
+      "score_breakdown": {
+        "mileage_score": 70,
+        "service_score": 100,
+        "repair_score": 90,
+        "prediction_score": 55,
+        "weights": {
+          "mileage": 0.4,
+          "service_history": 0.2,
+          "repair_history": 0.15,
+          "prediction_outputs": 0.25
+        }
+      },
+      "recommendation": "Battery health is acceptable."
+    },
+    {
+      "model_version": "parts-health-v0.1",
+      "part_category": "tires",
+      "part_name": "Tires",
+      "health_score": 37,
+      "risk_level": "high",
+      "current_mileage_km": 128500,
+      "mileage_since_service_km": 52000,
+      "remaining_km": -2000,
+      "inputs": {
+        "mileage": {
+          "current_mileage_km": 128500,
+          "installed_at_mileage_km": 76500,
+          "last_service_mileage_km": null
+        },
+        "service_history": [],
+        "repair_history": [
+          {
+            "type": "repair",
+            "title": "Tires repair",
+            "mileage_km": 122000,
+            "metadata": {
+              "part_category": "tires"
+            }
+          }
+        ],
+        "prediction_outputs": [
+          {
+            "part_category": "tires",
+            "probability": 0.78
+          }
+        ]
+      },
+      "score_breakdown": {
+        "mileage_score": 16,
+        "service_score": 60,
+        "repair_score": 86,
+        "prediction_score": 22,
+        "weights": {
+          "mileage": 0.4,
+          "service_history": 0.2,
+          "repair_history": 0.15,
+          "prediction_outputs": 0.25
+        }
+      },
+      "recommendation": "Inspect and replace tires if tread depth is below safe threshold."
+    },
+    {
+      "model_version": "parts-health-v0.1",
+      "part_category": "air_filter",
+      "part_name": "Air filter",
+      "health_score": 92,
+      "risk_level": "low",
+      "current_mileage_km": 128500,
+      "mileage_since_service_km": 9000,
+      "remaining_km": 11000,
+      "inputs": {
+        "mileage": {
+          "current_mileage_km": 128500,
+          "installed_at_mileage_km": null,
+          "last_service_mileage_km": 119500
+        },
+        "service_history": [],
+        "repair_history": [],
+        "prediction_outputs": [
+          {
+            "part_category": "air_filter",
+            "risk_level": "low"
+          }
+        ]
+      },
+      "score_breakdown": {
+        "mileage_score": 89,
+        "service_score": 100,
+        "repair_score": 100,
+        "prediction_score": 85,
+        "weights": {
+          "mileage": 0.4,
+          "service_history": 0.2,
+          "repair_history": 0.15,
+          "prediction_outputs": 0.25
+        }
+      },
+      "recommendation": "Air filter is within normal service interval."
+    }
+  ]
+}
