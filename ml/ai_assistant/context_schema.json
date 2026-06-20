@@ -1,0 +1,544 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lamba.local/schemas/ai-assistant-context-v0.1.json",
+  "title": "AI Assistant Context",
+  "description": "Unified context payload used by the AI Assistant to answer vehicle maintenance questions with Digital Twin data.",
+  "type": "object",
+  "required": [
+    "context_id",
+    "schema_version",
+    "generated_at",
+    "assistant",
+    "digital_twin_ref",
+    "vehicle",
+    "timeline",
+    "parts_health",
+    "predictions",
+    "grounding"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "context_id": {
+      "type": "string",
+      "description": "Stable identifier for this AI Assistant context snapshot."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "ai-assistant-context-v0.1"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "assistant": {
+      "type": "object",
+      "required": [
+        "locale",
+        "audience",
+        "response_mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "locale": {
+          "type": "string",
+          "description": "Preferred locale for assistant responses."
+        },
+        "audience": {
+          "type": "string",
+          "enum": [
+            "owner",
+            "technician",
+            "support"
+          ]
+        },
+        "response_mode": {
+          "type": "string",
+          "enum": [
+            "concise",
+            "detailed",
+            "diagnostic"
+          ]
+        },
+        "safety_instructions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "digital_twin_ref": {
+      "type": "object",
+      "required": [
+        "digital_twin_id",
+        "schema_version",
+        "generated_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "digital_twin_id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "string",
+          "const": "digital-twin-v0.1"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "vehicle": {
+      "$ref": "#/$defs/vehicle_profile"
+    },
+    "timeline": {
+      "type": "object",
+      "required": [
+        "taxonomy_version",
+        "events"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "taxonomy_version": {
+          "type": "string"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/timeline_event"
+          }
+        }
+      }
+    },
+    "parts_health": {
+      "type": "object",
+      "required": [
+        "model_version",
+        "parts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model_version": {
+          "type": "string"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/part_health_context"
+          }
+        }
+      }
+    },
+    "predictions": {
+      "type": "object",
+      "required": [
+        "model_version",
+        "source",
+        "items"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model_version": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "rule_based",
+            "mock",
+            "ml_service"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/prediction_context"
+          }
+        }
+      }
+    },
+    "grounding": {
+      "type": "object",
+      "required": [
+        "overall_risk_level",
+        "active_alerts",
+        "recommended_actions",
+        "evidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "overall_risk_level": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "active_alerts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/grounding_alert"
+          }
+        },
+        "recommended_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence_item"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "vehicle_profile": {
+      "type": "object",
+      "required": [
+        "id",
+        "brand",
+        "model",
+        "year",
+        "mileage_km"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "user_id": {
+          "type": "integer"
+        },
+        "brand": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "year": {
+          "type": "integer"
+        },
+        "vin": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mileage_km": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "timeline_event": {
+      "type": "object",
+      "required": [
+        "id",
+        "vehicle_id",
+        "type",
+        "title",
+        "event_date",
+        "assistant_hint"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "vehicle_id": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "trip",
+            "refuel",
+            "repair",
+            "inspection",
+            "accident",
+            "recall",
+            "warning",
+            "maintenance",
+            "prediction",
+            "diagnostic",
+            "part_replacement",
+            "note"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mileage_km": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cost": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "event_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "metadata": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "assistant_hint": {
+          "type": "string",
+          "description": "Short explanation of how this event should influence an assistant answer."
+        }
+      }
+    },
+    "part_health_context": {
+      "type": "object",
+      "required": [
+        "part_category",
+        "part_name",
+        "health_score",
+        "risk_level",
+        "current_mileage_km",
+        "recommendation",
+        "assistant_hint"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model_version": {
+          "type": "string"
+        },
+        "part_category": {
+          "type": "string"
+        },
+        "part_name": {
+          "type": "string"
+        },
+        "health_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "risk_level": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "current_mileage_km": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mileage_since_service_km": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "remaining_km": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "assistant_hint": {
+          "type": "string"
+        }
+      }
+    },
+    "prediction_context": {
+      "type": "object",
+      "required": [
+        "part_name",
+        "risk_level",
+        "recommendation",
+        "explanation",
+        "assistant_hint"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "vehicle_id": {
+          "type": "integer"
+        },
+        "part_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "part_category": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "part_name": {
+          "type": "string"
+        },
+        "risk_level": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "risk_score": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "remaining_km": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "remaining_days": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "predicted_next_mileage": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "predicted_next_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "probability": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "explanation": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "assistant_hint": {
+          "type": "string"
+        }
+      }
+    },
+    "grounding_alert": {
+      "type": "object",
+      "required": [
+        "severity",
+        "title",
+        "source_type",
+        "source_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "severity": {
+          "$ref": "#/$defs/risk_level"
+        },
+        "title": {
+          "type": "string"
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "timeline_event",
+            "part_health",
+            "prediction"
+          ]
+        },
+        "source_id": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        }
+      }
+    },
+    "evidence_item": {
+      "type": "object",
+      "required": [
+        "source_type",
+        "source_id",
+        "statement"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "vehicle",
+            "timeline_event",
+            "part_health",
+            "prediction"
+          ]
+        },
+        "source_id": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        },
+        "statement": {
+          "type": "string"
+        }
+      }
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    }
+  }
+}
