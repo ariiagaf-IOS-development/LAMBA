@@ -1,13 +1,27 @@
 ALTER TABLE vehicle_events
 	DROP CONSTRAINT IF EXISTS vehicle_events_type_allowed;
 
+UPDATE vehicle_events
+SET type = 'refuel'
+WHERE type = 'fuel';
+
+UPDATE vehicle_events
+SET type = 'maintenance'
+WHERE type = 'service';
+
 ALTER TABLE vehicle_events
 	ADD CONSTRAINT vehicle_events_type_allowed
 	CHECK (
 		type IN (
-			'maintenance',
+			'trip',
+			'refuel',
 			'repair',
-			'fuel',
+			'inspection',
+			'accident',
+			'recall',
+			'warning',
+			'maintenance',
+			'prediction',
 			'diagnostic',
 			'part_replacement',
 			'note'

@@ -65,7 +65,7 @@ function Resolve-Swag {
 Push-Location $RepoRoot
 try {
     $swag = Resolve-Swag
-    & $swag init -g main.go -d "cmd/api,internal/handler,internal/domain" -o docs --parseInternal
+    & $swag init -g main.go -d "cmd/api,internal/infrastructure/http/handler,internal/domain" -o docs --parseInternal
 }
 finally {
     Pop-Location

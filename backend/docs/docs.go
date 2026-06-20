@@ -1049,17 +1049,29 @@ const docTemplate = `{
         "domain.EventType": {
             "type": "string",
             "enum": [
-                "maintenance",
+                "trip",
+                "refuel",
                 "repair",
-                "fuel",
+                "inspection",
+                "accident",
+                "recall",
+                "warning",
+                "maintenance",
+                "prediction",
                 "diagnostic",
                 "part_replacement",
                 "note"
             ],
             "x-enum-varnames": [
-                "EventTypeMaintenance",
+                "EventTypeTrip",
+                "EventTypeRefuel",
                 "EventTypeRepair",
-                "EventTypeFuel",
+                "EventTypeInspection",
+                "EventTypeAccident",
+                "EventTypeRecall",
+                "EventTypeWarning",
+                "EventTypeMaintenance",
+                "EventTypePrediction",
                 "EventTypeDiagnostic",
                 "EventTypePartReplacement",
                 "EventTypeNote"
@@ -1455,7 +1467,15 @@ const docTemplate = `{
                         "trip",
                         "refuel",
                         "repair",
-                        "service"
+                        "inspection",
+                        "accident",
+                        "recall",
+                        "warning",
+                        "maintenance",
+                        "prediction",
+                        "diagnostic",
+                        "part_replacement",
+                        "note"
                     ],
                     "allOf": [
                         {

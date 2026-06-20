@@ -30,7 +30,7 @@ type vehicleEventRequest struct {
 }
 
 type vehicleEventUpdateRequest struct {
-	Type        *domain.EventType `json:"type" example:"repair" enums:"trip,refuel,repair,service"`
+	Type        *domain.EventType `json:"type" example:"repair" enums:"trip,refuel,repair,inspection,accident,recall,warning,maintenance,prediction,diagnostic,part_replacement,note"`
 	Title       *string           `json:"title" example:"Замена масла"`
 	Description *string           `json:"description" example:"Масло 5W-30, фильтр"`
 	MileageKM   *int              `json:"mileage_km" example:"124500"`

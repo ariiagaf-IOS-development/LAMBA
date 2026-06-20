@@ -152,7 +152,7 @@ func TestVehicleEventRepository_ListByVehicleForUser_WithFilterAndPagination(t *
 	}).AddRow(
 		int64(1),
 		int64(10),
-		domain.EventTypeFuel,
+		domain.EventTypeRefuel,
 		"Заправка",
 		nil,
 		100000,
@@ -162,7 +162,7 @@ func TestVehicleEventRepository_ListByVehicleForUser_WithFilterAndPagination(t *
 		createdAt,
 	)
 
-	eventType := domain.EventTypeFuel
+	eventType := domain.EventTypeRefuel
 
 	mock.ExpectQuery("SELECT(.|\n)*FROM vehicle_events ve").
 		WithArgs(int64(10), int64(100), eventType, 20, 0).
@@ -180,7 +180,7 @@ func TestVehicleEventRepository_ListByVehicleForUser_WithFilterAndPagination(t *
 	if len(got) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(got))
 	}
-	if got[0].Type != domain.EventTypeFuel {
+	if got[0].Type != domain.EventTypeRefuel {
 		t.Fatalf("expected fuel event, got %q", got[0].Type)
 	}
 
@@ -209,7 +209,7 @@ func TestVehicleEventRepository_GetStatsByVehicleForUser(t *testing.T) {
 	mock.ExpectQuery("SELECT(.|\n)*type").
 		WithArgs(int64(10)).
 		WillReturnRows(sqlmock.NewRows([]string{"type", "count", "sum"}).
-			AddRow(domain.EventTypeFuel, int64(1), 3500.0).
+			AddRow(domain.EventTypeRefuel, int64(1), 3500.0).
 			AddRow(domain.EventTypeMaintenance, int64(1), 7000.0),
 		)
 

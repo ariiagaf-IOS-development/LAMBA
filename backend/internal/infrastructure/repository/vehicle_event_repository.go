@@ -445,7 +445,7 @@ func (r *VehicleEventRepository) GetDashboardStatsByVehicleForUser(
 	err = r.db.QueryRowContext(ctx, `
 		SELECT
 			COALESCE(SUM(CASE WHEN type = 'maintenance' THEN cost ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN type = 'fuel' THEN cost ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN type = 'refuel' THEN cost ELSE 0 END), 0),
 			COUNT(CASE WHEN type = 'repair' THEN 1 END),
 			COUNT(*)
 		FROM vehicle_events

@@ -145,3 +145,19 @@ func TestNormalizeVehicleEventFilter_InvalidType(t *testing.T) {
 		t.Fatalf("expected ErrVehicleEventInvalidType, got %v", err)
 	}
 }
+
+func TestValidateVehicleEventType_AllCanonicalTypes(t *testing.T) {
+	for _, eventType := range domain.AllEventTypes {
+		if err := validateVehicleEventType(eventType); err != nil {
+			t.Fatalf("expected type %q to be valid, got %v", eventType, err)
+		}
+	}
+}
+
+func TestValidateVehicleEventType_RejectsLegacyAliases(t *testing.T) {
+	for _, legacyType := range []domain.EventType{"fuel", "service"} {
+		if err := validateVehicleEventType(legacyType); err != ErrVehicleEventInvalidType {
+			t.Fatalf("expected legacy type %q to be rejected, got %v", legacyType, err)
+		}
+	}
+}

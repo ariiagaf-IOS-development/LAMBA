@@ -4,10 +4,17 @@ import "time"
 
 type EventType string
 
+// @enum trip refuel repair inspection accident recall warning maintenance prediction diagnostic part_replacement note
 const (
-	EventTypeMaintenance     EventType = "maintenance"
+	EventTypeTrip            EventType = "trip"
+	EventTypeRefuel          EventType = "refuel"
 	EventTypeRepair          EventType = "repair"
-	EventTypeFuel            EventType = "fuel"
+	EventTypeInspection      EventType = "inspection"
+	EventTypeAccident        EventType = "accident"
+	EventTypeRecall          EventType = "recall"
+	EventTypeWarning         EventType = "warning"
+	EventTypeMaintenance     EventType = "maintenance"
+	EventTypePrediction      EventType = "prediction"
 	EventTypeDiagnostic      EventType = "diagnostic"
 	EventTypePartReplacement EventType = "part_replacement"
 	EventTypeNote            EventType = "note"
@@ -15,9 +22,15 @@ const (
 
 func (t EventType) IsValid() bool {
 	switch t {
-	case EventTypeMaintenance,
+	case EventTypeTrip,
+		EventTypeRefuel,
 		EventTypeRepair,
-		EventTypeFuel,
+		EventTypeInspection,
+		EventTypeAccident,
+		EventTypeRecall,
+		EventTypeWarning,
+		EventTypeMaintenance,
+		EventTypePrediction,
 		EventTypeDiagnostic,
 		EventTypePartReplacement,
 		EventTypeNote:
@@ -41,9 +54,9 @@ type VehicleEvent struct {
 }
 
 type VehicleEventStats struct {
-	TotalEvents int64                    `json:"total_events"`
-	TotalCost   float64                  `json:"total_cost"`
-	ByType      []VehicleEventTypeStats  `json:"by_type"`
+	TotalEvents int64                   `json:"total_events"`
+	TotalCost   float64                 `json:"total_cost"`
+	ByType      []VehicleEventTypeStats `json:"by_type"`
 }
 
 type VehicleEventTypeStats struct {

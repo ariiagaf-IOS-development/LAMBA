@@ -255,7 +255,8 @@ func (s *VehicleEventService) shouldRecalculatePredictions(eventType domain.Even
 	switch eventType {
 	case domain.EventTypeMaintenance,
 		domain.EventTypeRepair,
-		domain.EventTypePartReplacement:
+		domain.EventTypePartReplacement,
+		domain.EventTypePrediction:
 		return true
 	default:
 		return false
