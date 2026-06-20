@@ -1,4 +1,57 @@
 definitions:
+  domain.DashboardEventPreview:
+    properties:
+      cost:
+        type: number
+      event_date:
+        type: string
+      id:
+        type: integer
+      mileage_km:
+        type: integer
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/domain.EventType'
+    type: object
+  domain.DashboardPredictionSummary:
+    properties:
+      created_at:
+        type: string
+      model_version:
+        type: string
+      part_category:
+        type: string
+      part_name:
+        type: string
+      probability:
+        type: number
+      recommendation:
+        type: string
+      remaining_days:
+        type: integer
+      remaining_km:
+        type: integer
+      risk_level:
+        $ref: '#/definitions/domain.RiskLevel'
+      risk_score:
+        type: integer
+    type: object
+  domain.DashboardVehicleSummary:
+    properties:
+      brand:
+        type: string
+      id:
+        type: integer
+      mileage_km:
+        type: integer
+      model:
+        type: string
+      vin:
+        type: string
+      year:
+        type: integer
+    type: object
   domain.EventType:
     enum:
     - maintenance
@@ -92,6 +145,27 @@ definitions:
         type: string
       year:
         type: integer
+    type: object
+  domain.VehicleDashboard:
+    properties:
+      current_mileage:
+        type: integer
+      latest_events:
+        items:
+          $ref: '#/definitions/domain.DashboardEventPreview'
+        type: array
+      prediction_summary:
+        $ref: '#/definitions/domain.DashboardPredictionSummary'
+      total_events_count:
+        type: integer
+      total_fuel_expenses:
+        type: number
+      total_maintenance_cost:
+        type: number
+      total_repairs_count:
+        type: integer
+      vehicle:
+        $ref: '#/definitions/domain.DashboardVehicleSummary'
     type: object
   domain.VehicleEvent:
     properties:
@@ -612,6 +686,45 @@ paths:
       summary: Update a vehicle
       tags:
       - vehicles
+  /api/vehicles/{id}/dashboard:
+    get:
+      consumes:
+      - application/json
+      description: 'Aggregated vehicle data: stats, events, predictions'
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.VehicleDashboard'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get vehicle dashboard
+      tags:
+      - dashboard
   /api/vehicles/{id}/events:
     get:
       description: Lists lifecycle events for a vehicle owned by the authenticated
