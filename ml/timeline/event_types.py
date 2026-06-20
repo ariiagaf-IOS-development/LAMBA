@@ -13,6 +13,8 @@ class TimelineEventType(str, Enum):
     maintenance = "maintenance"
     prediction = "prediction"
     diagnostic = "diagnostic"
+    part_replacement = "part_replacement"
+    note = "note"
 
 
 CANONICAL_EVENT_TYPES = {
@@ -26,6 +28,8 @@ CANONICAL_EVENT_TYPES = {
     TimelineEventType.maintenance.value,
     TimelineEventType.prediction.value,
     TimelineEventType.diagnostic.value,
+    TimelineEventType.part_replacement.value,
+    TimelineEventType.note.value,
 }
 
 
@@ -40,14 +44,12 @@ SUPPORTED_EVENT_TYPES = CANONICAL_EVENT_TYPES | set(LEGACY_EVENT_TYPE_ALIASES)
 TIMELINE_EVENT_SCHEMA = {
     "id": "integer",
     "vehicle_id": "integer",
-    "type": "trip | refuel | repair | inspection | accident | recall | warning | maintenance | prediction | diagnostic",
+    "type": "trip | refuel | repair | inspection | accident | recall | warning | maintenance | prediction | diagnostic | part_replacement | note",
     "title": "string",
     "description": "string | null",
     "mileage_km": "integer | null",
     "cost": "number | null",
     "event_date": "datetime string",
-    "source": "string | null",
-    "source_id": "string | integer | null",
     "metadata": "object | null",
 }
 
