@@ -1,4 +1,16 @@
-EVENT_TYPES = {"trip", "refuel", "repair", "service"}
+EVENT_TYPES = {
+    "trip",
+    "refuel",
+    "repair",
+    "service",
+    "inspection",
+    "accident",
+    "recall",
+    "warning",
+    "maintenance",
+    "prediction",
+    "diagnostic",
+}
 
 # parts that are currently used in mock responses
 MOCK_RESPONSE_PARTS = {
@@ -45,7 +57,10 @@ def validate_events(events_df):
 
     invalid_type = ~events_df["type"].isin(EVENT_TYPES)
     if invalid_type.any():
-        errors.append("vehicle_events.csv: type must be trip/refuel/repair/service")
+        errors.append(
+            "vehicle_events.csv: type must be one of: "
+            + ", ".join(sorted(EVENT_TYPES))
+        )
 
     if (events_df["cost"] < 0).any():
         errors.append("vehicle_events.csv: cost cannot be negative")

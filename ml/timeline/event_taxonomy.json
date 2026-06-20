@@ -1,0 +1,101 @@
+{
+  "version": "timeline-taxonomy-v0.1",
+  "schema": {
+    "id": "integer",
+    "vehicle_id": "integer",
+    "type": "string enum",
+    "title": "string",
+    "description": "string | null",
+    "mileage_km": "integer | null",
+    "cost": "number | null",
+    "event_date": "datetime string",
+    "source": "string | null",
+    "source_id": "string | integer | null",
+    "metadata": "object | null"
+  },
+  "legacy_aliases": {
+    "service": "maintenance"
+  },
+  "event_types": {
+    "trip": {
+      "label": "Trip",
+      "description": "Driving activity or mileage baseline event used to update vehicle usage context.",
+      "timeline_use": "Shows vehicle usage and odometer progression.",
+      "ai_context_use": "Helps estimate usage intensity and mileage-based wear.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["distance_km", "duration_minutes", "route_type"]
+    },
+    "refuel": {
+      "label": "Refuel",
+      "description": "Fueling or charging event with optional consumption and cost data.",
+      "timeline_use": "Shows fuel or energy usage history.",
+      "ai_context_use": "Helps identify abnormal consumption patterns.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["fuel_type", "liters", "price_per_liter", "station_name"]
+    },
+    "repair": {
+      "label": "Repair",
+      "description": "Completed corrective work after component failure, complaint, or malfunction.",
+      "timeline_use": "Shows resolved issues and repair costs.",
+      "ai_context_use": "Provides evidence of recurring failures and component reliability.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["part_category", "part_name", "repair_shop", "warranty_covered"]
+    },
+    "inspection": {
+      "label": "Inspection",
+      "description": "Manual or automated vehicle check that records observed condition without necessarily replacing parts.",
+      "timeline_use": "Shows condition checks and inspection results.",
+      "ai_context_use": "Adds factual observations before maintenance or diagnostics decisions.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["inspection_result", "inspector", "checked_components", "next_check_due"]
+    },
+    "accident": {
+      "label": "Accident",
+      "description": "Collision, crash, impact, or safety incident that may affect future vehicle condition.",
+      "timeline_use": "Highlights major damage and safety history.",
+      "ai_context_use": "Explains later repairs, warnings, or degraded component health.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["severity", "damage_area", "airbags_deployed", "insurance_claim_id"]
+    },
+    "recall": {
+      "label": "Recall",
+      "description": "Manufacturer or regulator recall notice, campaign, remedy, or recall completion event.",
+      "timeline_use": "Shows open and completed recall actions.",
+      "ai_context_use": "Adds safety and manufacturer campaign context to assistant answers.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["recall_id", "status", "component", "remedy", "manufacturer"]
+    },
+    "warning": {
+      "label": "Warning",
+      "description": "Dashboard light, sensor alert, owner warning, or system notification that indicates possible risk.",
+      "timeline_use": "Shows unresolved alerts and user-visible symptoms.",
+      "ai_context_use": "Helps prioritize urgent recommendations and diagnostics.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["warning_code", "severity", "system", "is_active"]
+    },
+    "maintenance": {
+      "label": "Maintenance",
+      "description": "Planned preventive service such as oil change, brake service, tire rotation, or scheduled replacement.",
+      "timeline_use": "Shows routine service history and preventive work.",
+      "ai_context_use": "Improves component health and maintenance interval reasoning.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["service_name", "part_category", "parts_replaced", "service_provider"]
+    },
+    "prediction": {
+      "label": "Prediction",
+      "description": "ML-generated forecast about component risk, remaining distance, or recommended next action.",
+      "timeline_use": "Shows generated future-looking insights.",
+      "ai_context_use": "Lets the assistant explain why a recommendation was made.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["model_version", "part_category", "risk_level", "probability", "remaining_km"]
+    },
+    "diagnostic": {
+      "label": "Diagnostic",
+      "description": "Diagnostic scan, trouble code reading, test result, or technician finding.",
+      "timeline_use": "Shows technical fault evidence and measurements.",
+      "ai_context_use": "Grounds assistant responses in fault codes and test results.",
+      "required_fields": ["id", "vehicle_id", "type", "title", "event_date"],
+      "recommended_metadata": ["dtc_codes", "system", "tool_name", "result"]
+    }
+  }
+}
