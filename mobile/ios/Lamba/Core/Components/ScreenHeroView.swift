@@ -16,12 +16,14 @@ struct ScreenHeroView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: -17) {
             Text(title)
-                .font(.system(size: 40, weight: .black))
+                .font(AppTypography.h1)
                 .foregroundStyle(AppColors.textPrimary)
+                .textCase(.uppercase)
             
             Text(accentTitle)
-                .font(.system(size: 40, weight: .black))
+                .font(AppTypography.h1)
                 .foregroundStyle(AppColors.primary)
+                .textCase(.uppercase)
             
             Text(subtitle)
                 .font(AppTypography.h3)
@@ -30,7 +32,7 @@ struct ScreenHeroView: View {
                 .padding(.top, 38)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 32)
+        .padding(.horizontal, 20)
         .padding(.top, 32)
     }
 }

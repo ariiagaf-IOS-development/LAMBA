@@ -19,7 +19,6 @@ struct AddVehicleView: View {
     @State private var mileage: String = ""
     
     @State private var selectedPhoto: PhotosPickerItem?
-    @State private var vehicleImage: Image?
     
     private var isFormValid: Bool {
         !brand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -33,9 +32,17 @@ struct AddVehicleView: View {
             AppColors.background.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                AppHeaderView(title: "CREATE VEHICLE") {
-                    authViewModel.logout()
-                }
+                
+                AppHeaderView(
+                    config: .init(
+                        title: "CREATE VEHICLE"
+                    ),
+                    actions: .init(
+                        onBackTap: {
+                            authViewModel.logout()
+                        }
+                    )
+                )
                 
                 ScreenHeroView(
                     title: "CREATE YOUR",
@@ -48,7 +55,7 @@ struct AddVehicleView: View {
                         
                         VehiclePhotoUploadField(
                             selectedPhoto: $selectedPhoto,
-                            vehicleImage: vehicleImage
+                            vehicleImageData: vehicleViewModel.vehicleImageData
                         )
                         
                         VehicleFieldSection(
@@ -99,7 +106,12 @@ struct AddVehicleView: View {
                     ]
                 ) {
                     if isFormValid {
-                        vehicleViewModel.createVehicle()
+                        vehicleViewModel.createVehicle(
+                            brand: brand,
+                            model: model,
+                            year: year,
+                            mileage: mileage
+                        )
                     }
                 }
                 .disabled(!isFormValid)
@@ -109,11 +121,11 @@ struct AddVehicleView: View {
                 .background(AppColors.background)
             }
         }
+        
         .onChange(of: selectedPhoto) { _, newValue in
             Task {
-                if let data = try? await newValue?.loadTransferable(type: Data.self),
-                   let uiImage = UIImage(data: data) {
-                    vehicleImage = Image(uiImage: uiImage)
+                if let data = try? await newValue?.loadTransferable(type: Data.self) {
+                    vehicleViewModel.vehicleImageData = data
                 }
             }
         }
@@ -162,10 +174,11 @@ private struct VehicleFieldSection: View {
 private struct VehiclePhotoUploadField: View {
     
     @Binding var selectedPhoto: PhotosPickerItem?
-    let vehicleImage: Image?
+    let vehicleImageData: Data?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            
             Text("UPLOAD VEHICLE PHOTO")
                 .font(.system(size: 10, weight: .black))
                 .foregroundStyle(AppColors.textSecondary)
@@ -175,14 +188,18 @@ private struct VehiclePhotoUploadField: View {
                 selection: $selectedPhoto,
                 matching: .images
             ) {
+                
                 HStack(spacing: 14) {
+                    
                     ZStack {
                         RoundedRectangle(cornerRadius: AppRadius.lg)
                             .fill(AppColors.background)
                             .frame(width: 52, height: 52)
                         
-                        if let vehicleImage {
-                            vehicleImage
+                        if let data = vehicleImageData,
+                           let uiImage = UIImage(data: data) {
+                            
+                            Image(uiImage: uiImage)
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 52, height: 52)
@@ -195,14 +212,20 @@ private struct VehiclePhotoUploadField: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(vehicleImage == nil ? "Add a photo to personalize your digital twin" : "Vehicle photo added")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.textSecondary)
-                            .lineSpacing(3)
                         
-                        Text(vehicleImage == nil ? "Tap to upload" : "Tap to change photo")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(AppColors.primary)
+                        Text(vehicleImageData == nil
+                             ? "Add a photo to personalize your digital twin"
+                             : "Vehicle photo added"
+                        )
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AppColors.textSecondary)
+                        
+                        Text(vehicleImageData == nil
+                             ? "Tap to upload"
+                             : "Tap to change photo"
+                        )
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(AppColors.primary)
                     }
                     
                     Spacer()
