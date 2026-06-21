@@ -10,6 +10,8 @@ import SwiftUI
 struct VehicleProfileView: View {
     
     @EnvironmentObject var vehicleViewModel: VehicleViewModel
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var isEditingVehicle = false
     
     var body: some View {
         ZStack {
@@ -47,10 +49,20 @@ struct VehicleProfileView: View {
                 ),
                 actions: .init(
                     onRightTap: {
-                        print("settings")
+                        isEditingVehicle = true
                     }
                 )
             )
+        }
+        .fullScreenCover(isPresented: $isEditingVehicle) {
+            AddVehicleView(
+                mode: .edit,
+                onClose: {
+                    isEditingVehicle = false
+                }
+            )
+            .environmentObject(vehicleViewModel)
+            .environmentObject(authViewModel)
         }
     }
 }

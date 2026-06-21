@@ -8,7 +8,27 @@
 import SwiftUI
 import PhotosUI
 
+enum VehicleFormMode {
+    case create
+    case edit
+}
+
 struct AddVehicleView: View {
+    
+    let mode: VehicleFormMode
+    let onClose: (() -> Void)?
+
+    init(
+        mode: VehicleFormMode = .create,
+        onClose: (() -> Void)? = nil
+    ) {
+        self.mode = mode
+        self.onClose = onClose
+    }
+
+    private var isEditing: Bool {
+        mode == .edit
+    }
     
     @EnvironmentObject var vehicleViewModel: VehicleViewModel
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -35,19 +55,25 @@ struct AddVehicleView: View {
                 
                 AppHeaderView(
                     config: .init(
-                        title: "CREATE VEHICLE"
+                        title: isEditing ? "EDIT VEHICLE" : "CREATE VEHICLE"
                     ),
                     actions: .init(
                         onBackTap: {
-                            authViewModel.logout()
+                            if isEditing {
+                                onClose?()
+                            } else {
+                                authViewModel.logout()
+                            }
                         }
                     )
                 )
                 
                 ScreenHeroView(
-                    title: "CREATE YOUR",
+                    title: isEditing ? "EDIT YOUR" : "CREATE YOUR",
                     accentTitle: "DIGITAL TWIN",
-                    subtitle: "Add your vehicle details to initialize LAMBA AI sync."
+                    subtitle: isEditing
+                    ? "Update your vehicle details and keep your digital twin accurate."
+                    : "Add your vehicle details to initialize LAMBA AI sync."
                 )
                 
                 ScrollView(showsIndicators: false) {
@@ -94,7 +120,7 @@ struct AddVehicleView: View {
                 }
                 
                 PrimaryActionButton(
-                    title: "INITIALIZE PROTOCOL",
+                    title: isEditing ? "SAVE CHANGES" : "INITIALIZE PROTOCOL",
                     colors: isFormValid
                     ? [
                         AppColors.gradientStart,
@@ -112,6 +138,10 @@ struct AddVehicleView: View {
                             year: year,
                             mileage: mileage
                         )
+                        
+                        if isEditing {
+                            onClose?()
+                        }
                     }
                 }
                 .disabled(!isFormValid)
@@ -121,8 +151,15 @@ struct AddVehicleView: View {
                 .background(AppColors.background)
             }
         }
-        
-        .onChange(of: selectedPhoto) { _, newValue in
+    .onAppear {
+        if isEditing {
+            brand = vehicleViewModel.brand
+            model = vehicleViewModel.model
+            year = vehicleViewModel.year
+            mileage = vehicleViewModel.mileage
+        }
+    }
+    .onChange(of: selectedPhoto) { _, newValue in
             Task {
                 if let data = try? await newValue?.loadTransferable(type: Data.self) {
                     vehicleViewModel.vehicleImageData = data
