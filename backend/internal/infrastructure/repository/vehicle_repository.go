@@ -24,11 +24,14 @@ type NullableStringUpdate struct {
 }
 
 type VehicleUpdate struct {
-	Brand     *string
-	Model     *string
-	Year      *int
-	VIN       NullableStringUpdate
-	MileageKM *int
+	Brand        *string
+	Model        *string
+	Year         *int
+	VIN          NullableStringUpdate
+	MileageKM    *int
+	FuelType     NullableStringUpdate
+	Transmission NullableStringUpdate
+	UsageType    NullableStringUpdate
 }
 
 func NewVehicleRepository(db *sql.DB) *VehicleRepository {
@@ -37,10 +40,11 @@ func NewVehicleRepository(db *sql.DB) *VehicleRepository {
 
 func (r *VehicleRepository) Create(ctx context.Context, vehicle domain.Vehicle) (domain.Vehicle, error) {
 	created, err := scanVehicle(r.db.QueryRowContext(ctx, `
-		INSERT INTO vehicles (user_id, brand, model, year, vin, mileage_km)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, user_id, brand, model, year, vin, mileage_km, created_at, updated_at
-	`, vehicle.UserID, vehicle.Brand, vehicle.Model, vehicle.Year, vehicle.VIN, vehicle.MileageKM))
+		INSERT INTO vehicles (user_id, brand, model, year, vin, mileage_km, fuel_type, transmission, usage_type)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id, user_id, brand, model, year, vin, mileage_km, fuel_type, transmission, usage_type, created_at, updated_at
+	`, vehicle.UserID, vehicle.Brand, vehicle.Model, vehicle.Year, vehicle.VIN, vehicle.MileageKM,
+		vehicle.FuelType, vehicle.Transmission, vehicle.UsageType))
 	if err != nil {
 		if isUniqueViolation(err) {
 			return domain.Vehicle{}, ErrConflict
@@ -54,7 +58,7 @@ func (r *VehicleRepository) Create(ctx context.Context, vehicle domain.Vehicle) 
 
 func (r *VehicleRepository) ListByUser(ctx context.Context, userID int64) ([]domain.Vehicle, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, user_id, brand, model, year, vin, mileage_km, created_at, updated_at
+		SELECT id, user_id, brand, model, year, vin, mileage_km, fuel_type, transmission, usage_type, created_at, updated_at
 		FROM vehicles
 		WHERE user_id = $1
 		ORDER BY id
@@ -82,7 +86,7 @@ func (r *VehicleRepository) ListByUser(ctx context.Context, userID int64) ([]dom
 
 func (r *VehicleRepository) GetByIDForUser(ctx context.Context, userID, id int64) (domain.Vehicle, error) {
 	vehicle, err := scanVehicle(r.db.QueryRowContext(ctx, `
-		SELECT id, user_id, brand, model, year, vin, mileage_km, created_at, updated_at
+		SELECT id, user_id, brand, model, year, vin, mileage_km, fuel_type, transmission, usage_type, created_at, updated_at
 		FROM vehicles
 		WHERE user_id = $1 AND id = $2
 	`, userID, id))
@@ -115,6 +119,15 @@ func (r *VehicleRepository) Update(ctx context.Context, userID, id int64, update
 	if update.MileageKM != nil {
 		sets, args = appendSet(sets, args, "mileage_km", *update.MileageKM)
 	}
+	if update.FuelType.Set {
+		sets, args = appendSet(sets, args, "fuel_type", update.FuelType.Value)
+	}
+	if update.Transmission.Set {
+		sets, args = appendSet(sets, args, "transmission", update.Transmission.Value)
+	}
+	if update.UsageType.Set {
+		sets, args = appendSet(sets, args, "usage_type", update.UsageType.Value)
+	}
 
 	if len(sets) == 0 {
 		return r.GetByIDForUser(ctx, userID, id)
@@ -126,7 +139,7 @@ func (r *VehicleRepository) Update(ctx context.Context, userID, id int64, update
 		UPDATE vehicles
 		SET %s
 		WHERE user_id = $1 AND id = $2
-		RETURNING id, user_id, brand, model, year, vin, mileage_km, created_at, updated_at
+		RETURNING id, user_id, brand, model, year, vin, mileage_km, fuel_type, transmission, usage_type, created_at, updated_at
 	`, strings.Join(sets, ", "))
 
 	vehicle, err := scanVehicle(r.db.QueryRowContext(ctx, query, args...))
@@ -170,7 +183,7 @@ type rowScanner interface {
 
 func scanVehicle(scanner rowScanner) (domain.Vehicle, error) {
 	var vehicle domain.Vehicle
-	var vin sql.NullString
+	var vin, fuelType, transmission, usageType sql.NullString
 
 	err := scanner.Scan(
 		&vehicle.ID,
@@ -180,6 +193,9 @@ func scanVehicle(scanner rowScanner) (domain.Vehicle, error) {
 		&vehicle.Year,
 		&vin,
 		&vehicle.MileageKM,
+		&fuelType,
+		&transmission,
+		&usageType,
 		&vehicle.CreatedAt,
 		&vehicle.UpdatedAt,
 	)
@@ -189,6 +205,15 @@ func scanVehicle(scanner rowScanner) (domain.Vehicle, error) {
 
 	if vin.Valid {
 		vehicle.VIN = &vin.String
+	}
+	if fuelType.Valid {
+		vehicle.FuelType = &fuelType.String
+	}
+	if transmission.Valid {
+		vehicle.Transmission = &transmission.String
+	}
+	if usageType.Valid {
+		vehicle.UsageType = &usageType.String
 	}
 
 	return vehicle, nil

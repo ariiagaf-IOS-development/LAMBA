@@ -19,19 +19,25 @@ type VehicleHandler struct {
 }
 
 type vehicleRequest struct {
-	Brand     string  `json:"brand" binding:"required" example:"Toyota"`
-	Model     string  `json:"model" binding:"required" example:"Camry"`
-	Year      int     `json:"year" binding:"required" example:"2020"`
-	VIN       *string `json:"vin" example:"JTDBE32K620123456"`
-	MileageKM int     `json:"mileage_km" example:"42000"`
+	Brand        string  `json:"brand" binding:"required" example:"Toyota"`
+	Model        string  `json:"model" binding:"required" example:"Camry"`
+	Year         int     `json:"year" binding:"required" example:"2020"`
+	VIN          *string `json:"vin" example:"JTDBE32K620123456"`
+	MileageKM    int     `json:"mileage_km" example:"42000"`
+	FuelType     *string `json:"fuel_type" example:"petrol"`
+	Transmission *string `json:"transmission" example:"automatic"`
+	UsageType    *string `json:"usage_type" example:"mixed"`
 }
 
 type vehicleUpdateRequest struct {
-	Brand     *string `json:"brand" example:"Toyota"`
-	Model     *string `json:"model" example:"Camry"`
-	Year      *int    `json:"year" example:"2021"`
-	VIN       *string `json:"vin" example:"JTDBE32K620123456"`
-	MileageKM *int    `json:"mileage_km" example:"45000"`
+	Brand        *string `json:"brand" example:"Toyota"`
+	Model        *string `json:"model" example:"Camry"`
+	Year         *int    `json:"year" example:"2021"`
+	VIN          *string `json:"vin" example:"JTDBE32K620123456"`
+	MileageKM    *int    `json:"mileage_km" example:"45000"`
+	FuelType     *string `json:"fuel_type" example:"petrol"`
+	Transmission *string `json:"transmission" example:"automatic"`
+	UsageType    *string `json:"usage_type" example:"mixed"`
 }
 
 type vehicleListResponse struct {
@@ -77,11 +83,14 @@ func (h *VehicleHandler) CreateVehicle(c *gin.Context) {
 	}
 
 	vehicle, err := h.vehicles.Create(c.Request.Context(), user.ID, service.CreateVehicleInput{
-		Brand:     req.Brand,
-		Model:     req.Model,
-		Year:      req.Year,
-		VIN:       req.VIN,
-		MileageKM: req.MileageKM,
+		Brand:        req.Brand,
+		Model:        req.Model,
+		Year:         req.Year,
+		VIN:          req.VIN,
+		MileageKM:    req.MileageKM,
+		FuelType:     req.FuelType,
+		Transmission: req.Transmission,
+		UsageType:    req.UsageType,
 	})
 	if err != nil {
 		h.handleVehicleError(c, err)
@@ -186,11 +195,14 @@ func (h *VehicleHandler) UpdateVehicle(c *gin.Context) {
 	}
 
 	vehicle, err := h.vehicles.Update(c.Request.Context(), user.ID, id, service.UpdateVehicleInput{
-		Brand:     req.Brand,
-		Model:     req.Model,
-		Year:      req.Year,
-		VIN:       req.VIN,
-		MileageKM: req.MileageKM,
+		Brand:        req.Brand,
+		Model:        req.Model,
+		Year:         req.Year,
+		VIN:          req.VIN,
+		MileageKM:    req.MileageKM,
+		FuelType:     req.FuelType,
+		Transmission: req.Transmission,
+		UsageType:    req.UsageType,
 	})
 	if err != nil {
 		h.handleVehicleError(c, err)
