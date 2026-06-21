@@ -20,40 +20,61 @@ struct AIChatView: View {
             
             VStack(spacing: 0) {
                 
-                // ================= HEADER =================
-                HStack(spacing: 12) {
-                    
-                    HeaderIcon(systemName: "bolt.fill")
+                ZStack {
                     
                     Text("LAMBA AI")
-                        .font(AppTypography.menu)
+                        .font(.system(size: 12, weight: .black))
                         .foregroundStyle(AppColors.textPrimary)
+                        .textCase(.uppercase)
+                        .tracking(1.5)
                     
-                    Spacer()
-                    
-                    HStack(spacing: 6) {
+                    HStack {
                         
-                        Circle()
-                            .fill(AppColors.green)
-                            .frame(width: 6, height: 6)
-
-                        Text("LINK ACTIVE")
-                            .font(.system(size: 10, weight: .black))
-                            .foregroundStyle(AppColors.green)
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(AppColors.card)
+                                .frame(width: 44, height: 44)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(AppColors.bubbleBorder, lineWidth: 1)
+                                )
+                            
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 18, weight: .black))
+                                .foregroundStyle(AppColors.primary)
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(AppColors.green)
+                                .frame(width: 6, height: 6)
+                            
+                            Text("LINK ACTIVE")
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundStyle(AppColors.green)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(hex: "ECFDF5"))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppRadius.pill)
+                                .stroke(Color(hex: "D0FAE5"), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: AppRadius.pill))
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color(hex: "ECFDF5"))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppRadius.pill)
-                            .stroke(Color(hex: "D0FAE5"), lineWidth: 1)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.pill))
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .frame(height: 65)
-                .background(AppColors.card)
+                .padding(.horizontal, 32)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
+                .background(AppColors.card.opacity(0.8))
+                .overlay(
+                    Rectangle()
+                        .fill(AppColors.bubbleBorder)
+                        .frame(height: 1),
+                    alignment: .bottom
+                )
                 
                 // ================= HERO =================
                 VStack(alignment: .leading, spacing: 6) {

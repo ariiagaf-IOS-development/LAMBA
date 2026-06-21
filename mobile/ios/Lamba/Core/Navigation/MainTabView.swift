@@ -9,6 +9,8 @@ import SwiftUI
 
 struct MainTabView: View {
     
+    @EnvironmentObject var vehicleViewModel: VehicleViewModel
+    
     var body: some View {
         TabView {
             
@@ -31,6 +33,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("CARE", systemImage: "heart.fill")
                 }
-        }.tint(AppColors.primary)
+        }
+        .tint(AppColors.primary)
     }
 }
