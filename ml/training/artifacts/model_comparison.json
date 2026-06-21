@@ -1,0 +1,134 @@
+{
+  "model_version": "maintenance-risk-baseline-v0.1",
+  "train_rows": 24,
+  "validation_rows": 6,
+  "feature_count": 22,
+  "risk_level_distribution": {
+    "train": {
+      "high": 2,
+      "low": 6,
+      "medium": 16
+    },
+    "validation": {
+      "high": 1,
+      "low": 1,
+      "medium": 4
+    }
+  },
+  "models": [
+    {
+      "model_name": "logistic_regression",
+      "remaining_km_model": "decision_tree_regressor",
+      "metrics": {
+        "risk_accuracy": 0.5,
+        "risk_macro_f1": 0.25,
+        "remaining_km_mae": 4638.67,
+        "remaining_km_rmse": 6650.32,
+        "remaining_km_r2": -2.1279
+      },
+      "validation_predictions": [
+        {
+          "vehicle_id": 1,
+          "actual_risk_level": "medium",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 2637,
+          "predicted_remaining_km": 2969
+        },
+        {
+          "vehicle_id": 9,
+          "actual_risk_level": "low",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 12000,
+          "predicted_remaining_km": 2000
+        },
+        {
+          "vehicle_id": 10,
+          "actual_risk_level": "high",
+          "predicted_risk_level": "low",
+          "actual_remaining_km": 0,
+          "predicted_remaining_km": 12000
+        },
+        {
+          "vehicle_id": 11,
+          "actual_risk_level": "medium",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 3000,
+          "predicted_remaining_km": 3000
+        },
+        {
+          "vehicle_id": 19,
+          "actual_risk_level": "medium",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 3000,
+          "predicted_remaining_km": 7500
+        },
+        {
+          "vehicle_id": 21,
+          "actual_risk_level": "medium",
+          "predicted_risk_level": "high",
+          "actual_remaining_km": 3000,
+          "predicted_remaining_km": 2000
+        }
+      ]
+    },
+    {
+      "model_name": "random_forest",
+      "remaining_km_model": "random_forest_regressor",
+      "metrics": {
+        "risk_accuracy": 0.6667,
+        "risk_macro_f1": 0.2667,
+        "remaining_km_mae": 3638.83,
+        "remaining_km_rmse": 5028.73,
+        "remaining_km_r2": -0.7885
+      },
+      "validation_predictions": [
+        {
+          "vehicle_id": 1,
+          "actual_risk_level": "medium",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 2637,
+          "predicted_remaining_km": 3383
+        },
+        {
+          "vehicle_id": 9,
+          "actual_risk_level": "low",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 12000,
+          "predicted_remaining_km": 2713
+        },
+        {
+          "vehicle_id": 10,
+          "actual_risk_level": "high",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 0,
+          "predicted_remaining_km": 7259
+        },
+        {
+          "vehicle_id": 11,
+          "actual_risk_level": "medium",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 3000,
+          "predicted_remaining_km": 6329
+        },
+        {
+          "vehicle_id": 19,
+          "actual_risk_level": "medium",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 3000,
+          "predicted_remaining_km": 4061
+        },
+        {
+          "vehicle_id": 21,
+          "actual_risk_level": "medium",
+          "predicted_risk_level": "medium",
+          "actual_remaining_km": 3000,
+          "predicted_remaining_km": 3151
+        }
+      ]
+    }
+  ],
+  "selected_model": "random_forest",
+  "selection_rule": "Highest risk_macro_f1 minus remaining_km_mae / 12000.",
+  "artifact_path": "ml/training/artifacts/maintenance_risk_model.joblib",
+  "sample_inference_path": "ml/training/artifacts/sample_inference.json"
+}
