@@ -168,6 +168,81 @@ FEATURE_SCHEMA = {
     },
 }
 
+EXPANDED_FEATURE_SCHEMA = {
+    "schema_version": "baseline-training-features-v0.2",
+    "entity": "vehicle_part",
+    "target": FEATURE_SCHEMA["target"],
+    "base_schema": "baseline-training-features-v0.1",
+    "features": [
+        *FEATURE_SCHEMA["features"],
+        {
+            "name": "part_name",
+            "type": "categorical",
+            "source": "parts state",
+            "description": "Tracked part display name.",
+        },
+        {
+            "name": "part_category",
+            "type": "categorical",
+            "source": "parts state",
+            "description": "Tracked part category from demo parts data.",
+        },
+        {
+            "name": "part_source",
+            "type": "categorical",
+            "source": "parts state",
+            "description": "Source system that produced the part record.",
+        },
+        {
+            "name": "part_age_km",
+            "type": "integer",
+            "source": "parts state",
+            "description": "Current vehicle mileage minus part installation mileage, or -1 when unknown.",
+        },
+        {
+            "name": "part_age_known",
+            "type": "integer",
+            "source": "parts state",
+            "description": "1 when part installation mileage is known, otherwise 0.",
+        },
+        {
+            "name": "km_since_part_service",
+            "type": "integer",
+            "source": "parts state",
+            "description": "Current vehicle mileage minus part last service mileage, or -1 when unknown.",
+        },
+        {
+            "name": "km_since_part_service_known",
+            "type": "integer",
+            "source": "parts state",
+            "description": "1 when part last service mileage is known, otherwise 0.",
+        },
+        {
+            "name": "is_core_maintenance_part",
+            "type": "integer",
+            "source": "parts state",
+            "description": "1 when the part is one of engine oil, brake pads, or timing belt.",
+        },
+        {
+            "name": "matching_repair_event_count",
+            "type": "integer",
+            "source": "repair history",
+            "description": "Count of repair events linked to the part by source id or text match.",
+        },
+        {
+            "name": "matching_repair_cost_total",
+            "type": "number",
+            "source": "repair history",
+            "description": "Total repair cost for events linked to this part.",
+        },
+    ],
+    "split": {
+        "method": "vehicle-grouped split inherited from the vehicle-level dataset",
+        "validation_ratio": VALIDATION_RATIO,
+        "random_state": RANDOM_STATE,
+    },
+}
+
 
 def load_demo_data(data_dir):
     data_dir = Path(data_dir)
@@ -223,6 +298,10 @@ def maintenance_quality_score(quality):
     }.get(quality, -1)
 
 
+def normalized_token(value):
+    return re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
+
+
 def latest_mileage(events):
     if events.empty:
         return None
@@ -233,6 +312,12 @@ def safe_distance(current_mileage, historical_mileage):
     if historical_mileage is None or pd.isna(historical_mileage):
         return None
     return max(0, int(current_mileage) - int(historical_mileage))
+
+
+def model_distance(current_mileage, historical_mileage):
+    if historical_mileage is None or pd.isna(historical_mileage):
+        return -1, 0
+    return max(0, int(current_mileage) - int(historical_mileage)), 1
 
 
 def non_recall_maintenance_events(events):
@@ -323,6 +408,74 @@ def build_feature_rows(vehicles_df, events_df, parts_df):
     return pd.DataFrame(rows)
 
 
+def matching_part_repair_events(part, repair_events):
+    if repair_events.empty:
+        return repair_events
+
+    part_source_id = str(part.get("source_id", "")).strip()
+    if part_source_id:
+        source_matches = repair_events[
+            repair_events["source_id"].fillna("").astype(str).str.strip().eq(part_source_id)
+        ]
+        if not source_matches.empty:
+            return source_matches
+
+    part_name = normalized_token(part.get("name"))
+    if not part_name:
+        return repair_events.iloc[0:0]
+
+    text = (
+        repair_events["title"].fillna("")
+        + " "
+        + repair_events["description"].fillna("")
+    ).map(normalized_token)
+
+    first_token = part_name.split()[0]
+    return repair_events[text.str.contains(first_token, regex=False)]
+
+
+def build_expanded_feature_rows(vehicle_dataset, events_df, parts_df):
+    rows = []
+    events_df = events_df.copy()
+    events_df["normalized_type"] = events_df["type"].map(normalize_event_type)
+
+    for _, vehicle_features in vehicle_dataset.sort_values("vehicle_id").iterrows():
+        vehicle_id = int(vehicle_features["vehicle_id"])
+        current_mileage = int(vehicle_features["mileage_km"])
+        vehicle_events = events_df[events_df["vehicle_id"] == vehicle_id].copy()
+        repair_events = vehicle_events[vehicle_events["normalized_type"] == "repair"]
+        vehicle_parts = parts_df[parts_df["vehicle_id"] == vehicle_id].copy()
+
+        for _, part in vehicle_parts.sort_values("id").iterrows():
+            installed_at = pd.to_numeric(part.get("installed_at_mileage_km"), errors="coerce")
+            last_service = pd.to_numeric(part.get("last_service_mileage_km"), errors="coerce")
+            part_age_km, part_age_known = model_distance(current_mileage, installed_at)
+            km_since_part_service, km_since_part_service_known = model_distance(
+                current_mileage,
+                last_service,
+            )
+            matched_repairs = matching_part_repair_events(part, repair_events)
+            part_name = str(part["name"])
+
+            row = vehicle_features.to_dict()
+            row.update({
+                "part_id": int(part["id"]),
+                "part_name": part_name,
+                "part_category": part.get("category"),
+                "part_source": part.get("source"),
+                "part_age_km": part_age_km,
+                "part_age_known": part_age_known,
+                "km_since_part_service": km_since_part_service,
+                "km_since_part_service_known": km_since_part_service_known,
+                "is_core_maintenance_part": int(part_name in {"Engine oil", "Brake pads", "Timing belt"}),
+                "matching_repair_event_count": int(len(matched_repairs)),
+                "matching_repair_cost_total": float(matched_repairs["cost"].fillna(0).sum()),
+            })
+            rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
 def split_train_validation(dataset):
     validation_parts = []
     for _, group in dataset.groupby(TARGET_COLUMN, group_keys=False):
@@ -346,6 +499,29 @@ def write_outputs(dataset, train, validation, output_dir):
         schema_file.write("\n")
 
 
+def split_expanded_by_vehicle(expanded_dataset, train, validation):
+    train_vehicle_ids = set(train["vehicle_id"])
+    validation_vehicle_ids = set(validation["vehicle_id"])
+    expanded_train = expanded_dataset[expanded_dataset["vehicle_id"].isin(train_vehicle_ids)]
+    expanded_validation = expanded_dataset[expanded_dataset["vehicle_id"].isin(validation_vehicle_ids)]
+    return (
+        expanded_train.sort_values(["vehicle_id", "part_id"]),
+        expanded_validation.sort_values(["vehicle_id", "part_id"]),
+    )
+
+
+def write_expanded_outputs(dataset, train, validation, output_dir):
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    dataset.to_csv(output_dir / "expanded_training_dataset.csv", index=False)
+    train.to_csv(output_dir / "expanded_train.csv", index=False)
+    validation.to_csv(output_dir / "expanded_validation.csv", index=False)
+    with open(output_dir / "expanded_feature_schema.json", "w", encoding="utf-8") as schema_file:
+        json.dump(EXPANDED_FEATURE_SCHEMA, schema_file, indent=2)
+        schema_file.write("\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build baseline training data from demo CSV files.")
     parser.add_argument("--data-dir", default=DEMO_DATA_DIR, type=Path)
@@ -355,13 +531,33 @@ def main():
     data = load_demo_data(args.data_dir)
     dataset = build_feature_rows(data["vehicles"], data["events"], data["parts"])
     train, validation = split_train_validation(dataset)
+    expanded_dataset = build_expanded_feature_rows(dataset, data["events"], data["parts"])
+    expanded_train, expanded_validation = split_expanded_by_vehicle(
+        expanded_dataset,
+        train,
+        validation,
+    )
     write_outputs(dataset, train, validation, args.output_dir)
+    write_expanded_outputs(
+        expanded_dataset,
+        expanded_train,
+        expanded_validation,
+        args.output_dir,
+    )
 
     print(f"dataset_rows={len(dataset)}")
     print(f"train_rows={len(train)}")
     print(f"validation_rows={len(validation)}")
     print(f"features={len(FEATURE_SCHEMA['features'])}")
     print(f"target_distribution={dataset[TARGET_COLUMN].value_counts().sort_index().to_dict()}")
+    print(f"expanded_dataset_rows={len(expanded_dataset)}")
+    print(f"expanded_train_rows={len(expanded_train)}")
+    print(f"expanded_validation_rows={len(expanded_validation)}")
+    print(f"expanded_features={len(EXPANDED_FEATURE_SCHEMA['features'])}")
+    print(
+        "expanded_target_distribution="
+        f"{expanded_dataset[TARGET_COLUMN].value_counts().sort_index().to_dict()}"
+    )
 
 
 if __name__ == "__main__":

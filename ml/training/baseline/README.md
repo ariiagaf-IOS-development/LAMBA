@@ -10,9 +10,15 @@ Generated files:
 
 | File | Purpose |
 | --- | --- |
-| `baseline_training_dataset.csv` | Full vehicle-level feature dataset. |
-| `train.csv` | Deterministic training split. |
-| `validation.csv` | Deterministic validation split. |
-| `feature_schema.json` | Machine-readable target, feature, and split definition. |
+| `expanded_training_dataset.csv` | Recommended larger vehicle-part feature dataset. |
+| `expanded_train.csv` | Vehicle-grouped training split for the expanded dataset. |
+| `expanded_validation.csv` | Vehicle-grouped validation split for the expanded dataset. |
+| `expanded_feature_schema.json` | Machine-readable target, feature, and split definition for the expanded dataset. |
+| `baseline_training_dataset.csv` | Smaller vehicle-level compatibility dataset. |
+| `train.csv` | Deterministic training split for the vehicle-level dataset. |
+| `validation.csv` | Deterministic validation split for the vehicle-level dataset. |
+| `feature_schema.json` | Machine-readable target, feature, and split definition for the vehicle-level dataset. |
 
 The target is `maintenance_needed`, parsed from the derived maintenance baseline event in `ml/demo_data/vehicle_events.csv`.
+
+Use `expanded_train.csv` and `expanded_validation.csv` for the first baseline model when more training rows are needed. The split is grouped by `vehicle_id`, so parts from the same vehicle do not leak across train and validation.
