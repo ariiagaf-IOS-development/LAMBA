@@ -1,0 +1,21 @@
+deploy:
+  stage: deploy
+  before_script:
+    - eval $(ssh-agent -s)
+    - chmod 600 $SSH_PRIVATE_KEY
+    - ssh-add $SSH_PRIVATE_KEY
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" > ~/.ssh/config
+  
+  script:
+    - ssh -p 22 root@10.93.27.23 "
+        cd /opt/lamba &&
+        docker compose down &&
+        docker compose up -d --build
+      "
+  only:
+    - main
+  tags:
+    - docker
+  environment:
+    name: production
