@@ -15,14 +15,16 @@ deploy:
   stage: deploy
   before_script:
     - apt-get update && apt-get install -y openssh-client rsync
+    - echo "$SSH_PRIVATE_KEY" > /tmp/id_rsa
+    - chmod 600 /tmp/id_rsa
     - eval $(ssh-agent -s)
-    - chmod 600 $SSH_PRIVATE_KEY
-    - ssh-add $SSH_PRIVATE_KEY
+    - ssh-add /tmp/id_rsa
     - mkdir -p ~/.ssh
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" > ~/.ssh/config
+    - ssh-add -l
   script:
-    - rsync -avz --exclude='.git' --exclude='.env' ./ root@10.93.27.23:/opt/lamba/
-    - ssh root@10.93.27.23 "
+    - rsync -avz --exclude='.git' --exclude='.env' -e "ssh -i /tmp/id_rsa" ./ root@10.93.27.23:/opt/lamba/
+    - ssh -i /tmp/id_rsa root@10.93.27.23 "
         cd /opt/lamba &&
         docker compose down &&
         docker compose up -d --build
