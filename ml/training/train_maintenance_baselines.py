@@ -7,6 +7,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+import sklearn
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.impute import SimpleImputer
@@ -285,6 +286,7 @@ def main():
 
     artifact = {
         "model_version": MODEL_VERSION,
+        "sklearn_version": sklearn.__version__,
         "selected_model": best_name,
         "classifier": best_family["classifier"],
         "regressor": best_family["regressor"],
@@ -315,6 +317,7 @@ def main():
 
     report = {
         "model_version": MODEL_VERSION,
+        "sklearn_version": sklearn.__version__,
         "train_rows": int(len(train)),
         "validation_rows": int(len(validation)),
         "feature_count": int(len(feature_columns)),
