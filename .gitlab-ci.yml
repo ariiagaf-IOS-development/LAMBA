@@ -24,6 +24,7 @@ deploy:
     - ssh-add -l
   script:
     - rsync -avz --exclude='.git' --exclude='.env' -e "ssh -i /tmp/id_rsa" ./ root@10.93.27.23:/opt/lamba/
+    - scp -i /tmp/id_rsa $ENV_FILE root@10.93.27.23:/opt/lamba/.env
     - ssh -i /tmp/id_rsa root@10.93.27.23 "
         cd /opt/lamba &&
         docker compose down &&
