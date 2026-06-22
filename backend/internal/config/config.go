@@ -29,7 +29,7 @@ const (
 	defaultPort               = "8080"
 	defaultDatabaseURL        = "postgres://lamba:lamba@localhost:5432/lamba?sslmode=disable"
 	defaultBcryptCost         = 12
-	defaultPredictionProvider = "rule_based"
+	defaultPredictionProvider = "ml_service"
 )
 
 const (
