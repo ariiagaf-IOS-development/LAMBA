@@ -13,6 +13,7 @@ type Config struct {
 	DatabaseURL        string
 	BcryptCost         int
 	PredictionProvider PredictionProviderType
+	MLServiceURL       string
 }
 
 const (
@@ -21,6 +22,7 @@ const (
 	envDatabaseURL        = "DATABASE_URL"
 	envBcryptCost         = "BCRYPT_COST"
 	envPredictionProvider = "PREDICTION_PROVIDER"
+	envMLServiceURL       = "ML_SERVICE_URL"
 )
 
 const (
@@ -40,6 +42,7 @@ type PredictionProviderType string
 const (
 	PredictionProviderRuleBased PredictionProviderType = "rule_based"
 	PredictionProviderMock      PredictionProviderType = "mock"
+	PredictionProviderMLService PredictionProviderType = "ml_service"
 )
 
 func MustLoad() Config {
@@ -52,6 +55,7 @@ func MustLoad() Config {
 		DatabaseURL:        getEnv(envDatabaseURL, defaultDatabaseURL),
 		BcryptCost:         getEnvIntInRange(envBcryptCost, defaultBcryptCost, minBcryptCost, maxBcryptCost),
 		PredictionProvider: loadPredictionProvider(),
+		MLServiceURL:       getEnv(envMLServiceURL, ""),
 	}
 }
 
@@ -102,6 +106,8 @@ func loadPredictionProvider() PredictionProviderType {
 		return PredictionProviderRuleBased
 	case "mock":
 		return PredictionProviderMock
+	case "ml_service":
+		return PredictionProviderMLService
 	default:
 		log.Fatalf("invalid PREDICTION_PROVIDER: %s", value)
 		return PredictionProviderRuleBased

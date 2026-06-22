@@ -46,13 +46,20 @@ func New(deps ...Dependencies) *gin.Engine {
 		partRepo := repository.NewPartRepository(dep.DB)
 		predictionRepo := repository.NewPredictionRepository(dep.DB)
 
+		ruleBasedProvider := provider.NewRuleBasedPredictionProvider()
+
 		var predictionProvider provider.PredictionProvider
 
 		switch dep.Config.PredictionProvider {
 		case config.PredictionProviderMock:
 			predictionProvider = provider.NewMockPredictionProvider()
+		case config.PredictionProviderMLService:
+			predictionProvider = provider.NewMLServicePredictionProvider(
+				dep.Config.MLServiceURL,
+				ruleBasedProvider,
+			)
 		default:
-			predictionProvider = provider.NewRuleBasedPredictionProvider()
+			predictionProvider = ruleBasedProvider
 		}
 
 		log.Info("prediction provider selected", slog.String("provider", string(dep.Config.PredictionProvider)))

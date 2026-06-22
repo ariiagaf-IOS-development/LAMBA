@@ -1,4 +1,7 @@
-from ml.parts_health.health_model import calculate_component_health
+try:
+    from ml.parts_health.health_model import calculate_component_health
+except ImportError:
+    from parts_health.health_model import calculate_component_health
 
 
 FALLBACK_MODEL_VERSION = "fallback-maintenance-v1.0.0"
