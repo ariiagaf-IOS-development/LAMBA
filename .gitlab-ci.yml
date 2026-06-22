@@ -1,25 +1,9 @@
 stages:
-  - build
   - test
   - deploy
 
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: ""
-
-build:
-  image: docker:latest
-  stage: build
-  script:
-    - docker compose build
-  tags:
-    - docker
-  services:
-    - docker:dind
-
 test-backend:
-  image: golang:1.22-alpine
+  image: golang:1.23-alpine
   stage: test
   script:
     - cd backend && go test ./...
@@ -27,19 +11,17 @@ test-backend:
     - docker
 
 deploy:
-  image: docker:latest
+  image: alpine:latest
   stage: deploy
   before_script:
-    - apk add --no-cache openssh-client
-    
+    - apk add --no-cache openssh-client rsync
     - eval $(ssh-agent -s)
     - chmod 600 $SSH_PRIVATE_KEY
     - ssh-add $SSH_PRIVATE_KEY
-    
     - mkdir -p ~/.ssh
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" > ~/.ssh/config
-  
   script:
+    - rsync -avz --exclude='.git' --exclude='.env' ./ root@10.93.27.23:/opt/lamba/
     - ssh root@10.93.27.23 "
         cd /opt/lamba &&
         docker compose down &&
