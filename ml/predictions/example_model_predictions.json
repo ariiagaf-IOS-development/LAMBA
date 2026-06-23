@@ -1,0 +1,19 @@
+{
+  "vehicle_id": 1,
+  "model_version": "maintenance-risk-baseline-v0.1",
+  "predictions": [
+    {
+      "part_category": "engine_oil",
+      "part_name": "Engine oil",
+      "risk_level": "medium",
+      "risk_score": 60,
+      "remaining_km": 3503,
+      "remaining_days": null,
+      "predicted_next_mileage": 128003,
+      "predicted_next_date": null,
+      "probability": 0.745,
+      "recommendation": "Engine oil should be checked soon.",
+      "explanation": "Predicted by maintenance-risk-baseline-v0.1 (random_forest). Risk score: 60, remaining: 3503 km."
+    }
+  ]
+}
