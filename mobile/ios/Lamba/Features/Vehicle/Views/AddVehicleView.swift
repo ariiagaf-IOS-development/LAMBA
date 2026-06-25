@@ -37,6 +37,7 @@ struct AddVehicleView: View {
     @State private var model: String = ""
     @State private var year: String = ""
     @State private var mileage: String = ""
+    @State private var vin: String = ""
     
     @State private var selectedPhoto: PhotosPickerItem?
     
@@ -44,7 +45,8 @@ struct AddVehicleView: View {
         !brand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !year.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !mileage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !mileage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !vin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     var body: some View {
@@ -109,6 +111,19 @@ struct AddVehicleView: View {
                             )
                             .frame(maxWidth: .infinity)
                         }
+                        
+                        VehicleFieldSection(
+                            title: "VIN CODE",
+                            placeholder: "JTDBE32K620123456",
+                            text: $vin
+                        )
+                        
+                        if let errorMessage = vehicleViewModel.errorMessage {
+                            Text(errorMessage)
+                                .font(AppTypography.caption)
+                                .foregroundStyle(AppColors.orange)
+                                .padding(.top, 4)
+                        }
                     }
                     .padding(.horizontal, AppSpacing.xxl)
                     .padding(.top, 40)
@@ -116,7 +131,9 @@ struct AddVehicleView: View {
                 }
                 
                 PrimaryActionButton(
-                    title: isEditing ? "SAVE CHANGES" : "INITIALIZE PROTOCOL",
+                    title: vehicleViewModel.isLoading
+                    ? "SAVING..."
+                    : (isEditing ? "SAVE CHANGES" : "INITIALIZE PROTOCOL"),
                     colors: isFormValid
                     ? [
                         AppColors.gradientStart,
@@ -127,32 +144,52 @@ struct AddVehicleView: View {
                         AppColors.textSecondary.opacity(0.5)
                     ]
                 ) {
-                    if isFormValid {
-                        vehicleViewModel.createVehicle(
-                            brand: brand,
-                            model: model,
-                            year: year,
-                            mileage: mileage
-                        )
+                    guard isFormValid, let token = authViewModel.token else {
+                        return
+                    }
+                    
+                    Task {
+                        if isEditing {
+                            await vehicleViewModel.updateSelectedVehicle(
+                                brand: brand,
+                                model: model,
+                                year: year,
+                                mileage: mileage,
+                                vin: vin,
+                                token: token
+                            )
+                        } else {
+                            await vehicleViewModel.createVehicle(
+                                brand: brand,
+                                model: model,
+                                year: year,
+                                mileage: mileage,
+                                vin: vin,
+                                token: token
+                            )
+                        }
                         
-                        onClose?()
+                        if vehicleViewModel.errorMessage == nil {
+                            onClose?()
+                        }
                     }
                 }
-                .disabled(!isFormValid)
+                .disabled(!isFormValid || vehicleViewModel.isLoading)
                 .padding(.horizontal, AppSpacing.xxl)
                 .padding(.top, AppSpacing.sm)
                 .padding(.bottom, AppSpacing.xl)
                 .background(AppColors.background)
             }
         }
-    .onAppear {
-        if isEditing {
-            brand = vehicleViewModel.brand
-            model = vehicleViewModel.model
-            year = vehicleViewModel.year
-            mileage = vehicleViewModel.mileage
+        .onAppear {
+            if isEditing {
+                brand = vehicleViewModel.brand
+                model = vehicleViewModel.model
+                year = vehicleViewModel.year
+                mileage = vehicleViewModel.mileage
+                vin = vehicleViewModel.vin
+            }
         }
-    }
     .onChange(of: selectedPhoto) { _, newValue in
             Task {
                 if let data = try? await newValue?.loadTransferable(type: Data.self) {

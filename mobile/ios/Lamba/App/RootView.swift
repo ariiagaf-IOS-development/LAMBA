@@ -103,6 +103,11 @@ struct RootView: View {
                 MainTabView()
                     .environmentObject(vehicleViewModel)
                     .environmentObject(authViewModel)
+                    .task {
+                        if let token = authViewModel.token {
+                            await vehicleViewModel.loadVehicles(token: token)
+                        }
+                    }
             }
         }
         .onAppear {
