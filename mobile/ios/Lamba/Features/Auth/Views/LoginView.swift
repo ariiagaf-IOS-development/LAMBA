@@ -9,18 +9,14 @@ import SwiftUI
 
 struct LoginView: View {
     
-    @EnvironmentObject var authViewModel: AuthViewModel
-    
     var body: some View {
-        VStack(spacing: 20) {
-            
-            Text("LOGIN")
-                .font(.largeTitle)
-                .bold()
-            
-            Button("Sign In") {
-                authViewModel.login()
+        SignInView(
+            onBack: {
+                print("Back")
+            },
+            onCreateAccount: {
+                print("Open sign up")
             }
-        }
+        )
     }
 }

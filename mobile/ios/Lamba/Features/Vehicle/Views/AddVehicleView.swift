@@ -59,11 +59,7 @@ struct AddVehicleView: View {
                     ),
                     actions: .init(
                         onBackTap: {
-                            if isEditing {
-                                onClose?()
-                            } else {
-                                authViewModel.logout()
-                            }
+                            onClose?()
                         }
                     )
                 )
@@ -139,9 +135,7 @@ struct AddVehicleView: View {
                             mileage: mileage
                         )
                         
-                        if isEditing {
-                            onClose?()
-                        }
+                        onClose?()
                     }
                 }
                 .disabled(!isFormValid)
