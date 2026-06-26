@@ -18,7 +18,30 @@
             "predicted_next_date": "2026-08-01",
             "probability": 0.65,
             "recommendation": "Maintenance will be required soon.",
-            "explanation": "Fallback response is used because ML service timeout occurred."
+            "explanation": "Fallback response is used because ML service timeout occurred.",
+            "explanation_details": {
+              "explanation_text": "fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk for Engine oil. The score is 65/100 with about 1500 km remaining.",
+              "confidence": "Medium confidence",
+              "confidence_qualifier": "medium",
+              "confidence_score": 0.65,
+              "factors": [
+                {
+                  "name": "risk_score",
+                  "value": "65",
+                  "impact": "medium",
+                  "weight": 0.35,
+                  "description": "Normalized maintenance risk score produced by the selected baseline model."
+                },
+                {
+                  "name": "remaining_km",
+                  "value": "1500 km",
+                  "impact": "medium",
+                  "weight": 0.25,
+                  "description": "Estimated distance before the next recommended maintenance action."
+                }
+              ],
+              "recommended_action": "Maintenance will be required soon."
+            }
           }
         ]
       }
@@ -42,7 +65,30 @@
             "predicted_next_date": "2026-08-01",
             "probability": 0.65,
             "recommendation": "Maintenance will be required soon.",
-            "explanation": "Fallback response is used because ML service is unavailable."
+            "explanation": "Fallback response is used because ML service is unavailable.",
+            "explanation_details": {
+              "explanation_text": "fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk for Engine oil. The score is 65/100 with about 1500 km remaining.",
+              "confidence": "Medium confidence",
+              "confidence_qualifier": "medium",
+              "confidence_score": 0.65,
+              "factors": [
+                {
+                  "name": "risk_score",
+                  "value": "65",
+                  "impact": "medium",
+                  "weight": 0.35,
+                  "description": "Normalized maintenance risk score produced by the selected baseline model."
+                },
+                {
+                  "name": "remaining_km",
+                  "value": "1500 km",
+                  "impact": "medium",
+                  "weight": 0.25,
+                  "description": "Estimated distance before the next recommended maintenance action."
+                }
+              ],
+              "recommended_action": "Maintenance will be required soon."
+            }
           }
         ]
       }
@@ -66,7 +112,30 @@
             "predicted_next_date": "2026-08-01",
             "probability": 0.65,
             "recommendation": "Maintenance will be required soon.",
-            "explanation": "Fallback response is used because ML response validation failed."
+            "explanation": "Fallback response is used because ML response validation failed.",
+            "explanation_details": {
+              "explanation_text": "fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk for Engine oil. The score is 65/100 with about 1500 km remaining.",
+              "confidence": "Medium confidence",
+              "confidence_qualifier": "medium",
+              "confidence_score": 0.65,
+              "factors": [
+                {
+                  "name": "risk_score",
+                  "value": "65",
+                  "impact": "medium",
+                  "weight": 0.35,
+                  "description": "Normalized maintenance risk score produced by the selected baseline model."
+                },
+                {
+                  "name": "remaining_km",
+                  "value": "1500 km",
+                  "impact": "medium",
+                  "weight": 0.25,
+                  "description": "Estimated distance before the next recommended maintenance action."
+                }
+              ],
+              "recommended_action": "Maintenance will be required soon."
+            }
           }
         ]
       }
