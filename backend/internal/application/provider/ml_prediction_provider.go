@@ -79,8 +79,7 @@ type mlPredictionItem struct {
 	PredictedNextDate    *string `json:"predicted_next_date"`
 	Probability          float64 `json:"probability"`
 	Recommendation       string  `json:"recommendation"`
-	Explanation          string         `json:"explanation"`
-	ExplanationDetails   map[string]any `json:"explanation_details,omitempty"`
+	Explanation          string  `json:"explanation"`
 }
 
 type mlResponse struct {

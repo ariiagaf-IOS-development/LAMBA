@@ -75,23 +75,7 @@ ML returns prediction result for vehicle parts.
       "predicted_next_date": "2026-08-01",
       "probability": 0.72,
       "recommendation": "Maintenance will be required soon",
-      "explanation": "8500 km have passed since the last oil change, so the maintenance risk is increased.",
-      "explanation_details": {
-        "explanation_text": "maintenance-v1.2.0 predicts medium risk for Engine oil. The score is 65/100 with about 1500 km remaining.",
-        "confidence": "Medium confidence",
-        "confidence_qualifier": "medium",
-        "confidence_score": 0.72,
-        "factors": [
-          {
-            "name": "risk_score",
-            "value": "65",
-            "impact": "medium",
-            "weight": 0.35,
-            "description": "Normalized maintenance risk score produced by the selected baseline model."
-          }
-        ],
-        "recommended_action": "Maintenance will be required soon"
-      }
+      "explanation": "8500 km have passed since the last oil change, so the maintenance risk is increased."
     }
   ]
 }
@@ -201,26 +185,6 @@ Each prediction contains:
 - `probability`
 - `recommendation`
 - `explanation`
-- `explanation_details`
-
-### explanation_details
-
-Structured explanation object for frontend and AI Assistant consumption. It contains:
-
-- `explanation_text`
-- `confidence`
-- `confidence_qualifier`
-- `confidence_score`
-- `factors`
-- `recommended_action`
-
-Confidence qualifiers:
-
-| Qualifier | Label | Rule |
-| --- | --- | --- |
-| `high` | `High confidence` | `confidence_score >= 0.75` |
-| `medium` | `Medium confidence` | `0.55 <= confidence_score < 0.75` |
-| `low` | `Low confidence` | `confidence_score < 0.55` |
 
 ## Error Handling
 

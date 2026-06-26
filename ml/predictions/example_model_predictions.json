@@ -13,37 +13,7 @@
       "predicted_next_date": null,
       "probability": 0.745,
       "recommendation": "Engine oil should be checked soon.",
-      "explanation": "Predicted by maintenance-risk-baseline-v0.1 (random_forest). Risk score: 60, remaining: 3503 km.",
-      "explanation_details": {
-        "explanation_text": "maintenance-risk-baseline-v0.1 (random_forest) predicts medium risk for Engine oil. The score is 60/100 with about 3503 km remaining.",
-        "confidence": "Medium confidence",
-        "confidence_qualifier": "medium",
-        "confidence_score": 0.745,
-        "factors": [
-          {
-            "name": "risk_score",
-            "value": "60",
-            "impact": "medium",
-            "weight": 0.35,
-            "description": "Normalized maintenance risk score produced by the selected baseline model."
-          },
-          {
-            "name": "remaining_km",
-            "value": "3503 km",
-            "impact": "medium",
-            "weight": 0.25,
-            "description": "Estimated distance before the next recommended maintenance action."
-          },
-          {
-            "name": "maintenance_history_quality",
-            "value": "average",
-            "impact": "medium",
-            "weight": 0.15,
-            "description": "Service history quality derived from available maintenance events."
-          }
-        ],
-        "recommended_action": "Engine oil should be checked soon."
-      }
+      "explanation": "Predicted by maintenance-risk-baseline-v0.1 (random_forest). Risk score: 60, remaining: 3503 km."
     }
   ]
 }
