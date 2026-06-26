@@ -8,17 +8,17 @@ Define a structured explanation format for ML maintenance predictions. The forma
 
 ```json
 {
-  "explanation_text": "For Engine oil, model maintenance-risk-baseline-v0.1 (random_forest) predicts medium risk: 60/100. Prediction confidence is 74.5%, and the estimated distance until the next service is about 3,503 km.",
+  "explanation_text": "maintenance-risk-baseline-v0.1 (random_forest) predicts medium risk for Engine oil. The score is 60/100 with about 3503 km remaining.",
   "confidence": "Medium confidence",
   "confidence_qualifier": "medium",
   "confidence_score": 0.745,
   "factors": [
     {
-      "name": "km_since_last_service",
-      "value": "4500 km",
+      "name": "risk_score",
+      "value": "60",
       "impact": "medium",
-      "weight": 0.4,
-      "description": "Distance since the last service increases the chance of upcoming maintenance."
+      "weight": 0.35,
+      "description": "Normalized maintenance risk score produced by the selected baseline model."
     }
   ],
   "recommended_action": "Engine oil should be checked soon."
@@ -53,22 +53,6 @@ Define a structured explanation format for ML maintenance predictions. The forma
 | `impact` | enum | Risk impact of this factor: `low`, `medium`, or `high`. |
 | `weight` | number | Relative explanation weight from `0` to `1`. |
 | `description` | string | Human-readable meaning of the factor. |
-
-## Generated Explanation Rules
-
-| Model value | Explanation conversion |
-| --- | --- |
-| `risk_level` | Converted to readable English labels: `low`, `medium`, or `high`. |
-| `probability` | Converted to a percentage string, for example `0.745` -> `74.5%`. |
-| `remaining_km` | Converted to readable distance, for example `3503` -> `about 3,503 km`. |
-
-Required top factors:
-
-| Factor | Source |
-| --- | --- |
-| `km_since_last_service` | `km_since_last_maintenance` feature. |
-| `driving_profile` | Vehicle `usage_type`. |
-| `community_data` | Baseline comparison with similar demo-data vehicles. |
 
 ## Integration Notes
 
