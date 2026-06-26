@@ -12,37 +12,44 @@
       "predicted_next_mileage": 128003,
       "predicted_next_date": null,
       "probability": 0.745,
-      "recommendation": "Engine oil should be checked soon.",
-      "explanation": "Predicted by maintenance-risk-baseline-v0.1 (random_forest). Risk score: 60, remaining: 3503 km.",
+      "recommendation": "Schedule inspection for Engine oil soon.",
+      "explanation": "For Engine oil, model maintenance-risk-baseline-v0.1 (random_forest) predicts medium risk: 60/100. Prediction confidence is 74.5%, and the estimated distance until the next service is about 3,503 km. Key reasons: 4500 km since the last service, mixed driving, and similar vehicles in the demo dataset support this risk level.",
       "explanation_details": {
-        "explanation_text": "maintenance-risk-baseline-v0.1 (random_forest) predicts medium risk for Engine oil. The score is 60/100 with about 3503 km remaining.",
+        "explanation_text": "For Engine oil, model maintenance-risk-baseline-v0.1 (random_forest) predicts medium risk: 60/100. Prediction confidence is 74.5%, and the estimated distance until the next service is about 3,503 km. Key reasons: 4500 km since the last service, mixed driving, and similar vehicles in the demo dataset support this risk level.",
         "confidence": "Medium confidence",
         "confidence_qualifier": "medium",
         "confidence_score": 0.745,
         "factors": [
           {
-            "name": "risk_score",
-            "value": "60",
+            "name": "km_since_last_service",
+            "value": "4500 km",
             "impact": "medium",
-            "weight": 0.35,
-            "description": "Normalized maintenance risk score produced by the selected baseline model."
+            "weight": 0.4,
+            "description": "Distance since the last service increases the chance of upcoming maintenance."
           },
           {
-            "name": "remaining_km",
-            "value": "3503 km",
+            "name": "driving_profile",
+            "value": "mixed driving",
             "impact": "medium",
-            "weight": 0.25,
-            "description": "Estimated distance before the next recommended maintenance action."
+            "weight": 0.3,
+            "description": "Driving profile helps estimate the load placed on the part."
           },
           {
-            "name": "maintenance_history_quality",
-            "value": "average",
+            "name": "community_data",
+            "value": "similar to demo-data vehicles in the high mileage bucket",
             "impact": "medium",
-            "weight": 0.15,
-            "description": "Service history quality derived from available maintenance events."
+            "weight": 0.2,
+            "description": "Comparison with similar vehicles in the available demo dataset refines the forecast."
+          },
+          {
+            "name": "model_probability",
+            "value": "74.5%",
+            "impact": "medium",
+            "weight": 0.1,
+            "description": "Model probability shows how strongly the model selected this risk level."
           }
         ],
-        "recommended_action": "Engine oil should be checked soon."
+        "recommended_action": "Schedule inspection for Engine oil soon."
       }
     }
   ]

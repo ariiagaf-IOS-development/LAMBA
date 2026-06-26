@@ -120,6 +120,7 @@ def build_feature_row(request: PredictionRequestSchema) -> dict:
         "body_class": "Sedan/Saloon",
         "fuel_type": vehicle.fuel_type or "Gasoline",
         "transmission": vehicle.transmission or "automatic",
+        "usage_type": vehicle.usage_type or "mixed",
         "maintenance_event_count": len(maintenance_events),
         "service_count_source": service_count,
         "maintenance_history_quality": maintenance_history_quality,
@@ -139,10 +140,10 @@ def build_feature_row(request: PredictionRequestSchema) -> dict:
 
 def recommendation_for(risk_level: str, part_name: str) -> str:
     if risk_level == "high":
-        return f"{part_name} requires maintenance as soon as possible."
+        return f"Inspect {part_name} as soon as possible."
     if risk_level == "medium":
-        return f"{part_name} should be checked soon."
-    return f"{part_name} is in good condition."
+        return f"Schedule inspection for {part_name} soon."
+    return f"{part_name} looks stable; continue planned maintenance."
 
 
 def predict_response(artifact: dict, request: PredictionRequestSchema) -> PredictionResponseSchema:
@@ -160,10 +161,16 @@ def predict_response(artifact: dict, request: PredictionRequestSchema) -> Predic
         part_name = part.get("part_name") or "Unknown"
         remaining_km = result["remaining_km"]
         recommendation = recommendation_for(result["risk_level"], part_name)
-        explanation_text = (
-            f"Predicted by {artifact['model_version']} "
-            f"({artifact['selected_model']}). "
-            f"Risk score: {result['risk_score']}, remaining: {remaining_km} km."
+        explanation_details = build_prediction_explanation(
+            model_version=artifact["model_version"],
+            model_name=artifact["selected_model"],
+            part_name=part_name,
+            risk_level=result["risk_level"],
+            risk_score=result["risk_score"],
+            remaining_km=remaining_km,
+            probability=float(probability),
+            recommendation=recommendation,
+            feature_row=row,
         )
         predictions.append({
             "part_category": part.get("part_category") or "general",
@@ -176,18 +183,8 @@ def predict_response(artifact: dict, request: PredictionRequestSchema) -> Predic
             "predicted_next_date": None,
             "probability": round(float(probability), 4),
             "recommendation": recommendation,
-            "explanation": explanation_text,
-            "explanation_details": build_prediction_explanation(
-                model_version=artifact["model_version"],
-                model_name=artifact["selected_model"],
-                part_name=part_name,
-                risk_level=result["risk_level"],
-                risk_score=result["risk_score"],
-                remaining_km=remaining_km,
-                probability=float(probability),
-                recommendation=recommendation,
-                feature_row=row,
-            ),
+            "explanation": explanation_details["explanation_text"],
+            "explanation_details": explanation_details,
         })
 
     return PredictionResponseSchema(
