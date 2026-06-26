@@ -75,7 +75,23 @@ ML returns prediction result for vehicle parts.
       "predicted_next_date": "2026-08-01",
       "probability": 0.72,
       "recommendation": "Maintenance will be required soon",
-      "explanation": "8500 km have passed since the last oil change, so the maintenance risk is increased."
+      "explanation": "8500 km have passed since the last oil change, so the maintenance risk is increased.",
+      "explanation_details": {
+        "explanation_text": "For Engine oil, model maintenance-v1.2.0 predicts medium risk: 65/100. Prediction confidence is 72.0%, and the estimated distance until the next service is about 1,500 km.",
+        "confidence": "Medium confidence",
+        "confidence_qualifier": "medium",
+        "confidence_score": 0.72,
+        "factors": [
+          {
+            "name": "km_since_last_service",
+            "value": "8500 km",
+            "impact": "medium",
+            "weight": 0.4,
+            "description": "Distance since the last service increases the chance of upcoming maintenance."
+          }
+        ],
+        "recommended_action": "Maintenance will be required soon"
+      }
     }
   ]
 }
@@ -185,6 +201,26 @@ Each prediction contains:
 - `probability`
 - `recommendation`
 - `explanation`
+- `explanation_details`
+
+### explanation_details
+
+Structured explanation object for frontend and AI Assistant consumption. It contains:
+
+- `explanation_text`
+- `confidence`
+- `confidence_qualifier`
+- `confidence_score`
+- `factors`
+- `recommended_action`
+
+Confidence qualifiers:
+
+| Qualifier | Label | Rule |
+| --- | --- | --- |
+| `high` | `High confidence` | `confidence_score >= 0.75` |
+| `medium` | `Medium confidence` | `0.55 <= confidence_score < 0.75` |
+| `low` | `Low confidence` | `confidence_score < 0.55` |
 
 ## Error Handling
 

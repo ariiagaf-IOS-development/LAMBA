@@ -1,7 +1,9 @@
 try:
     from ml.parts_health.health_model import calculate_component_health
+    from ml.predictions.explanations import build_prediction_explanation
 except ImportError:
     from parts_health.health_model import calculate_component_health
+    from predictions.explanations import build_prediction_explanation
 
 
 FALLBACK_MODEL_VERSION = "fallback-maintenance-v1.0.0"
@@ -47,6 +49,24 @@ def generate_fallback_predictions(payload: dict) -> dict:
         else:
             predicted_next_mileage = None
 
+        explanation_details = build_prediction_explanation(
+            model_version=FALLBACK_MODEL_VERSION,
+            model_name="parts_health_fallback",
+            part_name=health["part_name"],
+            risk_level=health["risk_level"],
+            risk_score=risk_score,
+            remaining_km=remaining_km,
+            probability=risk_score / 100,
+            recommendation=health["recommendation"],
+            feature_row={
+                "usage_type": vehicle.get("usage_type", "mixed"),
+                "mileage_bucket": "fallback",
+                "maintenance_history_quality": "fallback",
+                "km_since_last_maintenance": 0,
+                "repair_event_count": len(repair_history),
+            },
+        )
+
         predictions.append(
             {
                 "part_category": health["part_category"],
@@ -59,10 +79,8 @@ def generate_fallback_predictions(payload: dict) -> dict:
                 "predicted_next_date": None,
                 "probability": round(risk_score / 100, 2),
                 "recommendation": health["recommendation"],
-                "explanation": (
-                    "Fallback prediction was generated using the Parts Health Model "
-                    "because the ML prediction service was unavailable."
-                ),
+                "explanation": explanation_details["explanation_text"],
+                "explanation_details": explanation_details,
             }
         )
 

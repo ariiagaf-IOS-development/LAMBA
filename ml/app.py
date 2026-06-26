@@ -5,6 +5,7 @@ import joblib
 from fastapi import FastAPI
 
 from predictions.fallback import generate_fallback_predictions
+from predictions.explanations import build_prediction_explanation
 from predictions.schemas import PredictionRequestSchema, PredictionResponseSchema
 from training.inference_maintenance_model import predict_row
 
@@ -118,6 +119,7 @@ def _build_feature_row(request: PredictionRequestSchema) -> dict:
         "body_class": "Sedan/Saloon",
         "fuel_type": v.fuel_type or "Gasoline",
         "transmission": v.transmission or "automatic",
+        "usage_type": v.usage_type or "mixed",
         "maintenance_event_count": len(maintenance_events),
         "service_count_source": service_count,
         "maintenance_history_quality": mh_quality,
@@ -148,9 +150,22 @@ def _model_predict(request: PredictionRequestSchema) -> dict:
         parts = [{"part_category": "general", "part_name": "Vehicle overall"}]
 
     for part in parts:
+        part_name = part.get("part_name", "Unknown")
+        recommendation = _recommendation(result["risk_level"], part_name)
+        explanation_details = build_prediction_explanation(
+            model_version=_model_artifact["model_version"],
+            model_name=_model_artifact["selected_model"],
+            part_name=part_name,
+            risk_level=result["risk_level"],
+            risk_score=result["risk_score"],
+            remaining_km=result["remaining_km"],
+            probability=float(probability),
+            recommendation=recommendation,
+            feature_row=row,
+        )
         predictions.append({
             "part_category": part.get("part_category", "general"),
-            "part_name": part.get("part_name", "Unknown"),
+            "part_name": part_name,
             "risk_level": result["risk_level"],
             "risk_score": result["risk_score"],
             "remaining_km": result["remaining_km"],
@@ -158,12 +173,9 @@ def _model_predict(request: PredictionRequestSchema) -> dict:
             "predicted_next_mileage": request.vehicle.mileage_km + result["remaining_km"],
             "predicted_next_date": None,
             "probability": round(float(probability), 4),
-            "recommendation": _recommendation(result["risk_level"], part.get("part_name", "component")),
-            "explanation": (
-                f"Predicted by {_model_artifact['model_version']} "
-                f"({_model_artifact['selected_model']}). "
-                f"Risk score: {result['risk_score']}, remaining: {result['remaining_km']} km."
-            ),
+            "recommendation": recommendation,
+            "explanation": explanation_details["explanation_text"],
+            "explanation_details": explanation_details,
         })
 
     return {
@@ -175,10 +187,10 @@ def _model_predict(request: PredictionRequestSchema) -> dict:
 
 def _recommendation(risk_level: str, part_name: str) -> str:
     if risk_level == "high":
-        return f"{part_name} requires maintenance as soon as possible."
+        return f"Inspect {part_name} as soon as possible."
     if risk_level == "medium":
-        return f"{part_name} should be checked soon."
-    return f"{part_name} is in good condition."
+        return f"Schedule inspection for {part_name} soon."
+    return f"{part_name} looks stable; continue planned maintenance."
 
 
 @app.post("/predict", response_model=PredictionResponseSchema)

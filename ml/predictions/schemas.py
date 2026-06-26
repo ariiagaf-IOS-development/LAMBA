@@ -11,6 +11,29 @@ class RiskLevel(str, Enum):
     high = "high"
 
 
+class ConfidenceQualifier(str, Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
+class PredictionFactorSchema(BaseModel):
+    name: str
+    value: str
+    impact: RiskLevel
+    weight: float = Field(ge=0, le=1)
+    description: str
+
+
+class PredictionExplanationSchema(BaseModel):
+    explanation_text: str
+    confidence: str
+    confidence_qualifier: ConfidenceQualifier
+    confidence_score: float = Field(ge=0, le=1)
+    factors: List[PredictionFactorSchema]
+    recommended_action: str
+
+
 class VehicleSchema(BaseModel):
     id: int
     brand: str
@@ -61,6 +84,7 @@ class PredictionItemSchema(BaseModel):
     probability: float = Field(ge=0, le=1)
     recommendation: str
     explanation: str
+    explanation_details: PredictionExplanationSchema
 
 
 class PredictionResponseSchema(BaseModel):
