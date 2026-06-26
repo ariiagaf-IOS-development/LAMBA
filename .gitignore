@@ -43,6 +43,10 @@ env/
 *.swo
 *~
 
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+
 # OS artifacts
 .DS_Store
 Thumbs.db
