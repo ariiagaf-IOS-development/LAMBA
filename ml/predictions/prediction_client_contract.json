@@ -55,7 +55,23 @@
           "predicted_next_date": "date string | null",
           "probability": "number 0-1",
           "recommendation": "string",
-          "explanation": "string"
+          "explanation": "string",
+          "explanation_details": {
+            "explanation_text": "string",
+            "confidence": "Low confidence | Medium confidence | High confidence",
+            "confidence_qualifier": "low | medium | high",
+            "confidence_score": "number 0-1",
+            "factors": [
+              {
+                "name": "string",
+                "value": "string",
+                "impact": "low | medium | high",
+                "weight": "number 0-1",
+                "description": "string"
+              }
+            ],
+            "recommended_action": "string"
+          }
         }
       ]
     },
