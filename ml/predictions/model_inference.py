@@ -22,6 +22,7 @@ from predictions.schemas import (  # noqa: E402
     PredictionRequestSchema,
     PredictionResponseSchema,
 )
+from predictions.explanations import build_prediction_explanation  # noqa: E402
 from training.inference_maintenance_model import predict_row  # noqa: E402
 
 
@@ -158,6 +159,12 @@ def predict_response(artifact: dict, request: PredictionRequestSchema) -> Predic
     for part in parts:
         part_name = part.get("part_name") or "Unknown"
         remaining_km = result["remaining_km"]
+        recommendation = recommendation_for(result["risk_level"], part_name)
+        explanation_text = (
+            f"Predicted by {artifact['model_version']} "
+            f"({artifact['selected_model']}). "
+            f"Risk score: {result['risk_score']}, remaining: {remaining_km} km."
+        )
         predictions.append({
             "part_category": part.get("part_category") or "general",
             "part_name": part_name,
@@ -168,11 +175,18 @@ def predict_response(artifact: dict, request: PredictionRequestSchema) -> Predic
             "predicted_next_mileage": request.vehicle.mileage_km + remaining_km,
             "predicted_next_date": None,
             "probability": round(float(probability), 4),
-            "recommendation": recommendation_for(result["risk_level"], part_name),
-            "explanation": (
-                f"Predicted by {artifact['model_version']} "
-                f"({artifact['selected_model']}). "
-                f"Risk score: {result['risk_score']}, remaining: {remaining_km} km."
+            "recommendation": recommendation,
+            "explanation": explanation_text,
+            "explanation_details": build_prediction_explanation(
+                model_version=artifact["model_version"],
+                model_name=artifact["selected_model"],
+                part_name=part_name,
+                risk_level=result["risk_level"],
+                risk_score=result["risk_score"],
+                remaining_km=remaining_km,
+                probability=float(probability),
+                recommendation=recommendation,
+                feature_row=row,
             ),
         })
 
