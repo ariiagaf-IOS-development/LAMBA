@@ -62,6 +62,30 @@ Define a structured explanation format for ML maintenance predictions. The forma
 | `probability` | Converted to a percentage string, for example `0.745` -> `74.5%`. |
 | `remaining_km` | Converted to readable distance, for example `3503` -> `about 3,503 km`. |
 
+## Risk Recommendations
+
+Recommendations are selected using both `part_category` and `risk_level`. The
+same function is used by model and fallback predictions.
+
+| Risk level | Recommendation intent |
+| --- | --- |
+| `low` | Continue the normal maintenance schedule and routine monitoring. |
+| `medium` | Schedule inspection or service soon. |
+| `high` | Arrange immediate inspection or service; safety-critical work must not be delayed. |
+
+MVP-specific recommendation text is defined for:
+
+- `engine_oil` (Oil)
+- `brake_pads` (Brakes)
+- `battery`
+- `tires`
+- `air_filter`
+- `timing_belt`
+
+Unknown part categories use a risk-specific generic recommendation. Complete
+examples for all six MVP parts are available in
+`ml/predictions/recommendation_examples.json`.
+
 Required top factors:
 
 | Factor | Source |
@@ -85,3 +109,4 @@ Required top factors:
 | `ml/predictions/schemas.py` | Pydantic response schema. |
 | `ml/predictions/example_model_predictions.json` | Example model output. |
 | `ml/predictions/fallback_examples.json` | Example fallback outputs. |
+| `ml/predictions/recommendation_examples.json` | Risk recommendation rules and examples for all MVP parts. |

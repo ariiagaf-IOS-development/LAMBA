@@ -1,9 +1,12 @@
 try:
     from ml.parts_health.health_model import calculate_component_health
-    from ml.predictions.explanations import build_prediction_explanation
+    from ml.predictions.explanations import (
+        build_prediction_explanation,
+        recommendation_for,
+    )
 except ImportError:
     from parts_health.health_model import calculate_component_health
-    from predictions.explanations import build_prediction_explanation
+    from predictions.explanations import build_prediction_explanation, recommendation_for
 
 
 FALLBACK_MODEL_VERSION = "fallback-maintenance-v1.0.0"
@@ -49,15 +52,22 @@ def generate_fallback_predictions(payload: dict) -> dict:
         else:
             predicted_next_mileage = None
 
+        recommendation = recommendation_for(
+            health["risk_level"],
+            health["part_name"],
+            part_category=health["part_category"],
+            fallback=health["recommendation"],
+        )
         explanation_details = build_prediction_explanation(
             model_version=FALLBACK_MODEL_VERSION,
             model_name="parts_health_fallback",
             part_name=health["part_name"],
+            part_category=health["part_category"],
             risk_level=health["risk_level"],
             risk_score=risk_score,
             remaining_km=remaining_km,
             probability=risk_score / 100,
-            recommendation=health["recommendation"],
+            recommendation=recommendation,
             feature_row={
                 "usage_type": vehicle.get("usage_type", "mixed"),
                 "mileage_bucket": "fallback",
@@ -78,7 +88,7 @@ def generate_fallback_predictions(payload: dict) -> dict:
                 "predicted_next_mileage": predicted_next_mileage,
                 "predicted_next_date": None,
                 "probability": round(risk_score / 100, 2),
-                "recommendation": health["recommendation"],
+                "recommendation": recommendation,
                 "explanation": explanation_details["explanation_text"],
                 "explanation_details": explanation_details,
             }

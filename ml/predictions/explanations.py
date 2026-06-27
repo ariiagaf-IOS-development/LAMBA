@@ -15,6 +15,54 @@ USAGE_LABELS = {
     "personal": "personal use",
 }
 
+PART_CATEGORY_ALIASES = {
+    "oil": "engine_oil",
+    "engine oil": "engine_oil",
+    "brakes": "brake_pads",
+    "brake pads": "brake_pads",
+    "timing belt": "timing_belt",
+    "air filter": "air_filter",
+}
+
+PART_RECOMMENDATIONS = {
+    "engine_oil": {
+        "low": "Continue the normal oil service schedule and monitor mileage.",
+        "medium": "Schedule an oil and oil filter change soon.",
+        "high": "Replace the engine oil and oil filter as soon as possible.",
+    },
+    "brake_pads": {
+        "low": "Continue routine brake checks during planned maintenance.",
+        "medium": "Schedule a brake inspection soon and prepare for pad replacement.",
+        "high": "Arrange an immediate brake inspection and replace worn pads before further driving.",
+    },
+    "battery": {
+        "low": "Continue routine battery checks during planned maintenance.",
+        "medium": "Test battery capacity and the charging system at the next service visit.",
+        "high": "Have the battery and charging system inspected immediately and replace the battery if required.",
+    },
+    "tires": {
+        "low": "Continue routine tire pressure, tread, and rotation checks.",
+        "medium": "Inspect tread depth, pressure, and wear soon; rotate or replace tires as needed.",
+        "high": "Arrange an immediate tire inspection and replace unsafe tires before further driving.",
+    },
+    "air_filter": {
+        "low": "Continue the normal air filter inspection schedule.",
+        "medium": "Inspect and replace the air filter at the next planned service.",
+        "high": "Replace the air filter soon to avoid further airflow and performance degradation.",
+    },
+    "timing_belt": {
+        "low": "Continue the normal timing belt inspection and replacement schedule.",
+        "medium": "Schedule a timing belt inspection and plan replacement soon.",
+        "high": "Arrange an immediate timing belt inspection and replacement; do not delay service.",
+    },
+}
+
+DEFAULT_RECOMMENDATIONS = {
+    "low": "{part_name} looks stable; continue planned maintenance.",
+    "medium": "Schedule inspection for {part_name} soon.",
+    "high": "Inspect {part_name} as soon as possible.",
+}
+
 
 def confidence_qualifier(probability: float) -> str:
     if probability >= 0.75:
@@ -53,13 +101,25 @@ def driving_profile_label(feature_row: Dict[str, Any]) -> str:
     return USAGE_LABELS.get(usage_type, usage_type)
 
 
-def recommended_action_text(risk_level: str, part_name: str, fallback: str) -> str:
-    if risk_level == "high":
-        return f"Inspect {part_name} as soon as possible."
-    if risk_level == "medium":
-        return f"Schedule inspection for {part_name} soon."
-    if risk_level == "low":
-        return f"{part_name} looks stable; continue planned maintenance."
+def normalize_part_category(part_category: Optional[str], part_name: str) -> str:
+    value = str(part_category or part_name).strip().lower().replace("-", "_")
+    return PART_CATEGORY_ALIASES.get(value, value)
+
+
+def recommendation_for(
+    risk_level: str,
+    part_name: str,
+    part_category: Optional[str] = None,
+    fallback: str = "",
+) -> str:
+    category = normalize_part_category(part_category, part_name)
+    recommendation = PART_RECOMMENDATIONS.get(category, {}).get(risk_level)
+    if recommendation:
+        return recommendation
+
+    default = DEFAULT_RECOMMENDATIONS.get(risk_level)
+    if default:
+        return default.format(part_name=part_name)
     return fallback
 
 
@@ -90,6 +150,7 @@ def build_prediction_explanation(
     probability: float,
     recommendation: str,
     feature_row: Dict[str, Any],
+    part_category: Optional[str] = None,
 ) -> dict:
     km_since_last_service = feature_row.get("km_since_last_maintenance", 0)
     usage_profile = driving_profile_label(feature_row)
@@ -101,7 +162,12 @@ def build_prediction_explanation(
     risk_text = risk_label(risk_level)
     probability_text = format_probability(probability)
     remaining_text = format_remaining_km(remaining_km)
-    action_text = recommended_action_text(risk_level, part_name, recommendation)
+    action_text = recommendation_for(
+        risk_level,
+        part_name,
+        part_category=part_category,
+        fallback=recommendation,
+    )
 
     factors: List[dict] = [
         _factor(

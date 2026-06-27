@@ -5,7 +5,7 @@ import joblib
 from fastapi import FastAPI
 
 from predictions.fallback import generate_fallback_predictions
-from predictions.explanations import build_prediction_explanation
+from predictions.explanations import build_prediction_explanation, recommendation_for
 from predictions.schemas import PredictionRequestSchema, PredictionResponseSchema
 from training.inference_maintenance_model import predict_row
 
@@ -151,11 +151,17 @@ def _model_predict(request: PredictionRequestSchema) -> dict:
 
     for part in parts:
         part_name = part.get("part_name", "Unknown")
-        recommendation = _recommendation(result["risk_level"], part_name)
+        part_category = part.get("part_category", "general")
+        recommendation = recommendation_for(
+            result["risk_level"],
+            part_name,
+            part_category=part_category,
+        )
         explanation_details = build_prediction_explanation(
             model_version=_model_artifact["model_version"],
             model_name=_model_artifact["selected_model"],
             part_name=part_name,
+            part_category=part_category,
             risk_level=result["risk_level"],
             risk_score=result["risk_score"],
             remaining_km=result["remaining_km"],
@@ -164,7 +170,7 @@ def _model_predict(request: PredictionRequestSchema) -> dict:
             feature_row=row,
         )
         predictions.append({
-            "part_category": part.get("part_category", "general"),
+            "part_category": part_category,
             "part_name": part_name,
             "risk_level": result["risk_level"],
             "risk_score": result["risk_score"],
@@ -183,15 +189,6 @@ def _model_predict(request: PredictionRequestSchema) -> dict:
         "model_version": _model_artifact["model_version"],
         "predictions": predictions,
     }
-
-
-def _recommendation(risk_level: str, part_name: str) -> str:
-    if risk_level == "high":
-        return f"Inspect {part_name} as soon as possible."
-    if risk_level == "medium":
-        return f"Schedule inspection for {part_name} soon."
-    return f"{part_name} looks stable; continue planned maintenance."
-
 
 @app.post("/predict", response_model=PredictionResponseSchema)
 def predict(request: PredictionRequestSchema):
