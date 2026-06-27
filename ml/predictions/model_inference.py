@@ -22,7 +22,10 @@ from predictions.schemas import (  # noqa: E402
     PredictionRequestSchema,
     PredictionResponseSchema,
 )
-from predictions.explanations import build_prediction_explanation  # noqa: E402
+from predictions.explanations import (  # noqa: E402
+    build_prediction_explanation,
+    recommendation_for,
+)
 from training.inference_maintenance_model import predict_row  # noqa: E402
 
 
@@ -138,14 +141,6 @@ def build_feature_row(request: PredictionRequestSchema) -> dict:
     }
 
 
-def recommendation_for(risk_level: str, part_name: str) -> str:
-    if risk_level == "high":
-        return f"Inspect {part_name} as soon as possible."
-    if risk_level == "medium":
-        return f"Schedule inspection for {part_name} soon."
-    return f"{part_name} looks stable; continue planned maintenance."
-
-
 def predict_response(artifact: dict, request: PredictionRequestSchema) -> PredictionResponseSchema:
     row = build_feature_row(request)
     result = predict_row(artifact, row)
@@ -159,12 +154,18 @@ def predict_response(artifact: dict, request: PredictionRequestSchema) -> Predic
     predictions = []
     for part in parts:
         part_name = part.get("part_name") or "Unknown"
+        part_category = part.get("part_category") or "general"
         remaining_km = result["remaining_km"]
-        recommendation = recommendation_for(result["risk_level"], part_name)
+        recommendation = recommendation_for(
+            result["risk_level"],
+            part_name,
+            part_category=part_category,
+        )
         explanation_details = build_prediction_explanation(
             model_version=artifact["model_version"],
             model_name=artifact["selected_model"],
             part_name=part_name,
+            part_category=part_category,
             risk_level=result["risk_level"],
             risk_score=result["risk_score"],
             remaining_km=remaining_km,
@@ -173,7 +174,7 @@ def predict_response(artifact: dict, request: PredictionRequestSchema) -> Predic
             feature_row=row,
         )
         predictions.append({
-            "part_category": part.get("part_category") or "general",
+            "part_category": part_category,
             "part_name": part_name,
             "risk_level": result["risk_level"],
             "risk_score": result["risk_score"],
