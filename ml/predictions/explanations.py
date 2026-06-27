@@ -196,7 +196,8 @@ def build_prediction_explanation(
             probability_text,
             risk_level,
             0.10,
-            "Model probability shows how strongly the model selected this risk level.",
+            f"The model assigned a {probability_text} probability to the "
+            f"{risk_text}-risk class.",
         ),
     ]
 
