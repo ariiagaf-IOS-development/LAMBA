@@ -236,6 +236,14 @@
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "metadata": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Optional vehicle metadata used for assistant behavior, including personality_profile.",
+          "additionalProperties": true
         }
       }
     },
