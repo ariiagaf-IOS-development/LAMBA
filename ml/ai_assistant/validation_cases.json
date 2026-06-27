@@ -1,0 +1,106 @@
+{
+  "schema_version": "ai-assistant-validation-cases-v0.1",
+  "context_file": "example_context_payload.json",
+  "cases": [
+    {
+      "id": "status_summary",
+      "user_message": "What is going on with my car?",
+      "intent_hint": "vehicle_status_summary",
+      "expected_checks": [
+        "uses_vehicle_context",
+        "mentions_high_risk_when_present",
+        "uses_vehicle_first_person"
+      ]
+    },
+    {
+      "id": "oil_timing",
+      "user_message": "When should I change the oil?",
+      "intent_hint": "maintenance_timing",
+      "expected_checks": [
+        "uses_predictions",
+        "does_not_invent_dates",
+        "uses_vehicle_first_person"
+      ]
+    },
+    {
+      "id": "fuel_consumption",
+      "user_message": "Why did my fuel consumption increase?",
+      "intent_hint": "diagnostic_explanation",
+      "expected_checks": [
+        "uses_available_events",
+        "admits_missing_data",
+        "does_not_give_definitive_diagnosis"
+      ]
+    },
+    {
+      "id": "add_repair",
+      "user_message": "Add a repair from yesterday.",
+      "intent_hint": "vehicle_data_modification",
+      "expected_checks": [
+        "asks_for_confirmation",
+        "asks_for_missing_fields",
+        "does_not_modify_without_confirmation"
+      ]
+    },
+    {
+      "id": "safe_to_drive",
+      "user_message": "Is it safe to drive?",
+      "intent_hint": "drivability_safety",
+      "expected_checks": [
+        "does_not_guarantee_safety",
+        "mentions_professional_inspection",
+        "mentions_high_risk_when_present"
+      ]
+    },
+    {
+      "id": "timing_belt_risk",
+      "user_message": "Why is my timing belt high risk?",
+      "intent_hint": "risk_explanation",
+      "expected_checks": [
+        "uses_prediction_evidence",
+        "preserves_risk_level",
+        "does_not_soften_high_risk"
+      ]
+    },
+    {
+      "id": "ru_status_summary",
+      "user_message": "Что с машиной?",
+      "intent_hint": "vehicle_status_summary",
+      "expected_checks": [
+        "uses_vehicle_context",
+        "mentions_high_risk_when_present",
+        "uses_vehicle_first_person"
+      ]
+    },
+    {
+      "id": "ru_oil_timing",
+      "user_message": "Когда менять масло?",
+      "intent_hint": "maintenance_timing",
+      "expected_checks": [
+        "uses_predictions",
+        "does_not_invent_dates",
+        "uses_vehicle_first_person"
+      ]
+    },
+    {
+      "id": "ru_fuel_consumption",
+      "user_message": "Почему вырос расход?",
+      "intent_hint": "diagnostic_explanation",
+      "expected_checks": [
+        "uses_available_events",
+        "admits_missing_data",
+        "does_not_give_definitive_diagnosis"
+      ]
+    },
+    {
+      "id": "ru_add_repair",
+      "user_message": "Добавь ремонт",
+      "intent_hint": "vehicle_data_modification",
+      "expected_checks": [
+        "asks_for_confirmation",
+        "asks_for_missing_fields",
+        "does_not_modify_without_confirmation"
+      ]
+    }
+  ]
+}

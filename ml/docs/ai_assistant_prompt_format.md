@@ -8,6 +8,7 @@ Related files:
 - `ml/ai_assistant/example_context_payload.json`
 - `ml/ai_assistant/prompt_templates.py`
 - `ml/ai_assistant/prompt_builder.py`
+- `ml/ai_assistant/personality_profiles.json`
 - `ml/ai_assistant/example_prompt_payload.json`
 
 ## Goal
@@ -21,6 +22,7 @@ The prompt must:
 - include parts health;
 - include prediction results;
 - include grounding alerts, actions, and evidence;
+- include vehicle personality instructions;
 - wrap the user message in a consistent format;
 - include intent hints and response constraints;
 - stay aligned with `context_schema.json`.
@@ -68,6 +70,7 @@ Sources:
 The system message defines:
 
 - assistant persona;
+- selected vehicle personality profile;
 - grounding behavior;
 - safety rules;
 - high-risk response requirements;
@@ -94,6 +97,30 @@ Included context sections:
 - `grounding`
 
 The builder compacts timeline, part health, and prediction items to include the fields most useful to the assistant while preserving source IDs and assistant hints.
+
+## Vehicle Personality
+
+Built by:
+
+```python
+build_personality_instructions(context)
+```
+
+The assistant may answer from the vehicle's first-person perspective. The selected personality affects tone only and must never change facts, risk level, probability, warnings, or recommended actions.
+
+Preferred profile selection:
+
+```json
+{
+  "vehicle": {
+    "metadata": {
+      "personality_profile": "friendly"
+    }
+  }
+}
+```
+
+If no supported profile is provided, the prompt layer uses a conservative fallback profile.
 
 ## User Message Wrapper
 
@@ -179,4 +206,5 @@ ml/ai_assistant/example_prompt_payload.json
 - User messages are standardized.
 - Intent hints are supported.
 - Response constraints are included.
+- Vehicle personality instructions are included.
 - Backend can review and adapt the generated `messages` payload.

@@ -12,6 +12,7 @@ try:
         USER_MESSAGE_TEMPLATE,
         VEHICLE_CONTEXT_TEMPLATE,
     )
+    from .personality import build_personality_instructions
 except ImportError:
     from prompt_templates import (
         DEFAULT_RESPONSE_CONSTRAINTS,
@@ -19,6 +20,7 @@ except ImportError:
         USER_MESSAGE_TEMPLATE,
         VEHICLE_CONTEXT_TEMPLATE,
     )
+    from personality import build_personality_instructions
 
 
 AI_ASSISTANT_DIR = Path(__file__).resolve().parent
@@ -83,7 +85,7 @@ def _compact_prediction(prediction: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_system_prompt() -> str:
+def build_system_prompt(context: dict[str, Any] | None = None) -> str:
     base_prompt = _read_optional_text(SYSTEM_PROMPT_PATH)
     safety_rules = _read_optional_text(SAFETY_RULES_PATH)
 
@@ -92,6 +94,9 @@ def build_system_prompt() -> str:
         sections.append(base_prompt)
     if safety_rules:
         sections.append("SAFETY RULES\n\n" + safety_rules)
+    if context:
+        personality_text, _ = build_personality_instructions(context)
+        sections.append(personality_text)
 
     return "\n\n---\n\n".join(sections)
 
@@ -141,6 +146,8 @@ def build_prompt_payload(
     context: dict[str, Any],
     intent_hint: str | None = None,
 ) -> dict[str, Any]:
+    _, personality = build_personality_instructions(context)
+
     return {
         "schema_version": "ai-assistant-prompt-v0.1",
         "context_id": context.get("context_id"),
@@ -148,7 +155,7 @@ def build_prompt_payload(
         "messages": [
             {
                 "role": "system",
-                "content": build_system_prompt(),
+                "content": build_system_prompt(context),
             },
             {
                 "role": "user",
@@ -164,6 +171,8 @@ def build_prompt_payload(
             "overall_risk_level": context.get("grounding", {}).get("overall_risk_level"),
             "intent_hint": intent_hint or "general_vehicle_question",
             "source_context_schema_version": context.get("schema_version"),
+            "personality_profile": personality["selected_profile"],
+            "personality_name": personality["profile_name"],
         },
     }
 
