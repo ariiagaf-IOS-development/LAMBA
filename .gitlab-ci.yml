@@ -14,6 +14,8 @@ deploy:
   image: ubuntu:latest
   stage: deploy
   before_script:
+    - mkdir -p $HOME/.docker
+    - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
     - apt-get update && apt-get install -y openssh-client rsync
     - echo "$SSH_PRIVATE_KEY" > /tmp/id_rsa
     - chmod 600 /tmp/id_rsa
