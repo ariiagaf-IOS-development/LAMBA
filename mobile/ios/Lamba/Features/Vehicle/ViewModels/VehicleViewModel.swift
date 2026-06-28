@@ -17,36 +17,52 @@ final class VehicleViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
-    @Published var vehicleImageData: Data?
+    @Published var vehicleImages: [Int: Data] = [:]
+    
+    @Published var activeVehicleId: Int?
+    
+    var activeVehicle: VehicleResponse? {
+        vehicles.first { $0.id == activeVehicleId }
+    }
     
     var hasVehicle: Bool {
-        selectedVehicle != nil
+        activeVehicle != nil
     }
-    
+
     var brand: String {
-        selectedVehicle?.brand ?? ""
+        activeVehicle?.brand ?? ""
     }
-    
+
     var model: String {
-        selectedVehicle?.model ?? ""
+        activeVehicle?.model ?? ""
     }
-    
+
     var year: String {
-        if let year = selectedVehicle?.year {
+        if let year = activeVehicle?.year {
             return String(year)
         }
+
         return ""
     }
-    
+
     var mileage: String {
-        if let mileageKm = selectedVehicle?.mileageKm {
+        if let mileageKm = activeVehicle?.mileageKm {
+            return String(mileageKm)
+        }
+
+        return ""
+    }
+
+    var mileageDisplay: String {
+        if let mileageKm = activeVehicle?.mileageKm {
             return "\(mileageKm) km"
         }
+
         return ""
     }
-    
+
     var vin: String {
-        selectedVehicle?.vin ?? ""
+        activeVehicle?.vin ?? ""
     }
     
     func loadVehicles(token: String) async {
@@ -55,8 +71,17 @@ final class VehicleViewModel: ObservableObject {
         
         do {
             let loadedVehicles = try await VehicleAPIService.shared.getVehicles(token: token)
+            
             vehicles = loadedVehicles
-            selectedVehicle = loadedVehicles.first
+
+            if let currentId = activeVehicleId,
+               loadedVehicles.contains(where: { $0.id == currentId }) {
+                activeVehicleId = currentId
+            } else {
+                activeVehicleId = loadedVehicles.first?.id
+            }
+
+            selectedVehicle = vehicles.first(where: { $0.id == activeVehicleId })
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -92,7 +117,10 @@ final class VehicleViewModel: ObservableObject {
                 vin: vin.trimmingCharacters(in: .whitespacesAndNewlines),
                 token: token
             )
-            
+
+            activeVehicleId = createdVehicle.id
+            selectedVehicle = createdVehicle
+
             await refreshVehicles(token: token)
         } catch {
             errorMessage = error.localizedDescription
@@ -109,22 +137,17 @@ final class VehicleViewModel: ObservableObject {
         vin: String,
         token: String
     ) async {
-        guard let selectedVehicle else { return }
+        guard let activeVehicle else { return }
         
         isLoading = true
         errorMessage = nil
         
-        let cleanYear = Int(year.trimmingCharacters(in: .whitespacesAndNewlines)) ?? selectedVehicle.year
-        let cleanMileage = mileage
-            .replacingOccurrences(of: "km", with: "")
-            .replacingOccurrences(of: ",", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        let mileageKm = Int(cleanMileage) ?? selectedVehicle.mileageKm
+        let cleanYear = Int(year.trimmingCharacters(in: .whitespacesAndNewlines)) ?? activeVehicle.year
+        let mileageKm = Int(mileage.filter { $0.isNumber }) ?? activeVehicle.mileageKm
         
         do {
             let updatedVehicle = try await VehicleAPIService.shared.updateVehicle(
-                id: selectedVehicle.id,
+                id: activeVehicle.id,
                 brand: brand.trimmingCharacters(in: .whitespacesAndNewlines),
                 model: model.trimmingCharacters(in: .whitespacesAndNewlines),
                 year: cleanYear,
@@ -133,13 +156,10 @@ final class VehicleViewModel: ObservableObject {
                 token: token
             )
             
-            self.selectedVehicle = updatedVehicle
+            activeVehicleId = updatedVehicle.id
+            selectedVehicle = updatedVehicle
             
             await refreshVehicles(token: token)
-            
-            if let index = vehicles.firstIndex(where: { $0.id == updatedVehicle.id }) {
-                vehicles[index] = updatedVehicle
-            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -148,16 +168,21 @@ final class VehicleViewModel: ObservableObject {
     }
     
     func deleteSelectedVehicle(token: String) async {
-        guard let selectedVehicle else { return }
+        guard let activeVehicle else { return }
         
         isLoading = true
         errorMessage = nil
         
         do {
             try await VehicleAPIService.shared.deleteVehicle(
-                id: selectedVehicle.id,
+                id: activeVehicle.id,
                 token: token
             )
+            
+            if activeVehicleId == activeVehicle.id {
+                activeVehicleId = nil
+                selectedVehicle = nil
+            }
             
             await refreshVehicles(token: token)
         } catch {
@@ -167,8 +192,29 @@ final class VehicleViewModel: ObservableObject {
         isLoading = false
     }
     
-    func selectVehicle(_ vehicle: VehicleResponse) {
-        selectedVehicle = vehicle
+    func deleteVehicle(_ vehicle: VehicleResponse, token: String) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await VehicleAPIService.shared.deleteVehicle(
+                id: vehicle.id,
+                token: token
+            )
+            
+            vehicles.removeAll { $0.id == vehicle.id }
+            vehicleImages.removeValue(forKey: vehicle.id)
+            
+            if activeVehicleId == vehicle.id {
+                activeVehicleId = vehicles.first?.id
+            }
+            
+            selectedVehicle = vehicles.first(where: { $0.id == activeVehicleId })
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        
+        isLoading = false
     }
     
     func clearError() {
@@ -177,5 +223,22 @@ final class VehicleViewModel: ObservableObject {
     
     func refreshVehicles(token: String) async {
         await loadVehicles(token: token)
+    }
+    
+    func selectVehicle(_ vehicle: VehicleResponse) {
+        activeVehicleId = vehicle.id
+        selectedVehicle = vehicle
+    }
+    
+    func getImage(for vehicleId: Int) -> Data? {
+        vehicleImages[vehicleId]
+    }
+
+    func setImage(_ data: Data?, for vehicleId: Int) {
+        if let data {
+            vehicleImages[vehicleId] = data
+        } else {
+            vehicleImages.removeValue(forKey: vehicleId)
+        }
     }
 }

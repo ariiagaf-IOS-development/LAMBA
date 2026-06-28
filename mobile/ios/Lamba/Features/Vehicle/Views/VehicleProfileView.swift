@@ -13,10 +13,8 @@ struct VehicleProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var isEditingVehicle = false
     @State private var isAddingVehicle = false
-    
-    @State private var showAddVehicle = false
-    @State private var showEditVehicle = false
-    
+    @State private var isManagingVehicles = false
+        
     var body: some View {
         ZStack {
             AppColors.background
@@ -31,7 +29,18 @@ struct VehicleProfileView: View {
                             subtitle: "Performance Dual Motor • Neural Link V2.4 Active"
                         )
                         .padding(.top, AppSpacing.sm)
-                        
+
+                        if vehicleViewModel.vehicles.count > 1 {
+                            ManageVehiclesCard(
+                                count: vehicleViewModel.vehicles.count,
+                                activeVehicleName: "\(vehicleViewModel.brand) \(vehicleViewModel.model)"
+                            ) {
+                                isManagingVehicles = true
+                            }
+                            .padding(.horizontal, AppSpacing.lg)
+                            .padding(.top, AppSpacing.sm)
+                        }
+
                         VehicleImageCard()
                             .padding(.horizontal, AppSpacing.lg)
                             .padding(.top, AppSpacing.lg)
@@ -65,10 +74,8 @@ struct VehicleProfileView: View {
                 ),
                 actions: .init(
                     onRightTap: {
-                        if vehicleViewModel.hasVehicle {
+                        if vehicleViewModel.activeVehicle != nil {
                             isEditingVehicle = true
-                        } else {
-                            isAddingVehicle = true
                         }
                     }
                 )
@@ -94,6 +101,16 @@ struct VehicleProfileView: View {
             .environmentObject(vehicleViewModel)
             .environmentObject(authViewModel)
         }
+        .sheet(isPresented: $isManagingVehicles) {
+            ManageVehiclesView()
+                .environmentObject(vehicleViewModel)
+                .environmentObject(authViewModel)
+        }
+        .onAppear {
+            if vehicleViewModel.activeVehicleId == nil {
+                vehicleViewModel.activeVehicleId = vehicleViewModel.vehicles.first?.id
+            }
+        }
     }
     
     private struct VehicleImageCard: View {
@@ -107,7 +124,7 @@ struct VehicleProfileView: View {
                     
                     GeometryReader { geo in
                         Group {
-                            if let data = vehicleViewModel.vehicleImageData,
+                            if let data = vehicleViewModel.getImage(for: vehicleViewModel.activeVehicle?.id ?? 0),
                                let uiImage = UIImage(data: data) {
                                 
                                 Image(uiImage: uiImage)
@@ -153,7 +170,7 @@ struct VehicleProfileView: View {
                             .font(.system(size: 10, weight: .black))
                             .foregroundStyle(AppColors.textSecondary)
                         
-                        Text(vehicleViewModel.mileage.isEmpty ? "12,482 km" : vehicleViewModel.mileage)
+                        Text(vehicleViewModel.mileageDisplay.isEmpty ? "12,482 km" : vehicleViewModel.mileageDisplay)
                             .font(.system(size: 22, weight: .black))
                             .foregroundStyle(AppColors.textPrimary)
                     }
@@ -320,6 +337,51 @@ struct VehicleProfileView: View {
                 }
                 .appCard()
                 .padding(.horizontal, AppSpacing.lg)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+    
+    private struct ManageVehiclesCard: View {
+        
+        let count: Int
+        let activeVehicleName: String
+        let onTap: () -> Void
+        
+        var body: some View {
+            Button {
+                onTap()
+            } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: AppRadius.lg)
+                            .fill(AppColors.primary.opacity(0.10))
+                            .frame(width: 52, height: 52)
+                        
+                        Image(systemName: "rectangle.stack.fill")
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundStyle(AppColors.primary)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("MANAGE VEHICLES")
+                            .font(.system(size: 12, weight: .black))
+                            .foregroundStyle(AppColors.textPrimary)
+                            .tracking(1.2)
+                        
+                        Text("\(count) vehicles · Active: \(activeVehicleName)")
+                            .font(AppTypography.caption)
+                            .foregroundStyle(AppColors.textSecondary)
+                            .lineLimit(1)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .black))
+                        .foregroundStyle(AppColors.textMuted)
+                }
+                .appCard()
             }
             .buttonStyle(.plain)
         }

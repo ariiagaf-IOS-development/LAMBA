@@ -17,7 +17,7 @@ struct AddVehicleView: View {
     
     let mode: VehicleFormMode
     let onClose: (() -> Void)?
-
+    
     init(
         mode: VehicleFormMode = .create,
         onClose: (() -> Void)? = nil
@@ -25,7 +25,7 @@ struct AddVehicleView: View {
         self.mode = mode
         self.onClose = onClose
     }
-
+    
     private var isEditing: Bool {
         mode == .edit
     }
@@ -40,6 +40,7 @@ struct AddVehicleView: View {
     @State private var vin: String = ""
     
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var localVehicleImageData: Data?
     
     private var isFormValid: Bool {
         !brand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -79,7 +80,7 @@ struct AddVehicleView: View {
                         
                         VehiclePhotoUploadField(
                             selectedPhoto: $selectedPhoto,
-                            vehicleImageData: vehicleViewModel.vehicleImageData
+                            vehicleImageData: localVehicleImageData
                         )
                         
                         VehicleFieldSection(
@@ -102,10 +103,10 @@ struct AddVehicleView: View {
                                 keyboardType: .numberPad
                             )
                             .frame(maxWidth: .infinity)
-
+                            
                             VehicleFieldSection(
-                                title: "MILEAGE",
-                                placeholder: "48,000 km",
+                                title: "MILEAGE (KM)",
+                                placeholder: "42000",
                                 text: $mileage,
                                 keyboardType: .numberPad
                             )
@@ -170,6 +171,10 @@ struct AddVehicleView: View {
                         }
                         
                         if vehicleViewModel.errorMessage == nil {
+                            if let id = vehicleViewModel.activeVehicleId {
+                                vehicleViewModel.setImage(localVehicleImageData, for: id)
+                            }
+                            
                             onClose?()
                         }
                     }
@@ -182,125 +187,128 @@ struct AddVehicleView: View {
             }
         }
         .onAppear {
-            if isEditing {
-                brand = vehicleViewModel.brand
-                model = vehicleViewModel.model
-                year = vehicleViewModel.year
-                mileage = vehicleViewModel.mileage
-                vin = vehicleViewModel.vin
+            if isEditing, let vehicle = vehicleViewModel.activeVehicle {
+                brand = vehicle.brand
+                model = vehicle.model
+                year = String(vehicle.year)
+                mileage = String(vehicle.mileageKm)
+                vin = vehicle.vin
+                localVehicleImageData = vehicleViewModel.getImage(for: vehicle.id)
+            } else {
+                localVehicleImageData = nil
             }
         }
-    .onChange(of: selectedPhoto) { _, newValue in
+        .onChange(of: selectedPhoto) { _, newValue in
             Task {
                 if let data = try? await newValue?.loadTransferable(type: Data.self) {
-                    vehicleViewModel.vehicleImageData = data
+                    localVehicleImageData = data
                 }
             }
         }
     }
-}
-
-private struct VehicleInputField: View {
     
-    let placeholder: String
-    @Binding var text: String
-    var keyboardType: UIKeyboardType = .default
-    
-    var body: some View {
-        TextField(placeholder, text: $text)
-            .keyboardType(keyboardType)
-            .font(AppTypography.caption)
-            .foregroundStyle(AppColors.textPrimary)
-            .frame(minHeight: 24)
-            .appCard()
-    }
-}
-
-private struct VehicleFieldSection: View {
-    
-    let title: String
-    let placeholder: String
-    @Binding var text: String
-    var keyboardType: UIKeyboardType = .default
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(title)
-                .font(.system(size: 10, weight: .black))
-                .foregroundStyle(AppColors.textSecondary)
-                .tracking(2)
-            
-            VehicleInputField(
-                placeholder: placeholder,
-                text: $text,
-                keyboardType: keyboardType
-            )
-        }
-    }
-}
-
-private struct VehiclePhotoUploadField: View {
-    
-    @Binding var selectedPhoto: PhotosPickerItem?
-    let vehicleImageData: Data?
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            
-            Text("UPLOAD VEHICLE PHOTO")
-                .font(.system(size: 10, weight: .black))
-                .foregroundStyle(AppColors.textSecondary)
-                .tracking(2)
-            
-            PhotosPicker(
-                selection: $selectedPhoto,
-                matching: .images
-            ) {
-                
-                HStack(spacing: 14) {
-                    
-                    ZStack {
-                        RoundedRectangle(cornerRadius: AppRadius.lg)
-                            .fill(AppColors.background)
-                            .frame(width: 52, height: 52)
-                        
-                        if let data = vehicleImageData,
-                           let uiImage = UIImage(data: data) {
-                            
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 52, height: 52)
-                                .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
-                        } else {
-                            Image(systemName: "photo")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundStyle(AppColors.primary)
-                        }
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        
-                        Text(vehicleImageData == nil
-                             ? "Add a photo to personalize your digital twin"
-                             : "Vehicle photo added"
-                        )
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AppColors.textSecondary)
-                        
-                        Text(vehicleImageData == nil
-                             ? "Tap to upload"
-                             : "Tap to change photo"
-                        )
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(AppColors.primary)
-                    }
-                    
-                    Spacer()
-                }
+    private struct VehicleInputField: View {
+        
+        let placeholder: String
+        @Binding var text: String
+        var keyboardType: UIKeyboardType = .default
+        
+        var body: some View {
+            TextField(placeholder, text: $text)
+                .keyboardType(keyboardType)
+                .font(AppTypography.caption)
+                .foregroundStyle(AppColors.textPrimary)
+                .frame(minHeight: 24)
                 .appCard()
+        }
+    }
+    
+    private struct VehicleFieldSection: View {
+        
+        let title: String
+        let placeholder: String
+        @Binding var text: String
+        var keyboardType: UIKeyboardType = .default
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(title)
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .tracking(2)
+                
+                VehicleInputField(
+                    placeholder: placeholder,
+                    text: $text,
+                    keyboardType: keyboardType
+                )
             }
-            .buttonStyle(.plain)
+        }
+    }
+    
+    private struct VehiclePhotoUploadField: View {
+        
+        @Binding var selectedPhoto: PhotosPickerItem?
+        let vehicleImageData: Data?
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 14) {
+                
+                Text("UPLOAD VEHICLE PHOTO")
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .tracking(2)
+                
+                PhotosPicker(
+                    selection: $selectedPhoto,
+                    matching: .images
+                ) {
+                    
+                    HStack(spacing: 14) {
+                        
+                        ZStack {
+                            RoundedRectangle(cornerRadius: AppRadius.lg)
+                                .fill(AppColors.background)
+                                .frame(width: 52, height: 52)
+                            
+                            if let data = vehicleImageData,
+                               let uiImage = UIImage(data: data) {
+                                
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 52, height: 52)
+                                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
+                            } else {
+                                Image(systemName: "photo")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundStyle(AppColors.primary)
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            
+                            Text(vehicleImageData == nil
+                                 ? "Add a photo to personalize your digital twin"
+                                 : "Vehicle photo added"
+                            )
+                            .font(AppTypography.caption)
+                            .foregroundStyle(AppColors.textSecondary)
+                            
+                            Text(vehicleImageData == nil
+                                 ? "Tap to upload"
+                                 : "Tap to change photo"
+                            )
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(AppColors.primary)
+                        }
+                        
+                        Spacer()
+                    }
+                    .appCard()
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
