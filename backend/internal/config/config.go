@@ -14,6 +14,8 @@ type Config struct {
 	BcryptCost         int
 	PredictionProvider PredictionProviderType
 	MLServiceURL       string
+	AIAgentURL         string
+	AIAgentKey         string
 }
 
 const (
@@ -23,6 +25,8 @@ const (
 	envBcryptCost         = "BCRYPT_COST"
 	envPredictionProvider = "PREDICTION_PROVIDER"
 	envMLServiceURL       = "ML_SERVICE_URL"
+	envAIAgentURL         = "AI_AGENT_URL"
+	envAIAgentKey         = "AI_AGENT_KEY"
 )
 
 const (
@@ -56,6 +60,8 @@ func MustLoad() Config {
 		BcryptCost:         getEnvIntInRange(envBcryptCost, defaultBcryptCost, minBcryptCost, maxBcryptCost),
 		PredictionProvider: loadPredictionProvider(),
 		MLServiceURL:       getEnv(envMLServiceURL, ""),
+		AIAgentURL:         getEnv(envAIAgentURL, ""),
+		AIAgentKey:         getEnv(envAIAgentKey, ""),
 	}
 }
 
