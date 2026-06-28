@@ -17,14 +17,16 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) Create(ctx context.Context, email, passwordHash string) (domain.User, error) {
+func (r *UserRepository) Create(ctx context.Context, email, passwordHash, firstName, lastName string) (domain.User, error) {
 	var user domain.User
 
 	err := r.db.QueryRowContext(ctx, `
-		INSERT INTO users (email, password_hash)
-		VALUES ($1, $2)
-		RETURNING id, email, password_hash, created_at
-	`, email, passwordHash).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt)
+		INSERT INTO users (email, password_hash, first_name, last_name)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, email, first_name, last_name, password_hash, created_at
+	`, email, passwordHash, firstName, lastName).Scan(
+		&user.ID, &user.Email, &user.FirstName, &user.LastName, &user.PasswordHash, &user.CreatedAt,
+	)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return domain.User{}, ErrConflict
@@ -40,10 +42,10 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (domain.
 	var user domain.User
 
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, email, password_hash, created_at
+		SELECT id, email, first_name, last_name, password_hash, created_at
 		FROM users
 		WHERE lower(email) = lower($1)
-	`, email).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt)
+	`, email).Scan(&user.ID, &user.Email, &user.FirstName, &user.LastName, &user.PasswordHash, &user.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.User{}, ErrNotFound
 	}
@@ -58,10 +60,10 @@ func (r *UserRepository) FindByID(ctx context.Context, id int64) (domain.User, e
 	var user domain.User
 
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, email, password_hash, created_at
+		SELECT id, email, first_name, last_name, password_hash, created_at
 		FROM users
 		WHERE id = $1
-	`, id).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt)
+	`, id).Scan(&user.ID, &user.Email, &user.FirstName, &user.LastName, &user.PasswordHash, &user.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.User{}, ErrNotFound
 	}
