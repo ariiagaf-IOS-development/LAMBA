@@ -18,7 +18,44 @@
             "predicted_next_date": "2026-08-01",
             "probability": 0.65,
             "recommendation": "Maintenance will be required soon.",
-            "explanation": "Fallback response is used because ML service timeout occurred."
+            "explanation": "For Engine oil, model fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk: 65/100. Prediction confidence is 65.0%, and the estimated distance until the next service is about 1,500 km. Key reasons: 0 km since the last service, mixed driving, and similar vehicles in the demo dataset support this risk level.",
+            "explanation_details": {
+              "explanation_text": "For Engine oil, model fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk: 65/100. Prediction confidence is 65.0%, and the estimated distance until the next service is about 1,500 km. Key reasons: 0 km since the last service, mixed driving, and similar vehicles in the demo dataset support this risk level.",
+              "confidence": "Medium confidence",
+              "confidence_qualifier": "medium",
+              "confidence_score": 0.65,
+              "factors": [
+                {
+                  "name": "km_since_last_service",
+                  "value": "0 km",
+                  "impact": "medium",
+                  "weight": 0.4,
+                  "description": "Distance since the last service increases the chance of upcoming maintenance."
+                },
+                {
+                  "name": "driving_profile",
+                  "value": "mixed driving",
+                  "impact": "medium",
+                  "weight": 0.3,
+                  "description": "Driving profile helps estimate the load placed on the part."
+                },
+                {
+                  "name": "community_data",
+                  "value": "similar to demo-data vehicles in the fallback mileage bucket",
+                  "impact": "medium",
+                  "weight": 0.2,
+                  "description": "Comparison with similar vehicles in the available demo dataset refines the forecast."
+                },
+                {
+                  "name": "model_probability",
+                  "value": "65.0%",
+                  "impact": "medium",
+                  "weight": 0.1,
+                  "description": "Model probability shows how strongly the model selected this risk level."
+                }
+              ],
+              "recommended_action": "Schedule inspection for Engine oil soon."
+            }
           }
         ]
       }
@@ -42,7 +79,44 @@
             "predicted_next_date": "2026-08-01",
             "probability": 0.65,
             "recommendation": "Maintenance will be required soon.",
-            "explanation": "Fallback response is used because ML service is unavailable."
+            "explanation": "For Engine oil, model fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk: 65/100. Prediction confidence is 65.0%, and the estimated distance until the next service is about 1,500 km. Key reasons: 0 km since the last service, mixed driving, and similar vehicles in the demo dataset support this risk level.",
+            "explanation_details": {
+              "explanation_text": "For Engine oil, model fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk: 65/100. Prediction confidence is 65.0%, and the estimated distance until the next service is about 1,500 km. Key reasons: 0 km since the last service, mixed driving, and similar vehicles in the demo dataset support this risk level.",
+              "confidence": "Medium confidence",
+              "confidence_qualifier": "medium",
+              "confidence_score": 0.65,
+              "factors": [
+                {
+                  "name": "km_since_last_service",
+                  "value": "0 km",
+                  "impact": "medium",
+                  "weight": 0.4,
+                  "description": "Distance since the last service increases the chance of upcoming maintenance."
+                },
+                {
+                  "name": "driving_profile",
+                  "value": "mixed driving",
+                  "impact": "medium",
+                  "weight": 0.3,
+                  "description": "Driving profile helps estimate the load placed on the part."
+                },
+                {
+                  "name": "community_data",
+                  "value": "similar to demo-data vehicles in the fallback mileage bucket",
+                  "impact": "medium",
+                  "weight": 0.2,
+                  "description": "Comparison with similar vehicles in the available demo dataset refines the forecast."
+                },
+                {
+                  "name": "model_probability",
+                  "value": "65.0%",
+                  "impact": "medium",
+                  "weight": 0.1,
+                  "description": "Model probability shows how strongly the model selected this risk level."
+                }
+              ],
+              "recommended_action": "Schedule inspection for Engine oil soon."
+            }
           }
         ]
       }
@@ -66,7 +140,44 @@
             "predicted_next_date": "2026-08-01",
             "probability": 0.65,
             "recommendation": "Maintenance will be required soon.",
-            "explanation": "Fallback response is used because ML response validation failed."
+            "explanation": "For Engine oil, model fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk: 65/100. Prediction confidence is 65.0%, and the estimated distance until the next service is about 1,500 km. Key reasons: 0 km since the last service, mixed driving, and similar vehicles in the demo dataset support this risk level.",
+            "explanation_details": {
+              "explanation_text": "For Engine oil, model fallback-maintenance-v1.0.0 (parts_health_fallback) predicts medium risk: 65/100. Prediction confidence is 65.0%, and the estimated distance until the next service is about 1,500 km. Key reasons: 0 km since the last service, mixed driving, and similar vehicles in the demo dataset support this risk level.",
+              "confidence": "Medium confidence",
+              "confidence_qualifier": "medium",
+              "confidence_score": 0.65,
+              "factors": [
+                {
+                  "name": "km_since_last_service",
+                  "value": "0 km",
+                  "impact": "medium",
+                  "weight": 0.4,
+                  "description": "Distance since the last service increases the chance of upcoming maintenance."
+                },
+                {
+                  "name": "driving_profile",
+                  "value": "mixed driving",
+                  "impact": "medium",
+                  "weight": 0.3,
+                  "description": "Driving profile helps estimate the load placed on the part."
+                },
+                {
+                  "name": "community_data",
+                  "value": "similar to demo-data vehicles in the fallback mileage bucket",
+                  "impact": "medium",
+                  "weight": 0.2,
+                  "description": "Comparison with similar vehicles in the available demo dataset refines the forecast."
+                },
+                {
+                  "name": "model_probability",
+                  "value": "65.0%",
+                  "impact": "medium",
+                  "weight": 0.1,
+                  "description": "Model probability shows how strongly the model selected this risk level."
+                }
+              ],
+              "recommended_action": "Schedule inspection for Engine oil soon."
+            }
           }
         ]
       }

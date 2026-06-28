@@ -1,0 +1,4 @@
+ALTER TABLE vehicles
+    ADD COLUMN IF NOT EXISTS fuel_type TEXT,
+    ADD COLUMN IF NOT EXISTS transmission TEXT,
+    ADD COLUMN IF NOT EXISTS usage_type TEXT;

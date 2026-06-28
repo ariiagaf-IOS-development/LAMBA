@@ -7,11 +7,28 @@ services:
       HTTP_ADDR: ":8080"
       GIN_MODE: release
       DATABASE_URL: postgres://lamba:lamba@postgres:5432/lamba?sslmode=disable
+      PREDICTION_PROVIDER: ml_service
+      ML_SERVICE_URL: http://ml:8000
     ports:
       - "80:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      ml:
+        condition: service_healthy
+
+  ml:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   postgres:
     image: postgres:16-alpine

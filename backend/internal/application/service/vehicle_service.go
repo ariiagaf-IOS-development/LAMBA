@@ -23,19 +23,25 @@ type VehicleService struct {
 }
 
 type CreateVehicleInput struct {
-	Brand     string
-	Model     string
-	Year      int
-	VIN       *string
-	MileageKM int
+	Brand        string
+	Model        string
+	Year         int
+	VIN          *string
+	MileageKM    int
+	FuelType     *string
+	Transmission *string
+	UsageType    *string
 }
 
 type UpdateVehicleInput struct {
-	Brand     *string
-	Model     *string
-	Year      *int
-	VIN       *string
-	MileageKM *int
+	Brand        *string
+	Model        *string
+	Year         *int
+	VIN          *string
+	MileageKM    *int
+	FuelType     *string
+	Transmission *string
+	UsageType    *string
 }
 
 func NewVehicleService(vehicles *repository.VehicleRepository) *VehicleService {
@@ -119,11 +125,14 @@ func newVehicleFromInput(input CreateVehicleInput) (domain.Vehicle, error) {
 	}
 
 	return domain.Vehicle{
-		Brand:     brand,
-		Model:     model,
-		Year:      input.Year,
-		VIN:       normalizedVIN,
-		MileageKM: input.MileageKM,
+		Brand:        brand,
+		Model:        model,
+		Year:         input.Year,
+		VIN:          normalizedVIN,
+		MileageKM:    input.MileageKM,
+		FuelType:     input.FuelType,
+		Transmission: input.Transmission,
+		UsageType:    input.UsageType,
 	}, nil
 }
 
@@ -172,6 +181,21 @@ func newVehicleUpdateFromInput(input UpdateVehicleInput) (repository.VehicleUpda
 		}
 
 		update.MileageKM = input.MileageKM
+	}
+
+	if input.FuelType != nil {
+		update.FuelType.Set = true
+		update.FuelType.Value = input.FuelType
+	}
+
+	if input.Transmission != nil {
+		update.Transmission.Set = true
+		update.Transmission.Value = input.Transmission
+	}
+
+	if input.UsageType != nil {
+		update.UsageType.Set = true
+		update.UsageType.Value = input.UsageType
 	}
 
 	return update, nil

@@ -21,4 +21,33 @@ Generated files:
 
 The target is `maintenance_needed`, parsed from the derived maintenance baseline event in `ml/demo_data/vehicle_events.csv`.
 
+## Baseline Model Training
+
 Use `expanded_train.csv` and `expanded_validation.csv` for the first baseline model when more training rows are needed. The split is grouped by `vehicle_id`, so parts from the same vehicle do not leak across train and validation.
+
+Train and compare the first model baselines:
+
+```bash
+python3 ml/training/train_maintenance_baselines.py
+```
+
+The training script fits two baseline families:
+
+| Family | Risk model | Remaining km model |
+| --- | --- | --- |
+| `logistic_regression` | Logistic Regression | Decision Tree Regressor |
+| `random_forest` | Random Forest Classifier | Random Forest Regressor |
+
+Generated model outputs:
+
+| File | Purpose |
+| --- | --- |
+| `ml/training/artifacts/maintenance_risk_model.joblib` | Best selected model artifact. |
+| `ml/training/artifacts/model_comparison.json` | Metrics and validation predictions for both baselines. |
+| `ml/training/artifacts/sample_inference.json` | Smoke-test inference output from the selected model. |
+
+Run inference from the exported artifact:
+
+```bash
+python3 ml/training/inference_maintenance_model.py
+```

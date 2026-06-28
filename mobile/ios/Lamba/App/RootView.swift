@@ -31,9 +31,15 @@ struct RootView: View {
             
             // 1. NOT LOGGED IN
             else if !authViewModel.isLoggedIn {
-                LoginView()
-                    .environmentObject(authViewModel)
-                
+                WelcomeView(
+                    onGetStarted: {
+                        authViewModel.login()
+                    },
+                    onSignIn: {
+                        authViewModel.login()
+                    }
+                )
+                .environmentObject(authViewModel)
             }
             
             // 2. NO VEHICLE
@@ -46,6 +52,8 @@ struct RootView: View {
             // 3. MAIN APP
             else {
                 MainTabView()
+                    .environmentObject(vehicleViewModel)
+                    .environmentObject(authViewModel)
             }
         }
     }

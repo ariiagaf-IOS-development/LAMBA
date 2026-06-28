@@ -1,0 +1,15 @@
+{
+  "model_version": "maintenance-risk-baseline-v0.1",
+  "selected_model": "random_forest",
+  "vehicle_id": 1,
+  "prediction": {
+    "risk_level": "medium",
+    "risk_score": 60,
+    "remaining_km": 3383,
+    "probability_by_risk_level": {
+      "high": 0.005,
+      "low": 0.2,
+      "medium": 0.795
+    }
+  }
+}

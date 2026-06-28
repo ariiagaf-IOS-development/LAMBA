@@ -1,0 +1,136 @@
+{
+  "schema_version": "prediction-recommendations-v1.0",
+  "recommendation_rules": {
+    "low": "Continue normal maintenance and routine monitoring.",
+    "medium": "Schedule inspection or service soon.",
+    "high": "Arrange immediate inspection or service and do not delay safety-critical work."
+  },
+  "examples": [
+    {
+      "part_category": "engine_oil",
+      "part_name": "Engine oil",
+      "risk_level": "low",
+      "explanation_details": {
+        "explanation_text": "Engine oil is currently predicted as low risk with 82.0% confidence.",
+        "confidence": "High confidence",
+        "confidence_qualifier": "high",
+        "confidence_score": 0.82,
+        "factors": [
+          {
+            "name": "km_since_last_service",
+            "value": "2,000 km",
+            "impact": "low",
+            "weight": 0.4,
+            "description": "The oil was serviced recently."
+          }
+        ],
+        "recommended_action": "Continue the normal oil service schedule and monitor mileage."
+      }
+    },
+    {
+      "part_category": "brake_pads",
+      "part_name": "Brake pads",
+      "risk_level": "high",
+      "explanation_details": {
+        "explanation_text": "Brake pads are predicted as high risk with 91.0% confidence and require prompt attention.",
+        "confidence": "High confidence",
+        "confidence_qualifier": "high",
+        "confidence_score": 0.91,
+        "factors": [
+          {
+            "name": "km_since_last_service",
+            "value": "44,000 km",
+            "impact": "high",
+            "weight": 0.4,
+            "description": "Distance since the last brake service is above the expected interval."
+          }
+        ],
+        "recommended_action": "Arrange an immediate brake inspection and replace worn pads before further driving."
+      }
+    },
+    {
+      "part_category": "battery",
+      "part_name": "Battery",
+      "risk_level": "medium",
+      "explanation_details": {
+        "explanation_text": "The battery is predicted as medium risk with 68.0% confidence.",
+        "confidence": "Medium confidence",
+        "confidence_qualifier": "medium",
+        "confidence_score": 0.68,
+        "factors": [
+          {
+            "name": "community_data",
+            "value": "elevated replacement rate for similar vehicles",
+            "impact": "medium",
+            "weight": 0.2,
+            "description": "Similar vehicles show increasing battery service needs."
+          }
+        ],
+        "recommended_action": "Test battery capacity and the charging system at the next service visit."
+      }
+    },
+    {
+      "part_category": "tires",
+      "part_name": "Tires",
+      "risk_level": "high",
+      "explanation_details": {
+        "explanation_text": "Tires are predicted as high risk with 88.0% confidence and require prompt attention.",
+        "confidence": "High confidence",
+        "confidence_qualifier": "high",
+        "confidence_score": 0.88,
+        "factors": [
+          {
+            "name": "driving_profile",
+            "value": "commercial use",
+            "impact": "high",
+            "weight": 0.3,
+            "description": "The driving profile can accelerate tire wear."
+          }
+        ],
+        "recommended_action": "Arrange an immediate tire inspection and replace unsafe tires before further driving."
+      }
+    },
+    {
+      "part_category": "air_filter",
+      "part_name": "Air filter",
+      "risk_level": "low",
+      "explanation_details": {
+        "explanation_text": "The air filter is currently predicted as low risk with 79.0% confidence.",
+        "confidence": "High confidence",
+        "confidence_qualifier": "high",
+        "confidence_score": 0.79,
+        "factors": [
+          {
+            "name": "km_since_last_service",
+            "value": "5,000 km",
+            "impact": "low",
+            "weight": 0.4,
+            "description": "Distance since replacement remains within the normal interval."
+          }
+        ],
+        "recommended_action": "Continue the normal air filter inspection schedule."
+      }
+    },
+    {
+      "part_category": "timing_belt",
+      "part_name": "Timing belt",
+      "risk_level": "medium",
+      "explanation_details": {
+        "explanation_text": "The timing belt is predicted as medium risk with 72.0% confidence.",
+        "confidence": "Medium confidence",
+        "confidence_qualifier": "medium",
+        "confidence_score": 0.72,
+        "factors": [
+          {
+            "name": "km_since_last_service",
+            "value": "82,000 km",
+            "impact": "medium",
+            "weight": 0.4,
+            "description": "The timing belt is approaching its expected service interval."
+          }
+        ],
+        "recommended_action": "Schedule a timing belt inspection and plan replacement soon."
+      }
+    }
+  ]
+}
