@@ -209,6 +209,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/parts/catalog": {
+            "get": {
+                "description": "Returns all available parts from the catalog",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "parts"
+                ],
+                "summary": "List parts catalog",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.catalogResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/vehicles": {
             "get": {
                 "security": [
@@ -868,6 +894,191 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/vehicles/{id}/parts": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Returns all parts installed on a vehicle",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "parts"
+                ],
+                "summary": "List vehicle parts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.vehiclePartsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Creates a new part record for the specified vehicle",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "parts"
+                ],
+                "summary": "Add a part to a vehicle",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Part payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.createPartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.VehiclePart"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/vehicles/{id}/parts/{partId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Removes a part from the vehicle",
+                "tags": [
+                    "parts"
+                ],
+                "summary": "Delete a vehicle part",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Part ID",
+                        "name": "partId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/vehicles/{id}/predictions": {
             "get": {
                 "security": [
@@ -1194,6 +1405,32 @@ const docTemplate = `{
                 "EventTypeNote"
             ]
         },
+        "domain.PartCatalogItem": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "default_lifetime_days": {
+                    "type": "integer"
+                },
+                "default_lifetime_km": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Prediction": {
             "type": "object",
             "properties": {
@@ -1425,6 +1662,41 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.VehiclePart": {
+            "type": "object",
+            "properties": {
+                "catalog_code": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "installed_at_mileage_km": {
+                    "type": "integer"
+                },
+                "last_service_date": {
+                    "type": "string"
+                },
+                "last_service_mileage_km": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "vehicle_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "handler.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -1464,6 +1736,14 @@ const docTemplate = `{
                     "type": "string",
                     "example": "driver@example.com"
                 },
+                "first_name": {
+                    "type": "string",
+                    "example": "Ivan"
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Petrov"
+                },
                 "password": {
                     "type": "string",
                     "example": "password123"
@@ -1483,6 +1763,49 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/handler.userResponse"
+                }
+            }
+        },
+        "handler.catalogResponse": {
+            "type": "object",
+            "properties": {
+                "parts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.PartCatalogItem"
+                    }
+                }
+            }
+        },
+        "handler.createPartRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "catalog_code": {
+                    "type": "string",
+                    "example": "engine_oil"
+                },
+                "category": {
+                    "type": "string",
+                    "example": "fluids"
+                },
+                "installed_at_mileage_km": {
+                    "type": "integer",
+                    "example": 40000
+                },
+                "last_service_date": {
+                    "type": "string",
+                    "example": "2025-01-15T00:00:00Z"
+                },
+                "last_service_mileage_km": {
+                    "type": "integer",
+                    "example": 40000
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Engine oil"
                 }
             }
         },
@@ -1525,9 +1848,17 @@ const docTemplate = `{
                     "type": "string",
                     "example": "driver@example.com"
                 },
+                "first_name": {
+                    "type": "string",
+                    "example": "Ivan"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Petrov"
                 }
             }
         },
@@ -1665,6 +1996,17 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/domain.Vehicle"
+                    }
+                }
+            }
+        },
+        "handler.vehiclePartsResponse": {
+            "type": "object",
+            "properties": {
+                "parts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.VehiclePart"
                     }
                 }
             }

@@ -80,6 +80,23 @@ definitions:
     - EventTypeDiagnostic
     - EventTypePartReplacement
     - EventTypeNote
+  domain.PartCatalogItem:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      default_lifetime_days:
+        type: integer
+      default_lifetime_km:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   domain.Prediction:
     properties:
       created_at:
@@ -235,6 +252,29 @@ definitions:
       type:
         $ref: '#/definitions/domain.EventType'
     type: object
+  domain.VehiclePart:
+    properties:
+      catalog_code:
+        type: string
+      category:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      installed_at_mileage_km:
+        type: integer
+      last_service_date:
+        type: string
+      last_service_mileage_km:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+      vehicle_id:
+        type: integer
+    type: object
   handler.ErrorResponse:
     properties:
       error:
@@ -259,6 +299,12 @@ definitions:
       email:
         example: driver@example.com
         type: string
+      first_name:
+        example: Ivan
+        type: string
+      last_name:
+        example: Petrov
+        type: string
       password:
         example: password123
         type: string
@@ -276,6 +322,36 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/handler.userResponse'
+    type: object
+  handler.catalogResponse:
+    properties:
+      parts:
+        items:
+          $ref: '#/definitions/domain.PartCatalogItem'
+        type: array
+    type: object
+  handler.createPartRequest:
+    properties:
+      catalog_code:
+        example: engine_oil
+        type: string
+      category:
+        example: fluids
+        type: string
+      installed_at_mileage_km:
+        example: 40000
+        type: integer
+      last_service_date:
+        example: "2025-01-15T00:00:00Z"
+        type: string
+      last_service_mileage_km:
+        example: 40000
+        type: integer
+      name:
+        example: Engine oil
+        type: string
+    required:
+    - name
     type: object
   handler.predictionsResponse:
     properties:
@@ -303,9 +379,15 @@ definitions:
       email:
         example: driver@example.com
         type: string
+      first_name:
+        example: Ivan
+        type: string
       id:
         example: 1
         type: integer
+      last_name:
+        example: Petrov
+        type: string
     type: object
   handler.vehicleEventRequest:
     properties:
@@ -401,6 +483,13 @@ definitions:
       vehicles:
         items:
           $ref: '#/definitions/domain.Vehicle'
+        type: array
+    type: object
+  handler.vehiclePartsResponse:
+    properties:
+      parts:
+        items:
+          $ref: '#/definitions/domain.VehiclePart'
         type: array
     type: object
   handler.vehicleRequest:
@@ -606,6 +695,23 @@ paths:
       summary: Get current user
       tags:
       - auth
+  /api/parts/catalog:
+    get:
+      description: Returns all available parts from the catalog
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.catalogResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: List parts catalog
+      tags:
+      - parts
   /api/vehicles:
     get:
       description: Lists vehicles owned by the authenticated user.
@@ -1033,6 +1139,125 @@ paths:
       summary: Get vehicle event statistics
       tags:
       - vehicle-events
+  /api/vehicles/{id}/parts:
+    get:
+      description: Returns all parts installed on a vehicle
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehiclePartsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: List vehicle parts
+      tags:
+      - parts
+    post:
+      consumes:
+      - application/json
+      description: Creates a new part record for the specified vehicle
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Part payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.createPartRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.VehiclePart'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Add a part to a vehicle
+      tags:
+      - parts
+  /api/vehicles/{id}/parts/{partId}:
+    delete:
+      description: Removes a part from the vehicle
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Part ID
+        in: path
+        name: partId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a vehicle part
+      tags:
+      - parts
   /api/vehicles/{id}/predictions:
     get:
       description: Returns latest predictions for vehicle parts. If predictions do

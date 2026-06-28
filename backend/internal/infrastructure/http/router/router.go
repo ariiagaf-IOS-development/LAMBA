@@ -79,12 +79,14 @@ func New(deps ...Dependencies) *gin.Engine {
 			eventRepo,
 			predictionRepo,
 		)
+		partService := service.NewPartService(partRepo)
 
 		authHandler := handler.NewAuthHandler(authService, log)
 		vehicleHandler := handler.NewVehicleHandler(vehicleService, log)
 		eventHandler := handler.NewVehicleEventHandler(eventService, log)
 		predictionHandler := handler.NewPredictionHandler(predictionService, log)
 		dashboardHandler := handler.NewDashboardHandler(dashboardService, log)
+		partHandler := handler.NewPartHandler(partService, log)
 
 		api := r.Group("/api")
 		{
@@ -110,6 +112,11 @@ func New(deps ...Dependencies) *gin.Engine {
 			protected.GET("/vehicles/:id/predictions", predictionHandler.GetByVehicle)
 			protected.POST("/vehicles/:id/predictions/refresh", predictionHandler.RefreshPredictions)
 			protected.GET("/vehicles/:id/dashboard", dashboardHandler.GetDashboard)
+
+			protected.GET("/parts/catalog", partHandler.ListCatalog)
+			protected.GET("/vehicles/:id/parts", partHandler.ListByVehicle)
+			protected.POST("/vehicles/:id/parts", partHandler.CreatePart)
+			protected.DELETE("/vehicles/:id/parts/:partId", partHandler.DeletePart)
 		}
 
 		internal := r.Group("/api/internal")
