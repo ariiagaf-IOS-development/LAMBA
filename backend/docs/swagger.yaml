@@ -143,13 +143,19 @@ definitions:
         type: string
       created_at:
         type: string
+      fuel_type:
+        type: string
       id:
         type: integer
       mileage_km:
         type: integer
       model:
         type: string
+      transmission:
+        type: string
       updated_at:
+        type: string
+      usage_type:
         type: string
       user_id:
         type: integer
@@ -160,6 +166,10 @@ definitions:
     type: object
   domain.VehicleDashboard:
     properties:
+      all_predictions:
+        items:
+          $ref: '#/definitions/domain.Prediction'
+        type: array
       current_mileage:
         type: integer
       latest_events:
@@ -168,6 +178,8 @@ definitions:
         type: array
       prediction_summary:
         $ref: '#/definitions/domain.DashboardPredictionSummary'
+      status:
+        type: string
       total_events_count:
         type: integer
       total_fuel_expenses:
@@ -273,6 +285,15 @@ definitions:
         type: array
       vehicle_id:
         type: integer
+    type: object
+  handler.pushPredictionsRequest:
+    properties:
+      predictions:
+        items:
+          $ref: '#/definitions/domain.Prediction'
+        type: array
+    required:
+    - predictions
     type: object
   handler.userResponse:
     properties:
@@ -387,11 +408,20 @@ definitions:
       brand:
         example: Toyota
         type: string
+      fuel_type:
+        example: petrol
+        type: string
       mileage_km:
         example: 42000
         type: integer
       model:
         example: Camry
+        type: string
+      transmission:
+        example: automatic
+        type: string
+      usage_type:
+        example: mixed
         type: string
       vin:
         example: JTDBE32K620123456
@@ -424,11 +454,20 @@ definitions:
       brand:
         example: Toyota
         type: string
+      fuel_type:
+        example: petrol
+        type: string
       mileage_km:
         example: 45000
         type: integer
       model:
         example: Camry
+        type: string
+      transmission:
+        example: automatic
+        type: string
+      usage_type:
+        example: mixed
         type: string
       vin:
         example: JTDBE32K620123456
@@ -508,6 +547,46 @@ paths:
       summary: Register a user
       tags:
       - auth
+  /api/internal/vehicles/{id}/predictions:
+    post:
+      consumes:
+      - application/json
+      description: Internal endpoint (no auth) for ML service to push predictions
+        directly
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Predictions to save
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.pushPredictionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.predictionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Push predictions from ML service
+      tags:
+      - predictions-internal
   /api/me:
     get:
       description: Returns the user authenticated by HTTP Basic credentials.
@@ -998,6 +1077,44 @@ paths:
       security:
       - BasicAuth: []
       summary: Get vehicle predictions
+      tags:
+      - predictions
+  /api/vehicles/{id}/predictions/refresh:
+    post:
+      description: Calls ML service to regenerate predictions for the vehicle, saves
+        results, and returns updated predictions
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.predictionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Refresh vehicle predictions
       tags:
       - predictions
   /api/vehicles/{id}/timeline:
