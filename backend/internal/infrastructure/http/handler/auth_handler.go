@@ -18,13 +18,17 @@ type AuthHandler struct {
 }
 
 type authRequest struct {
-	Email    string `json:"email" binding:"required" example:"driver@example.com"`
-	Password string `json:"password" binding:"required" example:"password123"`
+	Email     string `json:"email" binding:"required" example:"driver@example.com"`
+	Password  string `json:"password" binding:"required" example:"password123"`
+	FirstName string `json:"first_name" example:"Ivan"`
+	LastName  string `json:"last_name" example:"Petrov"`
 }
 
 type userResponse struct {
 	ID        int64  `json:"id" example:"1"`
 	Email     string `json:"email" example:"driver@example.com"`
+	FirstName string `json:"first_name" example:"Ivan"`
+	LastName  string `json:"last_name" example:"Petrov"`
 	CreatedAt string `json:"created_at" example:"2026-06-12T12:00:00Z"`
 }
 
@@ -64,7 +68,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	user, err := h.auth.Register(c.Request.Context(), req.Email, req.Password)
+	user, err := h.auth.Register(c.Request.Context(), req.Email, req.Password, req.FirstName, req.LastName)
 	if err != nil {
 		h.handleAuthError(c, err)
 		return
@@ -147,6 +151,8 @@ func newUserResponse(user domain.User) userResponse {
 	return userResponse{
 		ID:        user.ID,
 		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
 		CreatedAt: user.CreatedAt.UTC().Format(time.RFC3339),
 	}
 }

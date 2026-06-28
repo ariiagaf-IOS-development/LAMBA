@@ -258,6 +258,36 @@ func (r *PartRepository) UpdateServiceByCatalogCodeForUser(
 	return part, nil
 }
 
+func (r *PartRepository) DeleteForUser(
+	ctx context.Context,
+	userID int64,
+	vehicleID int64,
+	partID int64,
+) error {
+	result, err := r.db.ExecContext(ctx, `
+		DELETE FROM parts p
+		USING vehicles v
+		WHERE
+			p.vehicle_id = v.id
+			AND v.user_id = $1
+			AND p.vehicle_id = $2
+			AND p.id = $3
+	`, userID, vehicleID, partID)
+	if err != nil {
+		return fmt.Errorf("delete vehicle part: %w", err)
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get deleted parts count: %w", err)
+	}
+	if count == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
 func scanPartCatalogItem(scanner rowScanner) (domain.PartCatalogItem, error) {
 	var item domain.PartCatalogItem
 

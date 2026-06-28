@@ -36,7 +36,7 @@ func NewAuthService(users *repository.UserRepository, bcryptCost int) *AuthServi
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, email, password string) (domain.User, error) {
+func (s *AuthService) Register(ctx context.Context, email, password, firstName, lastName string) (domain.User, error) {
 	normalizedEmail, err := normalizeEmail(email)
 	if err != nil {
 		return domain.User{}, err
@@ -51,7 +51,7 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (dom
 		return domain.User{}, fmt.Errorf("generate password hash: %w", err)
 	}
 
-	user, err := s.users.Create(ctx, normalizedEmail, string(hash))
+	user, err := s.users.Create(ctx, normalizedEmail, string(hash), strings.TrimSpace(firstName), strings.TrimSpace(lastName))
 	if errors.Is(err, repository.ErrConflict) {
 		return domain.User{}, ErrEmailTaken
 	}
