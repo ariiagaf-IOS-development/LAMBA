@@ -1,0 +1,213 @@
+{
+  "schema_version": "baseline-training-features-v0.2",
+  "entity": "vehicle_part",
+  "target": {
+    "name": "maintenance_needed",
+    "type": "binary_integer",
+    "values": {
+      "0": "No immediate maintenance need in the source maintenance baseline.",
+      "1": "Maintenance needed in the source maintenance baseline."
+    },
+    "source": "Parsed from the derived maintenance baseline event description."
+  },
+  "base_schema": "baseline-training-features-v0.1",
+  "features": [
+    {
+      "name": "vehicle_age_years",
+      "type": "integer",
+      "source": "vehicle profile",
+      "description": "Dataset reference year minus vehicle production year."
+    },
+    {
+      "name": "mileage_km",
+      "type": "integer",
+      "source": "vehicle profile",
+      "description": "Current vehicle odometer reading."
+    },
+    {
+      "name": "mileage_bucket",
+      "type": "categorical",
+      "source": "mileage",
+      "description": "Mileage grouped into low, medium, high, or very_high."
+    },
+    {
+      "name": "brand",
+      "type": "categorical",
+      "source": "vehicle profile",
+      "description": "Vehicle brand."
+    },
+    {
+      "name": "model",
+      "type": "categorical",
+      "source": "vehicle profile",
+      "description": "Vehicle model."
+    },
+    {
+      "name": "body_class",
+      "type": "categorical",
+      "source": "vehicle profile",
+      "description": "Vehicle body class from decoded profile data."
+    },
+    {
+      "name": "fuel_type",
+      "type": "categorical",
+      "source": "vehicle profile",
+      "description": "Fuel type used by the vehicle."
+    },
+    {
+      "name": "transmission",
+      "type": "categorical",
+      "source": "vehicle profile",
+      "description": "Vehicle transmission description."
+    },
+    {
+      "name": "maintenance_event_count",
+      "type": "integer",
+      "source": "maintenance history",
+      "description": "Number of maintenance/service events for the vehicle."
+    },
+    {
+      "name": "service_count_source",
+      "type": "integer",
+      "source": "maintenance history",
+      "description": "Service count parsed from the source maintenance baseline description."
+    },
+    {
+      "name": "maintenance_history_quality",
+      "type": "categorical",
+      "source": "maintenance history",
+      "description": "Source maintenance history quality label."
+    },
+    {
+      "name": "maintenance_history_score",
+      "type": "integer",
+      "source": "maintenance history",
+      "description": "Ordinal encoding of maintenance history quality: poor=0, average=1, good=2."
+    },
+    {
+      "name": "km_since_last_maintenance",
+      "type": "integer",
+      "source": "maintenance history",
+      "description": "Current mileage minus latest non-recall maintenance event mileage."
+    },
+    {
+      "name": "repair_event_count",
+      "type": "integer",
+      "source": "repair history",
+      "description": "Number of repair events for the vehicle."
+    },
+    {
+      "name": "km_since_last_repair",
+      "type": "integer",
+      "source": "repair history",
+      "description": "Current mileage minus latest repair event mileage."
+    },
+    {
+      "name": "repair_cost_total",
+      "type": "number",
+      "source": "repair history",
+      "description": "Total cost of repair events in the demo data."
+    },
+    {
+      "name": "refuel_event_count",
+      "type": "integer",
+      "source": "refueling history",
+      "description": "Number of refuel events for the vehicle."
+    },
+    {
+      "name": "km_since_last_refuel",
+      "type": "integer",
+      "source": "refueling history",
+      "description": "Current mileage minus latest refuel event mileage."
+    },
+    {
+      "name": "fuel_efficiency_km_per_liter",
+      "type": "number",
+      "source": "refueling history",
+      "description": "Fuel efficiency parsed from derived refuel event description."
+    },
+    {
+      "name": "tracked_part_count",
+      "type": "integer",
+      "source": "parts state",
+      "description": "Number of tracked parts for the vehicle."
+    },
+    {
+      "name": "avg_part_age_km",
+      "type": "number",
+      "source": "parts state",
+      "description": "Average current mileage minus installed-at mileage for tracked parts."
+    },
+    {
+      "name": "avg_km_since_part_service",
+      "type": "number",
+      "source": "parts state",
+      "description": "Average current mileage minus last service mileage for tracked parts."
+    },
+    {
+      "name": "part_name",
+      "type": "categorical",
+      "source": "parts state",
+      "description": "Tracked part display name."
+    },
+    {
+      "name": "part_category",
+      "type": "categorical",
+      "source": "parts state",
+      "description": "Tracked part category from demo parts data."
+    },
+    {
+      "name": "part_source",
+      "type": "categorical",
+      "source": "parts state",
+      "description": "Source system that produced the part record."
+    },
+    {
+      "name": "part_age_km",
+      "type": "integer",
+      "source": "parts state",
+      "description": "Current vehicle mileage minus part installation mileage, or -1 when unknown."
+    },
+    {
+      "name": "part_age_known",
+      "type": "integer",
+      "source": "parts state",
+      "description": "1 when part installation mileage is known, otherwise 0."
+    },
+    {
+      "name": "km_since_part_service",
+      "type": "integer",
+      "source": "parts state",
+      "description": "Current vehicle mileage minus part last service mileage, or -1 when unknown."
+    },
+    {
+      "name": "km_since_part_service_known",
+      "type": "integer",
+      "source": "parts state",
+      "description": "1 when part last service mileage is known, otherwise 0."
+    },
+    {
+      "name": "is_core_maintenance_part",
+      "type": "integer",
+      "source": "parts state",
+      "description": "1 when the part is one of engine oil, brake pads, or timing belt."
+    },
+    {
+      "name": "matching_repair_event_count",
+      "type": "integer",
+      "source": "repair history",
+      "description": "Count of repair events linked to the part by source id or text match."
+    },
+    {
+      "name": "matching_repair_cost_total",
+      "type": "number",
+      "source": "repair history",
+      "description": "Total repair cost for events linked to this part."
+    }
+  ],
+  "split": {
+    "method": "vehicle-grouped split inherited from the vehicle-level dataset",
+    "validation_ratio": 0.2,
+    "random_state": 42
+  }
+}
