@@ -14,7 +14,7 @@
 		A378C7CA2FDBF0020061D15E /* Exceptions for "Lamba" folder in "Lamba" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Repositories/ChatRepository.swift,
+				Info.plist,
 			);
 			target = A3B9FB6F2FDB85D900EB6F9B /* Lamba */;
 		};
@@ -269,6 +269,7 @@
 				DEVELOPMENT_TEAM = 4625D2FT3L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Lamba/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -301,6 +302,7 @@
 				DEVELOPMENT_TEAM = 4625D2FT3L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Lamba/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
