@@ -58,7 +58,12 @@ struct ManageVehiclesView: View {
                         Button(role: .destructive) {
                             Task {
                                 guard let token = authViewModel.token else { return }
+                                
                                 await vehicleViewModel.deleteVehicle(vehicle, token: token)
+                                
+                                if vehicleViewModel.vehicles.isEmpty {
+                                    dismiss()
+                                }
                             }
                         } label: {
                             Label("Delete", systemImage: "trash")

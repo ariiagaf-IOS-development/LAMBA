@@ -1,130 +1,626 @@
 //
-//  AIChatView 2.swift
+//  AIChatView.swift
 //  Lamba
-//
-//  Created by Арина Агафонова on 18.06.2026.
 //
 
 import SwiftUI
+import PhotosUI
 
 struct AIChatView: View {
     
-    @State private var messageText: String = ""
+    @Binding var selectedTab: AppTab
+    
+    @EnvironmentObject var vehicleViewModel: VehicleViewModel
+    @EnvironmentObject var authViewModel: AuthViewModel
+    
+    @StateObject private var chatViewModel = ChatViewModel()
+    @State private var selectedVehiclePhoto: PhotosPickerItem?
     
     var body: some View {
-        
         ZStack {
-            
             AppColors.background
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 
-                ZStack {
-                    
-                    Text("LAMBA AI")
-                        .font(.system(size: 12, weight: .black))
-                        .foregroundStyle(AppColors.textPrimary)
-                        .textCase(.uppercase)
-                        .tracking(1.5)
-                    
-                    HStack {
-                        
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(AppColors.card)
-                                .frame(width: 44, height: 44)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(AppColors.bubbleBorder, lineWidth: 1)
+                chatHeader
+                
+                heroSection
+                    .padding(.horizontal, AppSpacing.lg)
+                    .padding(.top, AppSpacing.md)
+                    .padding(.bottom, 10)
+                    .background(AppColors.background)
+                
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 16) {
+                                                        
+                            ForEach(chatViewModel.messages) { message in
+                                ChatBubble(message: message)
+                                    .id(message.id)
+                                
+                                if chatViewModel.createdVehicleCardAnchorId == message.id,
+                                   let vehicle = vehicleViewModel.activeVehicle {
+                                    CreatedVehicleMiniCard(vehicle: vehicle) {
+                                        selectedTab = .vehicle
+                                    }
+                                    .id("createdVehicleCard")
+                                }
+                            }
+                            
+                            if vehicleViewModel.activeVehicle != nil,
+                               !chatViewModel.isVehicleOnboardingActive,
+                               !chatViewModel.isLoading,
+                               chatViewModel.errorMessage == nil {
+                                SuggestedQuestionsView(
+                                    questions: chatViewModel.suggestedQuestions,
+                                    onTap: { question in
+                                        Task {
+                                            await chatViewModel.sendSuggestedQuestion(
+                                                question,
+                                                vehicleViewModel: vehicleViewModel,
+                                                token: authViewModel.token
+                                            )
+                                        }
+                                    }
                                 )
+                            }
                             
-                            Image(systemName: "bolt.fill")
-                                .font(.system(size: 18, weight: .black))
-                                .foregroundStyle(AppColors.primary)
-                        }
-                        
-                        Spacer()
-                        
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(AppColors.green)
-                                .frame(width: 6, height: 6)
+                            if chatViewModel.isLoading {
+                                TypingIndicator()
+                                    .id("loading")
+                            }
                             
-                            Text("LINK ACTIVE")
-                                .font(.system(size: 10, weight: .black))
-                                .foregroundStyle(AppColors.green)
+                            if let errorMessage = chatViewModel.errorMessage {
+                                ErrorChatCard(
+                                    message: errorMessage,
+                                    onRetry: {
+                                        Task {
+                                            await chatViewModel.retryLastMessage(
+                                                vehicleViewModel: vehicleViewModel,
+                                                token: authViewModel.token
+                                            )
+                                        }
+                                    }
+                                )
+                                .id("error")
+                            }
+                            Color.clear
+                                .frame(height: 1)
+                                .id("bottom")
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color(hex: "ECFDF5"))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AppRadius.pill)
-                                .stroke(Color(hex: "D0FAE5"), lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: AppRadius.pill))
+                        .padding(.horizontal, AppSpacing.lg)
+                        .padding(.top, AppSpacing.md)
+                        .padding(.bottom, AppSpacing.md)
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .onChange(of: chatViewModel.messages.count) { _, _ in
+                        scrollToBottom(proxy)
+                    }
+                    .onChange(of: chatViewModel.isLoading) { _, _ in
+                        scrollToBottom(proxy)
+                    }
+                    .onChange(of: chatViewModel.shouldShowCreatedVehicleCard) { _, _ in
+                        scrollToBottom(proxy)
                     }
                 }
-                .padding(.horizontal, 32)
-                .padding(.top, 16)
-                .padding(.bottom, 24)
-                .background(AppColors.card.opacity(0.8))
-                .overlay(
-                    Rectangle()
-                        .fill(AppColors.bubbleBorder)
-                        .frame(height: 1),
-                    alignment: .bottom
-                )
-                
-                // ================= HERO =================
-                VStack(alignment: .leading, spacing: 6) {
-                    
-                    Text("HI, ARI")
-                        .font(AppTypography.h1)
-                        .foregroundColor(AppColors.textPrimary)
-                        .padding(.top, 20)
-                    
-                    Text("How can I help with your car today?")
-                        .font(AppTypography.h2)
-                        .italic()
-                        .foregroundColor(AppColors.primary)
-                        .frame(maxWidth: 240, alignment: .leading)
-                        .lineLimit(2)
+            }
+        }
+        .task(id: vehicleViewModel.activeVehicleId) {
+            await chatViewModel.loadHistory(
+                vehicle: vehicleViewModel.activeVehicle,
+                token: authViewModel.token
+            )
+        }
+        .onChange(of: vehicleViewModel.activeVehicleId) { oldValue, newValue in
+            if oldValue != nil, newValue == nil {
+                chatViewModel.resetToNoVehicleState(previousVehicleId: oldValue)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            ChatInputBar(
+                text: $chatViewModel.inputText,
+                selectedPhoto: $selectedVehiclePhoto,
+                canUploadPhoto: vehicleViewModel.activeVehicle != nil,
+                isLoading: chatViewModel.isLoading,
+                isDisabled: false
+            ) {
+                Task {
+                    await chatViewModel.sendMessage(
+                        vehicleViewModel: vehicleViewModel,
+                        token: authViewModel.token
+                    )
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, AppSpacing.lg)
-                .padding(.top, AppSpacing.md)
-                
-                Spacer().frame(height: 20)
-                
-                // ================= MAIN CARD =================
-                VStack(alignment: .leading, spacing: 14) {
-                    AIInsightCard(
-                        text: "Your vehicle looks stable today. Brake pads are healthy, but the next service check is recommended in 1,240 km."
+            }
+            .onChange(of: selectedVehiclePhoto) { _, newValue in
+                Task {
+                    guard let vehicleId = vehicleViewModel.activeVehicleId,
+                          let data = try? await newValue?.loadTransferable(type: Data.self) else {
+                        return
+                    }
+                    
+                    vehicleViewModel.setImage(data, for: vehicleId)
+                    
+                    chatViewModel.addAssistantMessage(
+                        "Photo uploaded. Now I can recognize myself visually in your vehicle profile."
                     )
                     
-                    ActionCard(
-                        iconName: "waveform.path.ecg",
-                        title: "View detailed health report",
-                        subtitle: "Open full vehicle health overview"
-                    ) {
-                        print("Open health report")
-                    }
+                    selectedVehiclePhoto = nil
                 }
-                .padding(.horizontal, AppSpacing.lg)
-                
-                Spacer()
             }
+            .padding(.horizontal, AppSpacing.lg)
+            .padding(.top, 8)
+            .padding(.bottom, 14)
+            .background(AppColors.background.opacity(0.96))
+        }
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                UIApplication.shared.hideKeyboard()
+            }
+        )
+    }
+    
+    private var chatHeader: some View {
+        ZStack {
+            Text("LAMBA AI")
+                .font(.system(size: 12, weight: .black))
+                .foregroundStyle(AppColors.textPrimary)
+                .textCase(.uppercase)
+                .tracking(1.5)
             
-            // ================= INPUT FLOATING =================
-            VStack {
+            HStack {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(AppColors.card)
+                        .frame(width: 44, height: 44)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(AppColors.bubbleBorder, lineWidth: 1)
+                        )
+                    
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 18, weight: .black))
+                        .foregroundStyle(AppColors.primary)
+                }
+                
                 Spacer()
                 
-                AIInputBar(text: $messageText)
-                    .padding(.horizontal, AppSpacing.lg)
-                    .padding(.bottom, 10)
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(vehicleViewModel.activeVehicle == nil ? AppColors.orange : AppColors.green)
+                        .frame(width: 6, height: 6)
+                    
+                    Text(vehicleViewModel.activeVehicle == nil ? "NO VEHICLE" : "LINK ACTIVE")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(vehicleViewModel.activeVehicle == nil ? AppColors.orange : AppColors.green)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(vehicleViewModel.activeVehicle == nil ? AppColors.orange.opacity(0.10) : Color(hex: "ECFDF5"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.pill)
+                        .stroke(vehicleViewModel.activeVehicle == nil ? AppColors.orange.opacity(0.25) : Color(hex: "D0FAE5"), lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.pill))
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.top, 16)
+        .padding(.bottom, 24)
+        .background(AppColors.card.opacity(0.8))
+        .overlay(
+            Rectangle()
+                .fill(AppColors.bubbleBorder)
+                .frame(height: 1),
+            alignment: .bottom
+        )
+    }
+    
+    private var heroSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("HI, \(displayName.uppercased())")
+                .font(AppTypography.h1)
+                .foregroundColor(AppColors.textPrimary)
+                .padding(.top, 0)
+            
+            Text(heroSubtitle)
+                .font(AppTypography.h2)
+                .italic()
+                .foregroundColor(AppColors.primary)
+                .frame(maxWidth: 280, alignment: .leading)
+                .lineLimit(3)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var displayName: String {
+        let firstName = authViewModel.currentUser?.firstName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if let firstName, !firstName.isEmpty {
+            return firstName
+        }
+        
+        return "there"
+    }
+    
+    private var heroSubtitle: String {
+        if let vehicle = vehicleViewModel.activeVehicle {
+            return "I am your \(vehicle.brand) \(vehicle.model) digital twin."
+        }
+        
+        return "Add a vehicle first, and I will become its digital twin."
+    }
+    
+    private func scrollToBottom(_ proxy: ScrollViewProxy) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            withAnimation(.easeOut(duration: 0.25)) {
+                proxy.scrollTo("bottom", anchor: .bottom)
             }
         }
     }
 }
 
+private struct ChatBubble: View {
+    
+    let message: ChatUIMessage
+    
+    private var isUser: Bool {
+        message.role == .user
+    }
+    
+    var body: some View {
+        HStack {
+            if isUser {
+                Spacer(minLength: 48)
+            }
+            
+            VStack(alignment: isUser ? .trailing : .leading, spacing: 10) {
+                Text(message.text)
+                    .font(AppTypography.caption)
+                    .foregroundStyle(isUser ? .white : AppColors.textPrimary)
+                    .lineSpacing(4)
+                    .padding(16)
+                    .background(isUser ? AppColors.primary : AppColors.card)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.xl)
+                            .stroke(isUser ? Color.clear : AppColors.bubbleBorder, lineWidth: 1)
+                    )
+                
+                if let prediction = message.prediction {
+                    PredictionInlineCard(prediction: prediction)
+                }
+            }
+            
+            if !isUser {
+                Spacer(minLength: 48)
+            }
+        }
+    }
+}
+
+private struct PredictionInlineCard: View {
+    
+    let prediction: ChatPrediction
+    
+    private var riskText: String {
+        prediction.riskLevel ?? "Unknown"
+    }
+    
+    private var riskColor: Color {
+        switch riskText.lowercased() {
+        case "low":
+            return AppColors.green
+        case "medium":
+            return AppColors.yellow
+        case "high":
+            return AppColors.orange
+        default:
+            return AppColors.primary
+        }
+    }
+    
+    private var confidenceText: String {
+        guard let confidence = prediction.confidence else {
+            return "Not available"
+        }
+        
+        if confidence <= 1 {
+            return "\(Int(confidence * 100))%"
+        }
+        
+        return "\(Int(confidence))%"
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(riskColor.opacity(0.14))
+                        .frame(width: 34, height: 34)
+                    
+                    Image(systemName: "waveform.path.ecg")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(riskColor)
+                }
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("PREDICTION EXPLANATION")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(AppColors.textSecondary)
+                        .tracking(1.2)
+                    
+                    Text("AI-generated maintenance insight")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(AppColors.textMuted)
+                }
+                
+                Spacer()
+            }
+            
+            HStack(spacing: 10) {
+                PredictionMetricPill(
+                    title: "RISK",
+                    value: riskText.uppercased(),
+                    color: riskColor
+                )
+                
+                PredictionMetricPill(
+                    title: "CONFIDENCE",
+                    value: confidenceText,
+                    color: AppColors.primary
+                )
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("RECOMMENDED ACTION")
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .tracking(1.2)
+                
+                Text(prediction.displayRecommendation)
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AppColors.textPrimary)
+                    .lineSpacing(4)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .appCard()
+    }
+}
+
+private struct PredictionMetricPill: View {
+    
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 9, weight: .black))
+                .foregroundStyle(AppColors.textSecondary)
+                .tracking(1)
+            
+            Text(value)
+                .font(.system(size: 12, weight: .black))
+                .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(color.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.md)
+                .stroke(color.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
+private struct TypingIndicator: View {
+    
+    var body: some View {
+        HStack {
+            HStack(spacing: 6) {
+                ProgressView()
+                    .scaleEffect(0.8)
+                
+                Text("I am thinking...")
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            .appCard()
+            
+            Spacer()
+        }
+    }
+}
+
+private struct ErrorChatCard: View {
+    
+    let message: String
+    let onRetry: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(message)
+                .font(AppTypography.caption)
+                .foregroundStyle(AppColors.orange)
+            
+            Button {
+                onRetry()
+            } label: {
+                Text("Retry")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(AppColors.primary)
+            }
+        }
+        .appCard()
+    }
+}
+
+private struct SuggestedQuestionsView: View {
+    
+    let questions: [String]
+    let onTap: (String) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("SUGGESTED QUESTIONS")
+                .font(.system(size: 10, weight: .black))
+                .foregroundStyle(AppColors.textSecondary)
+                .tracking(1.2)
+            
+            VStack(spacing: 8) {
+                ForEach(questions, id: \.self) { question in
+                    Button {
+                        onTap(question)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(AppColors.primary)
+                            
+                            Text(question)
+                                .font(AppTypography.caption)
+                                .foregroundStyle(AppColors.textPrimary)
+                                .multilineTextAlignment(.leading)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(AppColors.textMuted)
+                        }
+                        .appCard()
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+
+private struct CreatedVehicleMiniCard: View {
+    
+    let vehicle: VehicleResponse
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button {
+            onTap()
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AppRadius.lg)
+                        .fill(AppColors.primary.opacity(0.10))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: "car.fill")
+                        .font(.system(size: 20, weight: .black))
+                        .foregroundStyle(AppColors.primary)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("DIGITAL TWIN CREATED")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(AppColors.textSecondary)
+                        .tracking(1.1)
+                    
+                    Text("\(vehicle.brand) \(vehicle.model)")
+                        .font(.system(size: 15, weight: .black))
+                        .foregroundStyle(AppColors.textPrimary)
+                    
+                    Text("\(vehicle.year) · \(vehicle.mileageKm) km")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppColors.textMuted)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundStyle(AppColors.primary)
+            }
+            .appCard()
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct ChatInputBar: View {
+    
+    @Binding var text: String
+    @Binding var selectedPhoto: PhotosPickerItem?
+    
+    let canUploadPhoto: Bool
+    let isLoading: Bool
+    let isDisabled: Bool
+    let onSend: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 10) {
+            if canUploadPhoto {
+                PhotosPicker(
+                    selection: $selectedPhoto,
+                    matching: .images
+                ) {
+                    ZStack {
+                        Circle()
+                            .fill(AppColors.primary.opacity(0.10))
+                            .frame(width: 38, height: 38)
+                        
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 15, weight: .black))
+                            .foregroundStyle(AppColors.primary)
+                    }
+                }
+                .disabled(isLoading)
+            }
+            
+            TextField(
+                canUploadPhoto ? "Ask your digital twin..." : "Answer to create my digital twin...",
+                text: $text,
+                axis: .vertical
+            )
+            .lineLimit(1...4)
+            .font(AppTypography.caption)
+            .foregroundStyle(AppColors.textPrimary)
+            .disabled(isDisabled || isLoading)
+            
+            Button {
+                UIApplication.shared.hideKeyboard()
+                onSend()
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(canSend ? AppColors.primary : AppColors.textMuted.opacity(0.4))
+                        .frame(width: 38, height: 38)
+                    
+                    Image(systemName: isLoading ? "hourglass" : "arrow.up")
+                        .font(.system(size: 15, weight: .black))
+                        .foregroundStyle(.white)
+                }
+            }
+            .disabled(!canSend)
+        }
+        .padding(10)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xxl))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.xxl)
+                .stroke(AppColors.bubbleBorder, lineWidth: 1)
+        )
+    }
+    
+    private var canSend: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !isLoading &&
+        !isDisabled
+    }
+}

@@ -105,6 +105,7 @@ struct RootView: View {
                     .environmentObject(authViewModel)
                     .task {
                         if let token = authViewModel.token {
+                            await authViewModel.fetchCurrentUser()
                             await vehicleViewModel.loadVehicles(token: token)
                         }
                     }

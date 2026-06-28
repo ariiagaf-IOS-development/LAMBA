@@ -16,10 +16,16 @@ final class VehicleViewModel: ObservableObject {
     
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    
+
     @Published var vehicleImages: [Int: Data] = [:]
-    
+
+    private let vehicleImagesCacheKey = "local_vehicle_images_by_vehicle_id"
+
     @Published var activeVehicleId: Int?
+    
+    init() {
+        loadVehicleImagesIfNeeded()
+    }
     
     var activeVehicle: VehicleResponse? {
         vehicles.first { $0.id == activeVehicleId }
@@ -179,6 +185,9 @@ final class VehicleViewModel: ObservableObject {
                 token: token
             )
             
+            vehicleImages.removeValue(forKey: activeVehicle.id)
+            saveVehicleImages()
+            
             if activeVehicleId == activeVehicle.id {
                 activeVehicleId = nil
                 selectedVehicle = nil
@@ -205,11 +214,18 @@ final class VehicleViewModel: ObservableObject {
             vehicles.removeAll { $0.id == vehicle.id }
             vehicleImages.removeValue(forKey: vehicle.id)
             
+            saveVehicleImages()
+            
             if activeVehicleId == vehicle.id {
                 activeVehicleId = vehicles.first?.id
             }
-            
+
             selectedVehicle = vehicles.first(where: { $0.id == activeVehicleId })
+
+            if vehicles.isEmpty {
+                activeVehicleId = nil
+                selectedVehicle = nil
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -235,10 +251,39 @@ final class VehicleViewModel: ObservableObject {
     }
 
     func setImage(_ data: Data?, for vehicleId: Int) {
+        loadVehicleImagesIfNeeded()
+        
         if let data {
             vehicleImages[vehicleId] = data
         } else {
             vehicleImages.removeValue(forKey: vehicleId)
+        }
+        
+        saveVehicleImages()
+    }
+    
+    private func saveVehicleImages() {
+        do {
+            let encoded = try JSONEncoder().encode(vehicleImages)
+            UserDefaults.standard.set(encoded, forKey: vehicleImagesCacheKey)
+        } catch {
+            print("Failed to save vehicle images:", error.localizedDescription)
+        }
+    }
+
+    private func loadVehicleImagesIfNeeded() {
+        guard vehicleImages.isEmpty,
+              let data = UserDefaults.standard.data(forKey: vehicleImagesCacheKey) else {
+            return
+        }
+        
+        do {
+            vehicleImages = try JSONDecoder().decode(
+                [Int: Data].self,
+                from: data
+            )
+        } catch {
+            print("Failed to load vehicle images:", error.localizedDescription)
         }
     }
 }

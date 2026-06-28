@@ -7,33 +7,43 @@
 
 import SwiftUI
 
+enum AppTab {
+    case ai
+    case log
+    case vehicle
+    case care
+}
+
 struct MainTabView: View {
     
-    @EnvironmentObject var vehicleViewModel: VehicleViewModel
+    @State private var selectedTab: AppTab = .ai
     
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             
-            AIChatView()
+            AIChatView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("AI", systemImage: "message.fill")
                 }
+                .tag(AppTab.ai)
             
-            TimelineView()
+            LogView()
                 .tabItem {
                     Label("LOG", systemImage: "clock.fill")
                 }
+                .tag(AppTab.log)
             
             VehicleProfileView()
                 .tabItem {
                     Label("VEHICLE", systemImage: "car.fill")
                 }
+                .tag(AppTab.vehicle)
             
             CareOverviewView()
                 .tabItem {
                     Label("CARE", systemImage: "heart.fill")
                 }
+                .tag(AppTab.care)
         }
-        .tint(AppColors.primary)
     }
 }

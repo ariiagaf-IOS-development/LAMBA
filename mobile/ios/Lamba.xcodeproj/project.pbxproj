@@ -15,7 +15,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Repositories/ChatRepository.swift,
 			);
 			target = A3B9FB6F2FDB85D900EB6F9B /* Lamba */;
 		};

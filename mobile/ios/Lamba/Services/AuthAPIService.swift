@@ -77,19 +77,34 @@ final class AuthAPIService {
     
     private init() {}
     
-    func register(email: String, password: String) async throws -> AuthResponse {
-        try await sendAuthRequest(
-            path: "/api/auth/register",
+    func register(
+        email: String,
+        password: String,
+        firstName: String,
+        lastName: String
+    ) async throws -> AuthResponse {
+        let body = RegisterRequest(
             email: email,
-            password: password
+            password: password,
+            firstName: firstName,
+            lastName: lastName
+        )
+        
+        return try await sendAuthRequest(
+            path: "/api/auth/register",
+            body: body
         )
     }
     
     func login(email: String, password: String) async throws -> AuthResponse {
-        try await sendAuthRequest(
-            path: "/api/auth/login",
+        let body = LoginRequest(
             email: email,
             password: password
+        )
+        
+        return try await sendAuthRequest(
+            path: "/api/auth/login",
+            body: body
         )
     }
     
@@ -98,7 +113,7 @@ final class AuthAPIService {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
         
         let data: Data
         let response: URLResponse
@@ -139,10 +154,9 @@ final class AuthAPIService {
         }
     }
     
-    private func sendAuthRequest(
+    private func sendAuthRequest<Body: Encodable>(
         path: String,
-        email: String,
-        password: String
+        body: Body
     ) async throws -> AuthResponse {
         
         let url = APIConfig.baseURL.appending(path: path)
@@ -151,16 +165,14 @@ final class AuthAPIService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let body = AuthRequest(
-            email: email,
-            password: password
-        )
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
         
-        request.httpBody = try JSONEncoder().encode(body)
+        request.httpBody = try encoder.encode(body)
         
         let data: Data
         let response: URLResponse
-
+        
         do {
             (data, response) = try await URLSession.shared.data(for: request)
         } catch {

@@ -7,9 +7,16 @@
 
 import Foundation
 
-struct AuthRequest: Encodable {
+struct LoginRequest: Encodable {
     let email: String
     let password: String
+}
+
+struct RegisterRequest: Encodable {
+    let email: String
+    let password: String
+    let firstName: String
+    let lastName: String
 }
 
 struct AuthResponse: Decodable {
@@ -21,5 +28,7 @@ struct AuthResponse: Decodable {
 struct UserResponse: Decodable {
     let id: Int
     let email: String
+    let firstName: String?
+    let lastName: String?
     let createdAt: String?
 }

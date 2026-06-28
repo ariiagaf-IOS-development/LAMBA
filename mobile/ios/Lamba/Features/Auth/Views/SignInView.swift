@@ -176,5 +176,6 @@ struct SignInView: View {
                 Spacer()
             }
         }
+        .hideKeyboardOnTap()
     }
 }

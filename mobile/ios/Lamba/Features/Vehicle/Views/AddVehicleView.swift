@@ -47,7 +47,7 @@ struct AddVehicleView: View {
         !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !year.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !mileage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !vin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        vin.trimmingCharacters(in: .whitespacesAndNewlines).count == 17
     }
     
     var body: some View {
@@ -114,7 +114,7 @@ struct AddVehicleView: View {
                         }
                         
                         VehicleFieldSection(
-                            title: "VIN CODE",
+                            title: "17-character VIN",
                             placeholder: "JTDBE32K620123456",
                             text: $vin
                         )

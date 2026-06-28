@@ -19,8 +19,10 @@ final class AuthViewModel: ObservableObject {
     
     private let tokenKey = "auth_token"
     
+    private let hasLaunchedBeforeKey = "has_launched_before"
+    
     var token: String? {
-        UserDefaults.standard.string(forKey: tokenKey)
+        KeychainService.shared.read(for: tokenKey)
     }
     
     func clearError() {
@@ -28,19 +30,33 @@ final class AuthViewModel: ObservableObject {
     }
     
     init() {
+        let hasLaunchedBefore = UserDefaults.standard.bool(forKey: hasLaunchedBeforeKey)
+        
+        if !hasLaunchedBefore {
+            KeychainService.shared.delete(for: tokenKey)
+            UserDefaults.standard.set(true, forKey: hasLaunchedBeforeKey)
+        }
+        
         if token != nil {
             isLoggedIn = true
         }
     }
     
-    func register(email: String, password: String) async {
+    func register(
+        email: String,
+        password: String,
+        firstName: String,
+        lastName: String
+    ) async {
         isLoading = true
         errorMessage = nil
         
         do {
             let response = try await AuthAPIService.shared.register(
                 email: email,
-                password: password
+                password: password,
+                firstName: firstName,
+                lastName: lastName
             )
             
             saveSession(response)
@@ -86,7 +102,7 @@ final class AuthViewModel: ObservableObject {
     }
     
     private func saveSession(_ response: AuthResponse) {
-        UserDefaults.standard.set(response.token, forKey: tokenKey)
+        KeychainService.shared.save(response.token, for: tokenKey)
         currentUser = response.user
         isLoggedIn = true
     }

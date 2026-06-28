@@ -30,15 +30,20 @@ struct VehicleProfileView: View {
                         )
                         .padding(.top, AppSpacing.sm)
 
-                        if vehicleViewModel.vehicles.count > 1 {
-                            ManageVehiclesCard(
-                                count: vehicleViewModel.vehicles.count,
-                                activeVehicleName: "\(vehicleViewModel.brand) \(vehicleViewModel.model)"
-                            ) {
+                        if vehicleViewModel.vehicles.count >= 1 {
+                            Button {
+                                print("OPEN MANAGE VEHICLES")
                                 isManagingVehicles = true
+                            } label: {
+                                ManageVehiclesCard(
+                                    count: vehicleViewModel.vehicles.count,
+                                    activeVehicleName: "\(vehicleViewModel.brand) \(vehicleViewModel.model)"
+                                )
                             }
+                            .buttonStyle(.plain)
                             .padding(.horizontal, AppSpacing.lg)
                             .padding(.top, AppSpacing.sm)
+                            .zIndex(10)
                         }
 
                         VehicleImageCard()
@@ -346,44 +351,39 @@ struct VehicleProfileView: View {
         
         let count: Int
         let activeVehicleName: String
-        let onTap: () -> Void
         
         var body: some View {
-            Button {
-                onTap()
-            } label: {
-                HStack(spacing: 14) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: AppRadius.lg)
-                            .fill(AppColors.primary.opacity(0.10))
-                            .frame(width: 52, height: 52)
-                        
-                        Image(systemName: "rectangle.stack.fill")
-                            .font(.system(size: 20, weight: .black))
-                            .foregroundStyle(AppColors.primary)
-                    }
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AppRadius.lg)
+                        .fill(AppColors.primary.opacity(0.10))
+                        .frame(width: 52, height: 52)
                     
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("MANAGE VEHICLES")
-                            .font(.system(size: 12, weight: .black))
-                            .foregroundStyle(AppColors.textPrimary)
-                            .tracking(1.2)
-                        
-                        Text("\(count) vehicles · Active: \(activeVehicleName)")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.textSecondary)
-                            .lineLimit(1)
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .black))
-                        .foregroundStyle(AppColors.textMuted)
+                    Image(systemName: "rectangle.stack.fill")
+                        .font(.system(size: 20, weight: .black))
+                        .foregroundStyle(AppColors.primary)
                 }
-                .appCard()
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("MANAGE VEHICLES")
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundStyle(AppColors.textPrimary)
+                        .tracking(1.2)
+                    
+                    Text("\(count) vehicles · Active: \(activeVehicleName)")
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AppColors.textSecondary)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundStyle(AppColors.textMuted)
             }
-            .buttonStyle(.plain)
+            .appCard()
+            .contentShape(Rectangle())
         }
     }
 }

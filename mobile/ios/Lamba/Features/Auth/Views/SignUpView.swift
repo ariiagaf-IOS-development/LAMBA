@@ -11,12 +11,13 @@ struct SignUpView: View {
     
     @EnvironmentObject var authViewModel: AuthViewModel
     
-    let onBack: () -> Void
-    let onSignIn: () -> Void
-    
-    @State private var fullName: String = ""
+    @State private var firstName: String = ""
+    @State private var lastName: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
+
+    let onBack: () -> Void
+    let onSignIn: () -> Void
     
     private var isEmailValid: Bool {
         email.contains("@") && email.contains(".")
@@ -26,21 +27,29 @@ struct SignUpView: View {
         password.count >= 8
     }
 
-    private var isFullNameValid: Bool {
-        fullName.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
+    private var isFirstNameValid: Bool {
+        firstName.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
+    }
+
+    private var isLastNameValid: Bool {
+        lastName.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
     }
 
     private var isFormValid: Bool {
-        isFullNameValid && isEmailValid && isPasswordValid
+        isFirstNameValid && isLastNameValid && isEmailValid && isPasswordValid
     }
 
     private var validationMessage: String? {
-        if fullName.isEmpty && email.isEmpty && password.isEmpty {
+        if firstName.isEmpty && lastName.isEmpty && email.isEmpty && password.isEmpty {
             return nil
         }
-        
-        if !isFullNameValid {
-            return "Enter your full name."
+
+        if !isFirstNameValid {
+            return "Enter your first name."
+        }
+
+        if !isLastNameValid {
+            return "Enter your last name."
         }
         
         if !isEmailValid {
@@ -116,12 +125,22 @@ struct SignUpView: View {
                         .padding(.top, 24)
                     
                     VStack(alignment: .leading, spacing: 14) {
-                        AuthFieldLabel("FULL NAME")
-                        
+                        AuthFieldLabel("FIRST NAME")
+
                         AuthTextField(
-                            text: $fullName,
-                            placeholder: "Arina Agafonova",
+                            text: $firstName,
+                            placeholder: "Arina",
                             systemImage: "person.fill",
+                            isSecure: false
+                        )
+
+                        AuthFieldLabel("LAST NAME")
+                            .padding(.top, 8)
+
+                        AuthTextField(
+                            text: $lastName,
+                            placeholder: "Agafonova",
+                            systemImage: "person.text.rectangle.fill",
                             isSecure: false
                         )
                         
@@ -169,7 +188,9 @@ struct SignUpView: View {
                             Task {
                                 await authViewModel.register(
                                     email: email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
-                                    password: password
+                                    password: password,
+                                    firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
+                                    lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines)
                                 )
                             }
                         } label: {
@@ -234,8 +255,12 @@ struct SignUpView: View {
         .onChange(of: password) { _, _ in
             authViewModel.clearError()
         }
-        .onChange(of: fullName) { _, _ in
+        .onChange(of: firstName) { _, _ in
             authViewModel.clearError()
         }
+        .onChange(of: lastName) { _, _ in
+            authViewModel.clearError()
+        }
+        .hideKeyboardOnTap()
     }
 }
