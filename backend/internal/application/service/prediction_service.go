@@ -103,3 +103,11 @@ func (s *PredictionService) RecalculateForVehicle(
 ) ([]domain.Prediction, error) {
 	return s.Recalculate(ctx, userID, vehicleID)
 }
+
+func (s *PredictionService) SaveForVehicle(
+	ctx context.Context,
+	vehicleID int64,
+	predictions []domain.Prediction,
+) ([]domain.Prediction, error) {
+	return s.predictions.ReplaceForVehicle(ctx, vehicleID, predictions)
+}

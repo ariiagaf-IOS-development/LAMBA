@@ -119,6 +119,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/internal/vehicles/{id}/predictions": {
+            "post": {
+                "description": "Internal endpoint (no auth) for ML service to push predictions directly",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "predictions-internal"
+                ],
+                "summary": "Push predictions from ML service",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Predictions to save",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.pushPredictionsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.predictionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/me": {
             "get": {
                 "security": [
@@ -879,6 +938,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/vehicles/{id}/predictions/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Calls ML service to regenerate predictions for the vehicle, saves results, and returns updated predictions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "predictions"
+                ],
+                "summary": "Refresh vehicle predictions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.predictionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/vehicles/{id}/timeline": {
             "get": {
                 "security": [
@@ -1168,6 +1285,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "fuel_type": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -1177,7 +1297,13 @@ const docTemplate = `{
                 "model": {
                     "type": "string"
                 },
+                "transmission": {
+                    "type": "string"
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "usage_type": {
                     "type": "string"
                 },
                 "user_id": {
@@ -1194,6 +1320,12 @@ const docTemplate = `{
         "domain.VehicleDashboard": {
             "type": "object",
             "properties": {
+                "all_predictions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Prediction"
+                    }
+                },
                 "current_mileage": {
                     "type": "integer"
                 },
@@ -1205,6 +1337,9 @@ const docTemplate = `{
                 },
                 "prediction_summary": {
                     "$ref": "#/definitions/domain.DashboardPredictionSummary"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "total_events_count": {
                     "type": "integer"
@@ -1362,6 +1497,20 @@ const docTemplate = `{
                 },
                 "vehicle_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "handler.pushPredictionsRequest": {
+            "type": "object",
+            "required": [
+                "predictions"
+            ],
+            "properties": {
+                "predictions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Prediction"
+                    }
                 }
             }
         },
@@ -1532,6 +1681,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Toyota"
                 },
+                "fuel_type": {
+                    "type": "string",
+                    "example": "petrol"
+                },
                 "mileage_km": {
                     "type": "integer",
                     "example": 42000
@@ -1539,6 +1692,14 @@ const docTemplate = `{
                 "model": {
                     "type": "string",
                     "example": "Camry"
+                },
+                "transmission": {
+                    "type": "string",
+                    "example": "automatic"
+                },
+                "usage_type": {
+                    "type": "string",
+                    "example": "mixed"
                 },
                 "vin": {
                     "type": "string",
@@ -1580,6 +1741,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Toyota"
                 },
+                "fuel_type": {
+                    "type": "string",
+                    "example": "petrol"
+                },
                 "mileage_km": {
                     "type": "integer",
                     "example": 45000
@@ -1587,6 +1752,14 @@ const docTemplate = `{
                 "model": {
                     "type": "string",
                     "example": "Camry"
+                },
+                "transmission": {
+                    "type": "string",
+                    "example": "automatic"
+                },
+                "usage_type": {
+                    "type": "string",
+                    "example": "mixed"
                 },
                 "vin": {
                     "type": "string",

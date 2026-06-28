@@ -253,6 +253,186 @@ func scanPrediction(scanner rowScanner) (domain.Prediction, error) {
 	return prediction, nil
 }
 
+func (r *PredictionRepository) ListLatestByVehicle(
+	ctx context.Context,
+	vehicleID int64,
+) ([]domain.Prediction, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT DISTINCT ON (p.part_name)
+			p.id,
+			p.vehicle_id,
+			p.part_code,
+			p.part_name,
+			p.part_category,
+			p.risk_level,
+			p.risk_score,
+			p.remaining_km,
+			p.remaining_days,
+			p.predicted_next_mileage,
+			p.predicted_next_date,
+			p.probability,
+			p.recommendation,
+			p.explanation,
+			p.source,
+			p.model_version,
+			p.created_at
+		FROM predictions p
+		WHERE p.vehicle_id = $1
+		ORDER BY p.part_name, p.created_at DESC, p.id DESC
+	`, vehicleID)
+	if err != nil {
+		return nil, fmt.Errorf("list latest predictions by vehicle: %w", err)
+	}
+	defer rows.Close()
+
+	predictions := make([]domain.Prediction, 0)
+	for rows.Next() {
+		prediction, err := scanPrediction(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan prediction: %w", err)
+		}
+		predictions = append(predictions, prediction)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate predictions: %w", err)
+	}
+
+	if len(predictions) == 0 {
+		exists, err := r.vehicleExists(ctx, vehicleID)
+		if err != nil {
+			return nil, err
+		}
+		if !exists {
+			return nil, ErrNotFound
+		}
+	}
+
+	return predictions, nil
+}
+
+func (r *PredictionRepository) ReplaceForVehicle(
+	ctx context.Context,
+	vehicleID int64,
+	predictions []domain.Prediction,
+) ([]domain.Prediction, error) {
+	exists, err := r.vehicleExists(ctx, vehicleID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, ErrNotFound
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin replace predictions tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM predictions
+		WHERE vehicle_id = $1
+	`, vehicleID); err != nil {
+		return nil, fmt.Errorf("delete old predictions: %w", err)
+	}
+
+	saved := make([]domain.Prediction, 0, len(predictions))
+	for _, prediction := range predictions {
+		prediction.VehicleID = vehicleID
+
+		created, err := scanPrediction(tx.QueryRowContext(ctx, `
+			INSERT INTO predictions (
+				vehicle_id,
+				part_code,
+				part_name,
+				part_category,
+				risk_level,
+				risk_score,
+				remaining_km,
+				remaining_days,
+				predicted_next_mileage,
+				predicted_next_date,
+				probability,
+				recommendation,
+				explanation,
+				source,
+				model_version
+			)
+			VALUES (
+				$1, $2, $3, $4, $5,
+				$6, $7, $8, $9, $10,
+				$11, $12, $13, $14, $15
+			)
+			RETURNING
+				id,
+				vehicle_id,
+				part_code,
+				part_name,
+				part_category,
+				risk_level,
+				risk_score,
+				remaining_km,
+				remaining_days,
+				predicted_next_mileage,
+				predicted_next_date,
+				probability,
+				recommendation,
+				explanation,
+				source,
+				model_version,
+				created_at
+		`,
+			prediction.VehicleID,
+			prediction.PartCode,
+			prediction.PartName,
+			prediction.PartCategory,
+			prediction.RiskLevel,
+			prediction.RiskScore,
+			prediction.RemainingKM,
+			prediction.RemainingDays,
+			prediction.PredictedNextMileage,
+			prediction.PredictedNextDate,
+			prediction.Probability,
+			prediction.Recommendation,
+			prediction.Explanation,
+			prediction.Source,
+			prediction.ModelVersion,
+		))
+		if err != nil {
+			return nil, fmt.Errorf("insert prediction: %w", err)
+		}
+
+		saved = append(saved, created)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit replace predictions tx: %w", err)
+	}
+
+	return saved, nil
+}
+
+func (r *PredictionRepository) vehicleExists(
+	ctx context.Context,
+	vehicleID int64,
+) (bool, error) {
+	var exists bool
+
+	err := r.db.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM vehicles
+			WHERE id = $1
+		)
+	`, vehicleID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check vehicle exists: %w", err)
+	}
+
+	return exists, nil
+}
+
 func (r *PredictionRepository) vehicleBelongsToUser(
 	ctx context.Context,
 	userID int64,
