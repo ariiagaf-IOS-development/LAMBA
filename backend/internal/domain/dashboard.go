@@ -11,6 +11,8 @@ type VehicleDashboard struct {
 	TotalEventsCount     int64                       `json:"total_events_count"`
 	LatestEvents         []DashboardEventPreview     `json:"latest_events"`
 	PredictionSummary    *DashboardPredictionSummary `json:"prediction_summary,omitempty"`
+	AllPredictions       []Prediction                `json:"all_predictions"`
+	Status               string                      `json:"status"`
 }
 
 type DashboardVehicleSummary struct {

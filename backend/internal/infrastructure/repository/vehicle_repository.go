@@ -84,6 +84,22 @@ func (r *VehicleRepository) ListByUser(ctx context.Context, userID int64) ([]dom
 	return vehicles, nil
 }
 
+func (r *VehicleRepository) GetByID(ctx context.Context, id int64) (domain.Vehicle, error) {
+	vehicle, err := scanVehicle(r.db.QueryRowContext(ctx, `
+		SELECT id, user_id, brand, model, year, vin, mileage_km, fuel_type, transmission, usage_type, created_at, updated_at
+		FROM vehicles
+		WHERE id = $1
+	`, id))
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Vehicle{}, ErrNotFound
+	}
+	if err != nil {
+		return domain.Vehicle{}, fmt.Errorf("get vehicle by id: %w", err)
+	}
+
+	return vehicle, nil
+}
+
 func (r *VehicleRepository) GetByIDForUser(ctx context.Context, userID, id int64) (domain.Vehicle, error) {
 	vehicle, err := scanVehicle(r.db.QueryRowContext(ctx, `
 		SELECT id, user_id, brand, model, year, vin, mileage_km, fuel_type, transmission, usage_type, created_at, updated_at

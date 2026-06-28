@@ -57,9 +57,26 @@ func (s *DashboardService) Get(
 		return domain.VehicleDashboard{}, err
 	}
 
-	predictionSummary, err := s.getPredictionSummary(ctx, userID, vehicleID)
+	predictions, err := s.predictions.ListLatestByVehicleForUser(ctx, userID, vehicleID)
 	if err != nil {
 		return domain.VehicleDashboard{}, err
+	}
+
+	var predictionSummary *domain.DashboardPredictionSummary
+	if len(predictions) > 0 {
+		selected := selectMostImportantPrediction(predictions)
+		predictionSummary = &domain.DashboardPredictionSummary{
+			PartName:       selected.PartName,
+			PartCategory:   selected.PartCategory,
+			RiskLevel:      selected.RiskLevel,
+			RiskScore:      selected.RiskScore,
+			RemainingKM:    selected.RemainingKM,
+			RemainingDays:  selected.RemainingDays,
+			Probability:    selected.Probability,
+			Recommendation: selected.Recommendation,
+			ModelVersion:   selected.ModelVersion,
+			CreatedAt:      selected.CreatedAt,
+		}
 	}
 
 	return domain.VehicleDashboard{
@@ -78,37 +95,31 @@ func (s *DashboardService) Get(
 		TotalEventsCount:     stats.TotalEventsCount,
 		LatestEvents:         toDashboardEventPreviews(latestEvents),
 		PredictionSummary:    predictionSummary,
+		AllPredictions:       predictions,
+		Status:               computeVehicleStatus(predictions),
 	}, nil
 }
 
-func (s *DashboardService) getPredictionSummary(
-	ctx context.Context,
-	userID int64,
-	vehicleID int64,
-) (*domain.DashboardPredictionSummary, error) {
-	predictions, err := s.predictions.ListLatestByVehicleForUser(ctx, userID, vehicleID)
-	if err != nil {
-		return nil, err
-	}
-
+func computeVehicleStatus(predictions []domain.Prediction) string {
 	if len(predictions) == 0 {
-		return nil, nil
+		return "unknown"
 	}
 
-	selected := selectMostImportantPrediction(predictions)
+	maxPriority := riskPriorityNone
+	for _, p := range predictions {
+		if pri := riskPriority(p.RiskLevel); pri > maxPriority {
+			maxPriority = pri
+		}
+	}
 
-	return &domain.DashboardPredictionSummary{
-		PartName:       selected.PartName,
-		PartCategory:   selected.PartCategory,
-		RiskLevel:      selected.RiskLevel,
-		RiskScore:      selected.RiskScore,
-		RemainingKM:    selected.RemainingKM,
-		RemainingDays:  selected.RemainingDays,
-		Probability:    selected.Probability,
-		Recommendation: selected.Recommendation,
-		ModelVersion:   selected.ModelVersion,
-		CreatedAt:      selected.CreatedAt,
-	}, nil
+	switch maxPriority {
+	case riskPriorityHigh:
+		return "warning"
+	case riskPriorityMedium:
+		return "attention"
+	default:
+		return "good"
+	}
 }
 
 func toDashboardEventPreviews(events []domain.VehicleEvent) []domain.DashboardEventPreview {
