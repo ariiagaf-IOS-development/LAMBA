@@ -1,4 +1,29 @@
 definitions:
+  domain.ChatMessage:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      message:
+        type: string
+      role:
+        $ref: '#/definitions/domain.ChatRole'
+      user_id:
+        type: integer
+      vehicle_id:
+        type: integer
+    type: object
+  domain.ChatRole:
+    enum:
+    - user
+    - assistant
+    - system
+    type: string
+    x-enum-varnames:
+    - ChatRoleUser
+    - ChatRoleAssistant
+    - ChatRoleSystem
   domain.DashboardEventPreview:
     properties:
       cost:
@@ -329,6 +354,34 @@ definitions:
         items:
           $ref: '#/definitions/domain.PartCatalogItem'
         type: array
+    type: object
+  handler.chatHistoryResponse:
+    properties:
+      count:
+        type: integer
+      limit:
+        type: integer
+      messages:
+        items:
+          $ref: '#/definitions/domain.ChatMessage'
+        type: array
+      offset:
+        type: integer
+      vehicle_id:
+        type: integer
+    type: object
+  handler.chatRequest:
+    properties:
+      message:
+        example: Когда мне нужно менять масло?
+        type: string
+    required:
+    - message
+    type: object
+  handler.chatResponse:
+    properties:
+      message:
+        $ref: '#/definitions/domain.ChatMessage'
     type: object
   handler.createPartRequest:
     properties:
@@ -891,6 +944,102 @@ paths:
       summary: Update a vehicle
       tags:
       - vehicles
+  /api/vehicles/{id}/chat:
+    post:
+      consumes:
+      - application/json
+      description: Sends a message to the AI assistant in the context of a specific
+        vehicle. Returns the AI-generated response.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Chat message
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.chatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.chatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Send a chat message
+      tags:
+      - chat
+  /api/vehicles/{id}/chat/history:
+    get:
+      description: Returns paginated chat message history for a vehicle in chronological
+        order.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Limit (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.chatHistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get chat history
+      tags:
+      - chat
   /api/vehicles/{id}/dashboard:
     get:
       consumes:

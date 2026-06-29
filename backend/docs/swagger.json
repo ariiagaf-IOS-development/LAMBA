@@ -504,6 +504,152 @@
                 }
             }
         },
+        "/api/vehicles/{id}/chat": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Sends a message to the AI assistant in the context of a specific vehicle. Returns the AI-generated response.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Send a chat message",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Chat message",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.chatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.chatResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/vehicles/{id}/chat/history": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Returns paginated chat message history for a vehicle in chronological order.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Get chat history",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.chatHistoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/vehicles/{id}/dashboard": {
             "get": {
                 "security": [
@@ -1282,6 +1428,42 @@
         }
     },
     "definitions": {
+        "domain.ChatMessage": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/domain.ChatRole"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "vehicle_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.ChatRole": {
+            "type": "string",
+            "enum": [
+                "user",
+                "assistant",
+                "system"
+            ],
+            "x-enum-varnames": [
+                "ChatRoleUser",
+                "ChatRoleAssistant",
+                "ChatRoleSystem"
+            ]
+        },
         "domain.DashboardEventPreview": {
             "type": "object",
             "properties": {
@@ -1763,6 +1945,49 @@
                     "items": {
                         "$ref": "#/definitions/domain.PartCatalogItem"
                     }
+                }
+            }
+        },
+        "handler.chatHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ChatMessage"
+                    }
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "vehicle_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.chatRequest": {
+            "type": "object",
+            "required": [
+                "message"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Когда мне нужно менять масло?"
+                }
+            }
+        },
+        "handler.chatResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "$ref": "#/definitions/domain.ChatMessage"
                 }
             }
         },
