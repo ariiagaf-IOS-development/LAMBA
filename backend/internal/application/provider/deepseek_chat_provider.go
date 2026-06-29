@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -61,7 +62,9 @@ func (p *DeepSeekChatProvider) Chat(
 		return AIChatResponse{}, fmt.Errorf("marshal ai chat request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.apiURL, bytes.NewReader(jsonBody))
+	url := strings.TrimRight(p.apiURL, "/") + "/chat/completions"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return AIChatResponse{}, fmt.Errorf("create ai chat request: %w", err)
 	}
