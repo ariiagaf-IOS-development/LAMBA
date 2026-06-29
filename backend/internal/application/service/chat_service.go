@@ -114,10 +114,15 @@ func (s *ChatService) SendMessage(
 
 	recentMessages, _ := s.chat.GetRecentByVehicleForUser(ctx, userID, vehicleID, chatContextMessages)
 
+	var totalCost float64
+	for _, e := range vehicleEvents {
+		totalCost += e.Cost
+	}
+
 	messages := make([]provider.AIChatMessage, 0, len(recentMessages)+4)
 	messages = append(messages, provider.AIChatMessage{
 		Role:    "system",
-		Content: buildSystemMessage(),
+		Content: buildSystemMessage(vehicle, totalCost),
 	})
 	messages = append(messages, provider.AIChatMessage{
 		Role:    "user",

@@ -9,12 +9,168 @@ import (
 )
 
 func TestBuildSystemMessage(t *testing.T) {
-	msg := buildSystemMessage()
+	vehicle := domain.Vehicle{Brand: "Toyota", Model: "Camry", Year: 2020, MileageKM: 50000}
+	msg := buildSystemMessage(vehicle, 10000)
 	if msg == "" {
 		t.Fatal("expected non-empty system message")
 	}
 	if !strings.Contains(msg, "LAMBA") {
 		t.Fatal("expected system message to mention LAMBA")
+	}
+	if !strings.Contains(msg, "VEHICLE PERSONALITY") {
+		t.Fatal("expected system message to contain VEHICLE PERSONALITY")
+	}
+	if !strings.Contains(msg, "Toyota") {
+		t.Fatal("expected system message to mention vehicle brand")
+	}
+}
+
+func TestBuildPersonality_Grandpa(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Lada", Model: "2107", Year: 2000, MileageKM: 300000}
+	p := selectPersonalityProfile(vehicle, 10000)
+	if p.id != "grandpa" {
+		t.Fatalf("expected grandpa profile for old Lada, got %s", p.id)
+	}
+	personality := buildPersonality(vehicle, 10000)
+	if !strings.Contains(personality, "Кхе-кхе") {
+		t.Fatal("expected grandpa to have cough catchphrase")
+	}
+}
+
+func TestBuildPersonality_SimpleGuy(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Lada", Model: "Vesta", Year: 2022, MileageKM: 30000}
+	p := selectPersonalityProfile(vehicle, 5000)
+	if p.id != "simple_guy" {
+		t.Fatalf("expected simple_guy profile for young Lada, got %s", p.id)
+	}
+}
+
+func TestBuildPersonality_Showoff(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Ferrari", Model: "F8", Year: 2023, MileageKM: 5000}
+	p := selectPersonalityProfile(vehicle, 50000)
+	if p.id != "showoff" {
+		t.Fatalf("expected showoff profile for Ferrari, got %s", p.id)
+	}
+}
+
+func TestBuildPersonality_Picky(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "BMW", Model: "X5", Year: 2022, MileageKM: 40000}
+	p := selectPersonalityProfile(vehicle, 30000)
+	if p.id != "picky" {
+		t.Fatalf("expected picky profile for BMW with low mileage, got %s", p.id)
+	}
+}
+
+func TestBuildPersonality_FadedStar(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "BMW", Model: "E39", Year: 2010, MileageKM: 250000}
+	p := selectPersonalityProfile(vehicle, 100000)
+	if p.id != "faded_star" {
+		t.Fatalf("expected faded_star profile for old high-mileage BMW, got %s", p.id)
+	}
+}
+
+func TestBuildPersonality_Aristocrat(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Rolls-Royce", Model: "Ghost", Year: 2023, MileageKM: 10000}
+	p := selectPersonalityProfile(vehicle, 50000)
+	if p.id != "aristocrat" {
+		t.Fatalf("expected aristocrat profile for Rolls-Royce, got %s", p.id)
+	}
+}
+
+func TestBuildPersonality_Veteran(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Toyota", Model: "Corolla", Year: 2005, MileageKM: 250000}
+	p := selectPersonalityProfile(vehicle, 50000)
+	if p.id != "veteran" {
+		t.Fatalf("expected veteran profile for old Toyota, got %s", p.id)
+	}
+}
+
+func TestBuildPersonality_Newcomer(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Kia", Model: "Rio", Year: time.Now().Year(), MileageKM: 5000}
+	p := selectPersonalityProfile(vehicle, 0)
+	if p.id != "newcomer" {
+		t.Fatalf("expected newcomer profile for new Kia, got %s", p.id)
+	}
+}
+
+func TestBuildPersonality_Workhorse(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Toyota", Model: "Hilux", Year: 2018, MileageKM: 200000}
+	p := selectPersonalityProfile(vehicle, 200000)
+	if p.id != "workhorse" {
+		t.Fatalf("expected workhorse profile for high-mileage expensive car, got %s", p.id)
+	}
+}
+
+func TestBuildPersonality_Default(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Hyundai", Model: "Solaris", Year: 2020, MileageKM: 60000}
+	p := selectPersonalityProfile(vehicle, 30000)
+	if p.id != "friendly" {
+		t.Fatalf("expected friendly default profile, got %s", p.id)
+	}
+}
+
+func TestBrandCategories(t *testing.T) {
+	if !isRusticBrand("lada") {
+		t.Error("expected Lada to be rustic")
+	}
+	if !isRusticBrand("уаз") {
+		t.Error("expected УАЗ to be rustic")
+	}
+	if isRusticBrand("toyota") {
+		t.Error("expected Toyota to not be rustic")
+	}
+
+	if !isSportBrand("ferrari") {
+		t.Error("expected Ferrari to be sport")
+	}
+	if isSportBrand("toyota") {
+		t.Error("expected Toyota to not be sport")
+	}
+
+	if !isPickyBrand("bmw") {
+		t.Error("expected BMW to be picky")
+	}
+	if isPickyBrand("toyota") {
+		t.Error("expected Toyota to not be picky")
+	}
+
+	if !isLuxuryBrand("rolls-royce") {
+		t.Error("expected Rolls-Royce to be luxury")
+	}
+	if isLuxuryBrand("lada") {
+		t.Error("expected Lada to not be luxury")
+	}
+}
+
+func TestIsPremiumBrand(t *testing.T) {
+	premium := []string{"BMW", "Mercedes-Benz", "Audi", "Lexus", "Porsche", "Tesla", "Genesis", "Ferrari"}
+	for _, b := range premium {
+		if !isPremiumBrand(b) {
+			t.Errorf("expected %q to be premium", b)
+		}
+	}
+
+	notPremium := []string{"Toyota", "Hyundai", "Kia", "Lada", "Honda", "Ford"}
+	for _, b := range notPremium {
+		if isPremiumBrand(b) {
+			t.Errorf("expected %q to not be premium", b)
+		}
+	}
+}
+
+func TestBuildPersonality_CatchphraseInOutput(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "UAZ", Model: "Hunter", Year: 2000, MileageKM: 400000}
+	personality := buildPersonality(vehicle, 5000)
+	if !strings.Contains(personality, "catchphrase") {
+		t.Fatal("expected grandpa personality to contain catchphrase section")
+	}
+}
+
+func TestBuildPersonality_NoCatchphraseForFriendly(t *testing.T) {
+	vehicle := domain.Vehicle{Brand: "Hyundai", Model: "Tucson", Year: 2020, MileageKM: 60000}
+	personality := buildPersonality(vehicle, 10000)
+	if strings.Contains(personality, "catchphrase:") {
+		t.Fatal("friendly profile should not have a catchphrase line")
 	}
 }
 
