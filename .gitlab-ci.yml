@@ -1,12 +1,27 @@
 stages:
+  - build
   - test
   - deploy
+
+build-backend:
+  image: golang:1.23-alpine
+  stage: build
+  script:
+    - cd backend && go build -o /dev/null ./cmd/api
+  tags:
+    - docker
 
 test-backend:
   image: golang:1.23-alpine
   stage: test
   script:
-    - cd backend && go test ./...
+    - cd backend && go test ./... -race -coverprofile=coverage.out -covermode=atomic
+    - cd backend && go tool cover -func=coverage.out | tail -1
+  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
+  artifacts:
+    paths:
+      - backend/coverage.out
+    expire_in: 7 days
   tags:
     - docker
 
