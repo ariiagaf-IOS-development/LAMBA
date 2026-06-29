@@ -9,6 +9,8 @@ services:
       DATABASE_URL: postgres://lamba:lamba@postgres:5432/lamba?sslmode=disable
       PREDICTION_PROVIDER: ml_service
       ML_SERVICE_URL: http://ml:8000
+      AI_AGENT_URL: ${AI_AGENT_URL:-}
+      AI_AGENT_KEY: ${AI_AGENT_KEY:-}
     ports:
       - "80:8080"
     depends_on:

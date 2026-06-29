@@ -81,11 +81,29 @@ func New(deps ...Dependencies) *gin.Engine {
 		)
 		partService := service.NewPartService(partRepo)
 
+		chatRepo := repository.NewChatRepository(dep.DB)
+
+		var aiChatProvider provider.AIChatProvider
+		if dep.Config.AIAgentURL != "" {
+			aiChatProvider = provider.NewDeepSeekChatProvider(
+				dep.Config.AIAgentURL,
+				dep.Config.AIAgentKey,
+			)
+			log.Info("AI chat provider enabled", slog.String("url", dep.Config.AIAgentURL))
+		}
+
+		toolDispatcher := service.NewToolDispatcher(vehicleRepo, eventRepo, partRepo, predictionService)
+		chatService := service.NewChatService(
+			chatRepo, vehicleRepo, eventRepo, partRepo,
+			predictionService, aiChatProvider, toolDispatcher, log,
+		)
+
 		authHandler := handler.NewAuthHandler(authService, log)
 		vehicleHandler := handler.NewVehicleHandler(vehicleService, log)
 		eventHandler := handler.NewVehicleEventHandler(eventService, log)
 		predictionHandler := handler.NewPredictionHandler(predictionService, log)
 		dashboardHandler := handler.NewDashboardHandler(dashboardService, log)
+		chatHandler := handler.NewChatHandler(chatService, log)
 		partHandler := handler.NewPartHandler(partService, log)
 
 		api := r.Group("/api")
@@ -112,6 +130,9 @@ func New(deps ...Dependencies) *gin.Engine {
 			protected.GET("/vehicles/:id/predictions", predictionHandler.GetByVehicle)
 			protected.POST("/vehicles/:id/predictions/refresh", predictionHandler.RefreshPredictions)
 			protected.GET("/vehicles/:id/dashboard", dashboardHandler.GetDashboard)
+
+			protected.POST("/vehicles/:id/chat", chatHandler.SendMessage)
+			protected.GET("/vehicles/:id/chat/history", chatHandler.GetHistory)
 
 			protected.GET("/parts/catalog", partHandler.ListCatalog)
 			protected.GET("/vehicles/:id/parts", partHandler.ListByVehicle)
