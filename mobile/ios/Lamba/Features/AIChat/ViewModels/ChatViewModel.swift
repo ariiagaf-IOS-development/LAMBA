@@ -44,10 +44,9 @@ final class ChatViewModel: ObservableObject {
     
     func loadHistory(
         vehicle: VehicleResponse?,
-        token: String?
+        token: String?,
+        forceReload: Bool = false
     ) async {
-        loadLocalCacheIfNeeded()
-
         guard let vehicle else {
             if messages.isEmpty {
                 showEmptyVehicleGreeting()
@@ -55,23 +54,18 @@ final class ChatViewModel: ObservableObject {
             return
         }
         
-        if loadedVehicleId == vehicle.id && !messages.isEmpty {
+        if !forceReload,
+           loadedVehicleId == vehicle.id,
+           !messages.isEmpty {
             return
         }
-
-        if let cachedMessages = cachedMessagesByVehicleId[vehicle.id] {
-            messages = cachedMessages
-            loadedVehicleId = vehicle.id
-            return
-        }
-
-        loadedVehicleId = vehicle.id
         
         guard let token else {
             errorMessage = "Please sign in again to continue chatting."
             return
         }
         
+        loadedVehicleId = vehicle.id
         isLoading = true
         errorMessage = nil
         
@@ -85,16 +79,15 @@ final class ChatViewModel: ObservableObject {
                 ChatUIMessage(
                     role: ChatRole(rawValue: message.role.lowercased()) ?? .assistant,
                     text: message.displayText,
-                    prediction: message.prediction
+                    prediction: nil
                 )
             }
             
-            cachedMessagesByVehicleId[vehicle.id] = messages
-            
-            saveLocalCache()
-            
             if messages.isEmpty {
                 showVehicleGreeting(vehicle: vehicle)
+            } else {
+                cachedMessagesByVehicleId[vehicle.id] = messages
+                saveLocalCache()
             }
         } catch {
             errorMessage = friendlyMessage(for: error)
@@ -165,10 +158,16 @@ final class ChatViewModel: ObservableObject {
                 text: response.assistantText,
                 prediction: response.prediction
             )
-            
+
             messages.append(assistantMessage)
             cachedMessagesByVehicleId[vehicle.id] = messages
             saveLocalCache()
+
+            await loadHistory(
+                vehicle: vehicle,
+                token: token,
+                forceReload: true
+            )
         } catch {
             errorMessage = friendlyMessage(for: error)
         }

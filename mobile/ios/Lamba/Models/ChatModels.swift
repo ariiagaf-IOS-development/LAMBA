@@ -12,40 +12,35 @@ struct ChatMessageRequest: Encodable {
 }
 
 struct ChatResponse: Decodable {
-    let message: String?
-    let response: String?
-    let answer: String?
-    let role: String?
-    let prediction: ChatPrediction?
+    let message: ChatMessageResponse
     
     var assistantText: String {
-        message ?? response ?? answer ?? "I could not generate a response."
+        message.displayText
+    }
+    
+    var prediction: ChatPrediction? {
+        nil
     }
 }
 
 struct ChatHistoryResponse: Decodable {
+    let count: Int?
+    let limit: Int?
+    let offset: Int?
+    let vehicleId: Int?
     let messages: [ChatMessageResponse]
 }
 
-struct ChatMessageResponse: Decodable, Identifiable {
+struct ChatMessageResponse: Decodable {
     let id: Int?
+    let vehicleId: Int?
+    let userId: Int?
     let role: String
-    let message: String?
-    let content: String?
-    let text: String?
+    let message: String
     let createdAt: String?
-    let prediction: ChatPrediction?
-    
-    var displayId: String {
-        if let id {
-            return String(id)
-        }
-        
-        return UUID().uuidString
-    }
     
     var displayText: String {
-        message ?? content ?? text ?? ""
+        message
     }
 }
 
