@@ -26,9 +26,9 @@ struct VehicleProfileView: View {
                         ScreenHeroView(
                             title: vehicleViewModel.brand.isEmpty ? "VEHICLE" : vehicleViewModel.brand,
                             accentTitle: vehicleViewModel.model.isEmpty ? "PROFILE" : vehicleViewModel.model,
-                            subtitle: "Performance Dual Motor • Neural Link V2.4 Active"
+                            subtitle: "Performance Dual Motor • Neural Link V2.4 Active",
+                            topPadding: 12
                         )
-                        .padding(.top, AppSpacing.sm)
 
                         if vehicleViewModel.vehicles.count >= 1 {
                             Button {
@@ -65,7 +65,7 @@ struct VehicleProfileView: View {
                         }
                     }
                 }
-                .padding(.top, 10)
+                .padding(.top, 0)
                 .padding(.bottom, AppSpacing.xl)
             }
         }
@@ -250,9 +250,9 @@ struct VehicleProfileView: View {
                 ScreenHeroView(
                     title: "VEHICLE",
                     accentTitle: "PROFILE",
-                    subtitle: "Connect your first vehicle to unlock AI-powered maintenance tracking."
+                    subtitle: "Connect your first vehicle to unlock AI-powered maintenance tracking.",
+                    topPadding: 12
                 )
-                .padding(.top, AppSpacing.sm)
                 
                 VStack(spacing: 18) {
                     ZStack {

@@ -12,6 +12,7 @@ struct ScreenHeroView: View {
     let title: String
     let accentTitle: String
     let subtitle: String
+    var topPadding: CGFloat = 20
     
     var body: some View {
         VStack(alignment: .leading, spacing: -17) {
@@ -33,6 +34,6 @@ struct ScreenHeroView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
-        .padding(.top, 32)
+        .padding(.top, topPadding)
     }
 }

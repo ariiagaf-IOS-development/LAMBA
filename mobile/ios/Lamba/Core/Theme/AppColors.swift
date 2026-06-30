@@ -29,6 +29,12 @@ enum AppColors {
     
     static let yellow = Color(hex: "FE9A00")
     static let orange = Color(hex: "CA3500")
+    static let red = Color(hex: "DC2626")
+    
+    // MARK: - Risk levels
+    static let riskLow = green
+    static let riskMedium = yellow
+    static let riskHigh = red
     
     // MARK: - Gradient buttons
     static let gradientStart = Color(hex: "6366F1")

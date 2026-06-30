@@ -53,6 +53,11 @@ final class ChatViewModel: ObservableObject {
             }
             return
         }
+
+        isVehicleOnboardingActive = false
+        onboardingStep = .completed
+        shouldShowCreatedVehicleCard = false
+        createdVehicleCardAnchorId = nil
         
         if !forceReload,
            loadedVehicleId == vehicle.id,
@@ -110,8 +115,12 @@ final class ChatViewModel: ObservableObject {
             return
         }
         
-        if vehicleViewModel.activeVehicle == nil || isVehicleOnboardingActive {
+        if vehicleViewModel.activeVehicle == nil {
             inputText = ""
+            
+            if !isVehicleOnboardingActive {
+                showEmptyVehicleGreeting()
+            }
             
             await handleVehicleOnboardingAnswer(
                 trimmedText,
@@ -120,6 +129,11 @@ final class ChatViewModel: ObservableObject {
             )
             
             return
+        }
+
+        if isVehicleOnboardingActive {
+            isVehicleOnboardingActive = false
+            onboardingStep = .completed
         }
         
         guard let vehicle = vehicleViewModel.activeVehicle else {
