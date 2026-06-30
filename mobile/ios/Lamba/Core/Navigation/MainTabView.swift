@@ -12,6 +12,7 @@ enum AppTab {
     case log
     case vehicle
     case care
+    case profile
 }
 
 struct MainTabView: View {
@@ -44,6 +45,12 @@ struct MainTabView: View {
                     Label("CARE", systemImage: "heart.fill")
                 }
                 .tag(AppTab.care)
+            
+            UserProfileView()
+                .tabItem {
+                    Label("PROFILE", systemImage: "person.crop.circle.fill")
+                }
+                .tag(AppTab.profile)
         }
     }
 }

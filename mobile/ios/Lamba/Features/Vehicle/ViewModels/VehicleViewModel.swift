@@ -18,13 +18,16 @@ final class VehicleViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     @Published var vehicleImages: [Int: Data] = [:]
+    @Published var vehiclePersonalities: [Int: VehiclePersonality] = [:]
 
     private let vehicleImagesCacheKey = "local_vehicle_images_by_vehicle_id"
+    private let vehiclePersonalitiesCacheKey = "local_vehicle_personalities_by_vehicle_id"
 
     @Published var activeVehicleId: Int?
     
     init() {
         loadVehicleImagesIfNeeded()
+        loadVehiclePersonalitiesIfNeeded()
     }
     
     var activeVehicle: VehicleResponse? {
@@ -79,6 +82,7 @@ final class VehicleViewModel: ObservableObject {
             let loadedVehicles = try await VehicleAPIService.shared.getVehicles(token: token)
             
             vehicles = loadedVehicles
+            migrateBMWPersonalitiesIfNeeded(for: loadedVehicles)
 
             if let currentId = activeVehicleId,
                loadedVehicles.contains(where: { $0.id == currentId }) {
@@ -186,7 +190,9 @@ final class VehicleViewModel: ObservableObject {
             )
             
             vehicleImages.removeValue(forKey: activeVehicle.id)
+            vehiclePersonalities.removeValue(forKey: activeVehicle.id)
             saveVehicleImages()
+            saveVehiclePersonalities()
             
             if activeVehicleId == activeVehicle.id {
                 activeVehicleId = nil
@@ -213,8 +219,10 @@ final class VehicleViewModel: ObservableObject {
             
             vehicles.removeAll { $0.id == vehicle.id }
             vehicleImages.removeValue(forKey: vehicle.id)
+            vehiclePersonalities.removeValue(forKey: vehicle.id)
             
             saveVehicleImages()
+            saveVehiclePersonalities()
             
             if activeVehicleId == vehicle.id {
                 activeVehicleId = vehicles.first?.id
@@ -235,6 +243,14 @@ final class VehicleViewModel: ObservableObject {
     
     func clearError() {
         errorMessage = nil
+    }
+    
+    func clearSessionState() {
+        vehicles = []
+        selectedVehicle = nil
+        activeVehicleId = nil
+        errorMessage = nil
+        isLoading = false
     }
     
     func refreshVehicles(token: String) async {
@@ -262,6 +278,33 @@ final class VehicleViewModel: ObservableObject {
         saveVehicleImages()
     }
     
+    func personality(for vehicle: VehicleResponse) -> VehiclePersonality {
+        vehiclePersonalities[vehicle.id] ??
+        vehicle.backendPersonality ??
+        VehiclePersonality.inferred(
+            brand: vehicle.brand,
+            model: vehicle.model
+        )
+    }
+    
+    func personality(for vehicleId: Int) -> VehiclePersonality? {
+        if let personality = vehiclePersonalities[vehicleId] {
+            return personality
+        }
+        
+        guard let vehicle = vehicles.first(where: { $0.id == vehicleId }) else {
+            return nil
+        }
+        
+        return personality(for: vehicle)
+    }
+    
+    func setPersonality(_ personality: VehiclePersonality, for vehicleId: Int) {
+        loadVehiclePersonalitiesIfNeeded()
+        vehiclePersonalities[vehicleId] = personality
+        saveVehiclePersonalities()
+    }
+    
     private func saveVehicleImages() {
         do {
             let encoded = try JSONEncoder().encode(vehicleImages)
@@ -284,6 +327,61 @@ final class VehicleViewModel: ObservableObject {
             )
         } catch {
             print("Failed to load vehicle images:", error.localizedDescription)
+        }
+    }
+    
+    private func migrateBMWPersonalitiesIfNeeded(for vehicles: [VehicleResponse]) {
+        loadVehiclePersonalitiesIfNeeded()
+        
+        var didChange = false
+        
+        for vehicle in vehicles where vehicle.brand.lowercased().contains("bmw") {
+            if vehiclePersonalities[vehicle.id] == .diva {
+                vehiclePersonalities[vehicle.id] = .bmwRoast
+                didChange = true
+            }
+        }
+        
+        if didChange {
+            saveVehiclePersonalities()
+        }
+    }
+    
+    private func setPersonalityIfNeeded(for vehicle: VehicleResponse) {
+        guard vehiclePersonalities[vehicle.id] == nil,
+              vehicle.backendPersonality == nil else {
+            return
+        }
+        
+        vehiclePersonalities[vehicle.id] = VehiclePersonality.inferred(
+            brand: vehicle.brand,
+            model: vehicle.model
+        )
+        saveVehiclePersonalities()
+    }
+    
+    private func saveVehiclePersonalities() {
+        do {
+            let encoded = try JSONEncoder().encode(vehiclePersonalities)
+            UserDefaults.standard.set(encoded, forKey: vehiclePersonalitiesCacheKey)
+        } catch {
+            print("Failed to save vehicle personalities:", error.localizedDescription)
+        }
+    }
+    
+    private func loadVehiclePersonalitiesIfNeeded() {
+        guard vehiclePersonalities.isEmpty,
+              let data = UserDefaults.standard.data(forKey: vehiclePersonalitiesCacheKey) else {
+            return
+        }
+        
+        do {
+            vehiclePersonalities = try JSONDecoder().decode(
+                [Int: VehiclePersonality].self,
+                from: data
+            )
+        } catch {
+            print("Failed to load vehicle personalities:", error.localizedDescription)
         }
     }
 }

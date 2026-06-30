@@ -176,6 +176,15 @@ struct SignInView: View {
                 Spacer()
             }
         }
+        .onAppear {
+            authViewModel.clearError()
+        }
+        .onChange(of: email) { _, _ in
+            authViewModel.clearError()
+        }
+        .onChange(of: password) { _, _ in
+            authViewModel.clearError()
+        }
         .hideKeyboardOnTap()
     }
 }

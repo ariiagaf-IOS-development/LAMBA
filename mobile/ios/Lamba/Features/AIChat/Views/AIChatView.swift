@@ -36,7 +36,12 @@ struct AIChatView: View {
                         VStack(alignment: .leading, spacing: 16) {
                                                         
                             ForEach(chatViewModel.messages) { message in
-                                ChatBubble(message: message)
+                                ChatBubble(
+                                    message: message,
+                                    vehicleImageData: message.attachment?.vehiclePhotoId.flatMap {
+                                        vehicleViewModel.getImage(for: $0)
+                                    }
+                                )
                                     .id(message.id)
                                 
                                 if chatViewModel.createdVehicleCardAnchorId == message.id,
@@ -141,9 +146,7 @@ struct AIChatView: View {
                     
                     vehicleViewModel.setImage(data, for: vehicleId)
                     
-                    chatViewModel.addAssistantMessage(
-                        "Photo uploaded. Now I can recognize myself visually in your vehicle profile."
-                    )
+                    chatViewModel.addVehiclePhotoMessage(vehicleId: vehicleId)
                     
                     selectedVehiclePhoto = nil
                 }
@@ -246,7 +249,8 @@ struct AIChatView: View {
     
     private var heroSubtitle: String {
         if let vehicle = vehicleViewModel.activeVehicle {
-            return "I am your \(vehicle.brand) \(vehicle.model) digital twin."
+            let personality = vehicleViewModel.personality(for: vehicle)
+            return "I am your \(vehicle.brand) \(vehicle.model) digital twin. \(personality.aiLine)"
         }
         
         return "Add a vehicle first, and I will become its digital twin."
@@ -275,26 +279,14 @@ private struct ChatMessageText: View {
     }
     
     private var formattedText: Text {
-        let parts = text.boldPartsFromMarkdown()
-        var result = Text("")
-        
-        for part in parts {
-            if part.isBold {
-                result = result + Text(part.text)
-                    .font(.system(size: 12, weight: .bold))
-            } else {
-                result = result + Text(part.text)
-                    .font(.system(size: 12, weight: .regular))
-            }
-        }
-        
-        return result
+        Text(text.markdownBoldAttributedString())
     }
 }
 
 private struct ChatBubble: View {
     
     let message: ChatUIMessage
+    let vehicleImageData: Data?
     
     private var isUser: Bool {
         message.role == .user
@@ -307,17 +299,21 @@ private struct ChatBubble: View {
             }
             
             VStack(alignment: isUser ? .trailing : .leading, spacing: 10) {
-                ChatMessageText(
-                    text: message.text,
-                    isUser: isUser
-                )
-                .padding(16)
-                .background(isUser ? AppColors.primary : AppColors.card)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppRadius.xl)
-                        .stroke(isUser ? Color.clear : AppColors.bubbleBorder, lineWidth: 1)
-                )
+                if message.attachment?.vehiclePhotoId != nil {
+                    ChatVehiclePhotoCard(imageData: vehicleImageData)
+                } else {
+                    ChatMessageText(
+                        text: message.text,
+                        isUser: isUser
+                    )
+                    .padding(16)
+                    .background(isUser ? AppColors.primary : AppColors.card)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.xl)
+                            .stroke(isUser ? Color.clear : AppColors.bubbleBorder, lineWidth: 1)
+                    )
+                }
                 
                 if let prediction = message.prediction {
                     PredictionInlineCard(prediction: prediction)
@@ -328,6 +324,59 @@ private struct ChatBubble: View {
                 Spacer(minLength: 48)
             }
         }
+    }
+}
+
+private struct ChatVehiclePhotoCard: View {
+    
+    let imageData: Data?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let imageData,
+               let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 220, height: 132)
+                    .clipShape(RoundedRectangle(cornerRadius: 22))
+                    .clipped()
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 22)
+                        .fill(AppColors.primary.opacity(0.10))
+                        .frame(width: 220, height: 132)
+                    
+                    Image(systemName: "car.fill")
+                        .font(.system(size: 30, weight: .black))
+                        .foregroundStyle(AppColors.primary)
+                }
+            }
+            
+            HStack(spacing: 10) {
+                Image(systemName: "photo.fill")
+                    .font(.system(size: 15, weight: .black))
+                    .foregroundStyle(AppColors.primary)
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("PHOTO LINKED")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(AppColors.textSecondary)
+                        .tracking(1.1)
+                    
+                    Text("Saved to vehicle profile")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppColors.textMuted)
+                }
+            }
+        }
+        .padding(12)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.xl)
+                .stroke(AppColors.bubbleBorder, lineWidth: 1)
+        )
     }
 }
 
@@ -658,6 +707,19 @@ private struct ChatInputBar: View {
 
 private extension String {
     
+    func markdownBoldAttributedString() -> AttributedString {
+        let parts = boldPartsFromMarkdown()
+        var result = AttributedString()
+        
+        for part in parts {
+            var attributedPart = AttributedString(part.text)
+            attributedPart.font = .system(size: 12, weight: part.isBold ? .bold : .regular)
+            result += attributedPart
+        }
+        
+        return result
+    }
+    
     func boldPartsFromMarkdown() -> [(text: String, isBold: Bool)] {
         var result: [(text: String, isBold: Bool)] = []
         var currentText = ""
@@ -690,5 +752,15 @@ private extension String {
         }
         
         return result
+    }
+}
+
+private extension ChatMessageAttachment {
+    var vehiclePhotoId: Int? {
+        if case .vehiclePhoto(let vehicleId) = self {
+            return vehicleId
+        }
+        
+        return nil
     }
 }

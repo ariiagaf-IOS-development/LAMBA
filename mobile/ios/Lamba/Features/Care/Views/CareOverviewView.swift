@@ -49,6 +49,21 @@ struct CareOverviewView: View {
         .task(id: vehicleViewModel.activeVehicleId) {
             await loadCareData()
         }
+        .onAppear {
+            Task {
+                await loadCareData()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .vehicleEventsDidChange)) { notification in
+            guard let changedVehicleId = notification.object as? Int,
+                  changedVehicleId == vehicleViewModel.activeVehicleId else {
+                return
+            }
+            
+            Task {
+                await loadCareData()
+            }
+        }
         .sheet(item: $selectedPrediction) { prediction in
             PredictionDetailView(prediction: prediction)
                 .presentationDetents([.medium, .large])
@@ -73,7 +88,10 @@ struct CareOverviewView: View {
                         }
                     }
                     
-                    CareStatsGrid(dashboard: predictionRepository.dashboard)
+                    CareStatsGrid(
+                        dashboard: predictionRepository.dashboard,
+                        eventStats: predictionRepository.eventStats
+                    )
                     
                     if let focusPrediction {
                         FocusPredictionCard(prediction: focusPrediction) {
@@ -81,7 +99,10 @@ struct CareOverviewView: View {
                         }
                     }
                     
-                    DashboardSummaryCard(dashboard: predictionRepository.dashboard)
+                    DashboardSummaryCard(
+                        dashboard: predictionRepository.dashboard,
+                        eventStats: predictionRepository.eventStats
+                    )
                     
                     PredictiveEfficiencyCard(dashboard: predictionRepository.dashboard)
                     
@@ -175,6 +196,7 @@ struct CareOverviewView: View {
 
 private struct CareStatsGrid: View {
     let dashboard: VehicleDashboard?
+    let eventStats: VehicleEventStats?
     
     var body: some View {
         HStack(spacing: AppSpacing.md) {
@@ -195,7 +217,10 @@ private struct CareStatsGrid: View {
     }
     
     private var repairCost: String {
-        guard let cost = dashboard?.totalMaintenanceCost else { return "--" }
+        let statsCost = eventStats?.repairCost
+        let cost = statsCost.flatMap { $0 > 0 ? $0 : nil } ?? dashboard?.totalMaintenanceCost
+        
+        guard let cost else { return "--" }
         return cost.formatted(.number.precision(.fractionLength(0)))
     }
     
@@ -427,6 +452,7 @@ private struct PredictiveEfficiencyCard: View {
 
 private struct DashboardSummaryCard: View {
     let dashboard: VehicleDashboard?
+    let eventStats: VehicleEventStats?
     
     var body: some View {
         AppCard(padding: AppSpacing.lg, cornerRadius: AppRadius.xl) {
@@ -479,7 +505,10 @@ private struct DashboardSummaryCard: View {
     }
     
     private var repairCost: String {
-        guard let cost = dashboard?.totalMaintenanceCost else { return "--" }
+        let statsCost = eventStats?.repairCost
+        let cost = statsCost.flatMap { $0 > 0 ? $0 : nil } ?? dashboard?.totalMaintenanceCost
+        
+        guard let cost else { return "--" }
         return cost.formatted(.currency(code: "RUB").precision(.fractionLength(0)))
     }
     

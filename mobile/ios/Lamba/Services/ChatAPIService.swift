@@ -45,10 +45,6 @@ final class ChatAPIService {
             throw APIError.invalidResponse
         }
         
-        print("CHAT REQUEST: POST \(url)")
-        print("CHAT STATUS CODE:", httpResponse.statusCode)
-        print("CHAT RAW RESPONSE:", String(data: data, encoding: .utf8) ?? "")
-        
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.serverError(
                 statusCode: httpResponse.statusCode,
@@ -98,10 +94,6 @@ final class ChatAPIService {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
-        
-        print("CHAT HISTORY REQUEST: GET \(url)")
-        print("CHAT HISTORY STATUS CODE:", httpResponse.statusCode)
-        print("CHAT HISTORY RAW RESPONSE:", String(data: data, encoding: .utf8) ?? "")
         
         if httpResponse.statusCode == 404 {
             return []

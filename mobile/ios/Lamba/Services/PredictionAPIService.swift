@@ -61,10 +61,6 @@ final class PredictionAPIService {
             throw APIError.invalidResponse
         }
         
-        print("REQUEST:", method, url.absoluteString)
-        print("STATUS CODE:", httpResponse.statusCode)
-        print("RAW RESPONSE:", String(data: data, encoding: .utf8) ?? "")
-        
         guard 200...299 ~= httpResponse.statusCode else {
             throw APIError.serverError(
                 statusCode: httpResponse.statusCode,
@@ -78,8 +74,6 @@ final class PredictionAPIService {
         do {
             return try decoder.decode(Response.self, from: data)
         } catch {
-            print("Prediction decoding error:", error)
-            print("Raw response:", String(data: data, encoding: .utf8) ?? "")
             throw APIError.decodingError
         }
     }

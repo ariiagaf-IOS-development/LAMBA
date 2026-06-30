@@ -12,10 +12,8 @@ struct LoginView: View {
     var body: some View {
         SignInView(
             onBack: {
-                print("Back")
             },
             onCreateAccount: {
-                print("Open sign up")
             }
         )
     }

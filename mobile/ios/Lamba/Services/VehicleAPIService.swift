@@ -94,7 +94,6 @@ final class VehicleAPIService {
         let (data, response) = try await performRequest(request)
         
         guard 200...299 ~= response.statusCode else {
-            print("Create vehicle error:", String(data: data, encoding: .utf8) ?? "")
             throw APIError.serverError(
                 statusCode: response.statusCode,
                 message: String(data: data, encoding: .utf8)
@@ -141,7 +140,6 @@ final class VehicleAPIService {
         let (data, response) = try await performRequest(request)
         
         guard 200...299 ~= response.statusCode else {
-            print("Update vehicle error:", String(data: data, encoding: .utf8) ?? "")
             throw APIError.serverError(
                 statusCode: response.statusCode,
                 message: String(data: data, encoding: .utf8)
@@ -166,7 +164,6 @@ final class VehicleAPIService {
         let (data, response) = try await performRequest(request)
         
         guard 200...299 ~= response.statusCode else {
-            print("Delete vehicle error:", String(data: data, encoding: .utf8) ?? "")
             throw APIError.serverError(
                 statusCode: response.statusCode,
                 message: String(data: data, encoding: .utf8)
@@ -189,10 +186,6 @@ final class VehicleAPIService {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
-        
-        print("REQUEST:", request.httpMethod ?? "", request.url?.absoluteString ?? "")
-        print("STATUS CODE:", httpResponse.statusCode)
-        print("RAW RESPONSE:", String(data: data, encoding: .utf8) ?? "")
         
         return (data, httpResponse)
     }

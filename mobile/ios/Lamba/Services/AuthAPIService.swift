@@ -124,12 +124,6 @@ final class AuthAPIService {
             throw APIError.noInternet
         }
         
-        if let httpResponse = response as? HTTPURLResponse {
-            print("STATUS CODE:", httpResponse.statusCode)
-        }
-
-        print("RAW RESPONSE:", String(data: data, encoding: .utf8) ?? "")
-        
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
@@ -148,8 +142,6 @@ final class AuthAPIService {
         do {
             return try decoder.decode(UserResponse.self, from: data)
         } catch {
-            print("GET /api/me decoding error:", error)
-            print("Raw response:", String(data: data, encoding: .utf8) ?? "")
             throw APIError.decodingError
         }
     }
@@ -179,16 +171,12 @@ final class AuthAPIService {
             throw APIError.noInternet
         }
         
-        print("REQUEST:", request.httpMethod ?? "", url.absoluteString)
-        print("BODY:", String(data: request.httpBody ?? Data(), encoding: .utf8) ?? "")
-        
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
         
         guard 200...299 ~= httpResponse.statusCode else {
             let message = String(data: data, encoding: .utf8)
-            print("Auth backend error:", message ?? "")
             
             throw APIError.serverError(
                 statusCode: httpResponse.statusCode,
@@ -202,8 +190,6 @@ final class AuthAPIService {
         do {
             return try decoder.decode(AuthResponse.self, from: data)
         } catch {
-            print("Auth decoding error:", error)
-            print("Raw response:", String(data: data, encoding: .utf8) ?? "")
             throw APIError.decodingError
         }
     }

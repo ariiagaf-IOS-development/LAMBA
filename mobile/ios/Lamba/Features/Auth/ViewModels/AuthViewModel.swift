@@ -25,6 +25,10 @@ final class AuthViewModel: ObservableObject {
         KeychainService.shared.read(for: tokenKey)
     }
     
+    var authorizationHeaderValue: String? {
+        token.map { "Basic \($0)" }
+    }
+    
     func clearError() {
         errorMessage = nil
     }
@@ -73,7 +77,7 @@ final class AuthViewModel: ObservableObject {
         
         do {
             let response = try await AuthAPIService.shared.login(
-                email: email,
+                email: email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
                 password: password
             )
             
@@ -96,7 +100,7 @@ final class AuthViewModel: ObservableObject {
     }
     
     func logout() {
-        UserDefaults.standard.removeObject(forKey: tokenKey)
+        KeychainService.shared.delete(for: tokenKey)
         currentUser = nil
         isLoggedIn = false
     }

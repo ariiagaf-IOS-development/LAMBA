@@ -38,8 +38,12 @@ final class ChatViewModel: ObservableObject {
     
     private let localCacheKey = "local_chat_messages_by_vehicle_id"
     
-    init(repository: ChatRepository = ChatRepository()) {
+    init(repository: ChatRepository) {
         self.repository = repository
+    }
+    
+    convenience init() {
+        self.init(repository: ChatRepository())
     }
     
     func loadHistory(
@@ -47,6 +51,8 @@ final class ChatViewModel: ObservableObject {
         token: String?,
         forceReload: Bool = false
     ) async {
+        loadLocalCacheIfNeeded()
+        
         guard let vehicle else {
             if messages.isEmpty {
                 showEmptyVehicleGreeting()
@@ -58,6 +64,11 @@ final class ChatViewModel: ObservableObject {
         onboardingStep = .completed
         shouldShowCreatedVehicleCard = false
         createdVehicleCardAnchorId = nil
+        
+        if let cachedMessages = cachedMessagesByVehicleId[vehicle.id],
+           (!forceReload || messages.isEmpty) {
+            messages = cachedMessages
+        }
         
         if !forceReload,
            loadedVehicleId == vehicle.id,
@@ -80,17 +91,23 @@ final class ChatViewModel: ObservableObject {
                 token: token
             )
             
-            messages = history.map { message in
+            let backendMessages = history.map { message in
                 ChatUIMessage(
                     role: ChatRole(rawValue: message.role.lowercased()) ?? .assistant,
                     text: message.displayText,
-                    prediction: nil
+                    prediction: nil,
+                    attachment: nil
                 )
             }
             
-            if messages.isEmpty {
-                showVehicleGreeting(vehicle: vehicle)
+            if backendMessages.isEmpty {
+                if cachedMessagesByVehicleId[vehicle.id]?.isEmpty == false {
+                    messages = cachedMessagesByVehicleId[vehicle.id] ?? []
+                } else {
+                    showVehicleGreeting(vehicle: vehicle)
+                }
             } else {
+                messages = backendMessages + localOnlyMessages(for: vehicle.id)
                 cachedMessagesByVehicleId[vehicle.id] = messages
                 saveLocalCache()
             }
@@ -149,7 +166,8 @@ final class ChatViewModel: ObservableObject {
         let userMessage = ChatUIMessage(
             role: .user,
             text: trimmedText,
-            prediction: nil
+            prediction: nil,
+            attachment: nil
         )
         
         messages.append(userMessage)
@@ -170,7 +188,8 @@ final class ChatViewModel: ObservableObject {
             let assistantMessage = ChatUIMessage(
                 role: .assistant,
                 text: response.assistantText,
-                prediction: response.prediction
+                prediction: response.prediction,
+                attachment: nil
             )
 
             messages.append(assistantMessage)
@@ -218,11 +237,17 @@ final class ChatViewModel: ObservableObject {
     }
     
     private func showVehicleGreeting(vehicle: VehicleResponse) {
+        let personality = VehiclePersonality.inferred(
+            brand: vehicle.brand,
+            model: vehicle.model
+        )
+        
         messages = [
             ChatUIMessage(
                 role: .assistant,
-                text: "I am your \(vehicle.brand) \(vehicle.model) digital twin. Ask me about my condition, maintenance risks, repair history, or what I may need next.",
-                prediction: nil
+                text: "I am your \(vehicle.brand) \(vehicle.model) digital twin.\n\nPersonality core: **\(personality.title)**. \(personality.aiLine)\n\nAsk me about my condition, maintenance risks, repair history, or what I may need next.",
+                prediction: nil,
+                attachment: nil
             )
         ]
         
@@ -241,7 +266,8 @@ final class ChatViewModel: ObservableObject {
             ChatUIMessage(
                 role: .assistant,
                 text: "I do not exist yet — but we can create me together. Let’s start with my identity. What is my brand?",
-                prediction: nil
+                prediction: nil,
+                attachment: nil
             )
         ]
     }
@@ -280,7 +306,8 @@ final class ChatViewModel: ObservableObject {
             ChatUIMessage(
                 role: .user,
                 text: answer,
-                prediction: nil
+                prediction: nil,
+                attachment: nil
             )
         )
         
@@ -293,7 +320,8 @@ final class ChatViewModel: ObservableObject {
                 ChatUIMessage(
                     role: .assistant,
                     text: "Great. What is my model?",
-                    prediction: nil
+                    prediction: nil,
+                    attachment: nil
                 )
             )
             
@@ -305,7 +333,8 @@ final class ChatViewModel: ObservableObject {
                 ChatUIMessage(
                     role: .assistant,
                     text: "What year was I produced?",
-                    prediction: nil
+                    prediction: nil,
+                    attachment: nil
                 )
             )
             
@@ -317,7 +346,8 @@ final class ChatViewModel: ObservableObject {
                     ChatUIMessage(
                         role: .assistant,
                         text: "Please send my production year as digits, for example 2022.",
-                        prediction: nil
+                        prediction: nil,
+                        attachment: nil
                     )
                 )
                 return
@@ -330,7 +360,8 @@ final class ChatViewModel: ObservableObject {
                 ChatUIMessage(
                     role: .assistant,
                     text: "How many kilometers have I traveled so far?",
-                    prediction: nil
+                    prediction: nil,
+                    attachment: nil
                 )
             )
             
@@ -342,7 +373,8 @@ final class ChatViewModel: ObservableObject {
                     ChatUIMessage(
                         role: .assistant,
                         text: "Please send my mileage as a number in kilometers, for example 42000.",
-                        prediction: nil
+                        prediction: nil,
+                        attachment: nil
                     )
                 )
                 return
@@ -355,7 +387,8 @@ final class ChatViewModel: ObservableObject {
                 ChatUIMessage(
                     role: .assistant,
                     text: "What is my 17-character VIN?",
-                    prediction: nil
+                    prediction: nil,
+                    attachment: nil
                 )
             )
             
@@ -369,7 +402,8 @@ final class ChatViewModel: ObservableObject {
                     ChatUIMessage(
                         role: .assistant,
                         text: "Please send my VIN as exactly 17 characters. For example: JTDBE32K620123456.",
-                        prediction: nil
+                        prediction: nil,
+                        attachment: nil
                     )
                 )
                 return
@@ -400,11 +434,16 @@ final class ChatViewModel: ObservableObject {
                 onboardingStep = .completed
                 isVehicleOnboardingActive = false
                 shouldShowCreatedVehicleCard = true
+                let personality = VehiclePersonality.inferred(
+                    brand: onboardingDraft.brand,
+                    model: onboardingDraft.model
+                )
                 
                 let connectedMessage = ChatUIMessage(
                     role: .assistant,
-                    text: "I am connected now. Your \(onboardingDraft.brand) \(onboardingDraft.model) digital twin is ready. Would you like to upload my photo? Tap the attachment button below so I can recognize myself visually in your vehicle profile.",
-                    prediction: nil
+                    text: "I am connected now. Your \(onboardingDraft.brand) \(onboardingDraft.model) digital twin is ready.\n\nPersonality detected: **\(personality.title)**. \(personality.subtitle)\n\n\(personality.aiLine)\n\nWould you like to upload my photo? Tap the attachment button below so I can recognize myself visually in your vehicle profile.",
+                    prediction: nil,
+                    attachment: nil
                 )
                 
                 messages = [
@@ -431,15 +470,38 @@ final class ChatViewModel: ObservableObject {
         let message = ChatUIMessage(
             role: .assistant,
             text: text,
-            prediction: nil
+            prediction: nil,
+            attachment: nil
         )
         
         messages.append(message)
+        persistCurrentMessages()
+    }
+    
+    func addVehiclePhotoMessage(vehicleId: Int) {
+        let message = ChatUIMessage(
+            role: .assistant,
+            text: "Vehicle photo linked to this digital twin.",
+            prediction: nil,
+            attachment: .vehiclePhoto(vehicleId: vehicleId)
+        )
         
-        if let loadedVehicleId {
-            cachedMessagesByVehicleId[loadedVehicleId] = messages
-            saveLocalCache()
+        messages.append(message)
+        loadedVehicleId = vehicleId
+        persistCurrentMessages()
+    }
+    
+    private func persistCurrentMessages() {
+        guard let loadedVehicleId else {
+            return
         }
+        
+        cachedMessagesByVehicleId[loadedVehicleId] = messages
+        saveLocalCache()
+    }
+    
+    private func localOnlyMessages(for vehicleId: Int) -> [ChatUIMessage] {
+        (cachedMessagesByVehicleId[vehicleId] ?? []).filter { $0.attachment != nil }
     }
     
     private func friendlyMessage(for error: Error) -> String {
@@ -485,7 +547,8 @@ final class ChatViewModel: ObservableObject {
             ChatUIMessage(
                 role: .assistant,
                 text: "I do not exist yet — but we can create me together. Let’s start with my identity. What is my brand?",
-                prediction: nil
+                prediction: nil,
+                attachment: nil
             )
         ]
     }
@@ -496,18 +559,42 @@ struct ChatUIMessage: Identifiable, Codable {
     let role: ChatRole
     let text: String
     let prediction: ChatPrediction?
+    let attachment: ChatMessageAttachment?
     
     init(
         id: UUID = UUID(),
         role: ChatRole,
         text: String,
-        prediction: ChatPrediction?
+        prediction: ChatPrediction?,
+        attachment: ChatMessageAttachment? = nil
     ) {
         self.id = id
         self.role = role
         self.text = text
         self.prediction = prediction
+        self.attachment = attachment
     }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case role
+        case text
+        case prediction
+        case attachment
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        role = try container.decode(ChatRole.self, forKey: .role)
+        text = try container.decode(String.self, forKey: .text)
+        prediction = try container.decodeIfPresent(ChatPrediction.self, forKey: .prediction)
+        attachment = try container.decodeIfPresent(ChatMessageAttachment.self, forKey: .attachment)
+    }
+}
+
+enum ChatMessageAttachment: Codable, Equatable {
+    case vehiclePhoto(vehicleId: Int)
 }
 
 enum VehicleOnboardingStep {

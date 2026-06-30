@@ -45,9 +45,37 @@ struct AddVehicleView: View {
     private var isFormValid: Bool {
         !brand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !year.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !mileage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        vin.trimmingCharacters(in: .whitespacesAndNewlines).count == 17
+        parsedYear != nil &&
+        parsedMileage != nil &&
+        isVinValid
+    }
+    
+    private var parsedYear: Int? {
+        let value = Int(year.filter { $0.isNumber })
+        let nextYear = Calendar.current.component(.year, from: Date()) + 1
+        
+        guard let value, (1886...nextYear).contains(value) else {
+            return nil
+        }
+        
+        return value
+    }
+    
+    private var parsedMileage: Int? {
+        let value = Int(mileage.filter { $0.isNumber })
+        guard let value, value >= 0 else { return nil }
+        return value
+    }
+    
+    private var normalizedVin: String {
+        vin
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+    }
+    
+    private var isVinValid: Bool {
+        normalizedVin.count == 17 &&
+        normalizedVin.allSatisfy { $0.isLetter || $0.isNumber }
     }
     
     var body: some View {
@@ -156,7 +184,7 @@ struct AddVehicleView: View {
                                 model: model,
                                 year: year,
                                 mileage: mileage,
-                                vin: vin,
+                                vin: normalizedVin,
                                 token: token
                             )
                         } else {
@@ -165,7 +193,7 @@ struct AddVehicleView: View {
                                 model: model,
                                 year: year,
                                 mileage: mileage,
-                                vin: vin,
+                                vin: normalizedVin,
                                 token: token
                             )
                         }
@@ -187,6 +215,8 @@ struct AddVehicleView: View {
             }
         }
         .onAppear {
+            vehicleViewModel.clearError()
+            
             if isEditing, let vehicle = vehicleViewModel.activeVehicle {
                 brand = vehicle.brand
                 model = vehicle.model

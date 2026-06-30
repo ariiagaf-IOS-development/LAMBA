@@ -32,7 +32,6 @@ struct VehicleProfileView: View {
 
                         if vehicleViewModel.vehicles.count >= 1 {
                             Button {
-                                print("OPEN MANAGE VEHICLES")
                                 isManagingVehicles = true
                             } label: {
                                 ManageVehiclesCard(
@@ -51,6 +50,10 @@ struct VehicleProfileView: View {
                             .padding(.top, AppSpacing.lg)
                         
                         NeuralLinkCard()
+                            .padding(.horizontal, AppSpacing.lg)
+                            .padding(.top, AppSpacing.sm)
+                        
+                        VehiclePersonalityMiniCard()
                             .padding(.horizontal, AppSpacing.lg)
                             .padding(.top, AppSpacing.sm)
                         
@@ -238,6 +241,51 @@ struct VehicleProfileView: View {
             .padding(24)
             .background(AppColors.textPrimary)
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.xxl))
+        }
+    }
+    
+    private struct VehiclePersonalityMiniCard: View {
+        
+        @EnvironmentObject var vehicleViewModel: VehicleViewModel
+        
+        var body: some View {
+            if let vehicle = vehicleViewModel.activeVehicle {
+                let personality = vehicleViewModel.personality(for: vehicle)
+                
+                HStack(spacing: AppSpacing.md) {
+                    Image(systemName: personality.iconName)
+                        .font(.system(size: 18, weight: .black))
+                        .foregroundStyle(AppColors.primary)
+                        .frame(width: 48, height: 48)
+                        .background(AppColors.primary.opacity(0.10))
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                    
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("PERSONALITY CORE")
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundStyle(AppColors.textMuted)
+                            .tracking(1.2)
+                        
+                        Text(personality.title)
+                            .font(.system(size: 18, weight: .black))
+                            .foregroundStyle(AppColors.textPrimary)
+                        
+                        Text(personality.aiLine)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(AppColors.textSecondary)
+                            .lineLimit(2)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(AppSpacing.lg)
+                .background(AppColors.card)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.xxl))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.xxl)
+                        .stroke(AppColors.bubbleBorder, lineWidth: 1)
+                )
+            }
         }
     }
     
