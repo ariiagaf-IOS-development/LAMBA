@@ -261,6 +261,37 @@ struct AIChatView: View {
     }
 }
 
+private struct ChatMessageText: View {
+    
+    let text: String
+    let isUser: Bool
+    
+    var body: some View {
+        formattedText
+            .foregroundStyle(isUser ? .white : AppColors.textPrimary)
+            .lineSpacing(4)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+    
+    private var formattedText: Text {
+        let parts = text.boldPartsFromMarkdown()
+        var result = Text("")
+        
+        for part in parts {
+            if part.isBold {
+                result = result + Text(part.text)
+                    .font(.system(size: 12, weight: .bold))
+            } else {
+                result = result + Text(part.text)
+                    .font(.system(size: 12, weight: .regular))
+            }
+        }
+        
+        return result
+    }
+}
+
 private struct ChatBubble: View {
     
     let message: ChatUIMessage
@@ -276,17 +307,17 @@ private struct ChatBubble: View {
             }
             
             VStack(alignment: isUser ? .trailing : .leading, spacing: 10) {
-                Text(message.text)
-                    .font(AppTypography.caption)
-                    .foregroundStyle(isUser ? .white : AppColors.textPrimary)
-                    .lineSpacing(4)
-                    .padding(16)
-                    .background(isUser ? AppColors.primary : AppColors.card)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppRadius.xl)
-                            .stroke(isUser ? Color.clear : AppColors.bubbleBorder, lineWidth: 1)
-                    )
+                ChatMessageText(
+                    text: message.text,
+                    isUser: isUser
+                )
+                .padding(16)
+                .background(isUser ? AppColors.primary : AppColors.card)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.xl)
+                        .stroke(isUser ? Color.clear : AppColors.bubbleBorder, lineWidth: 1)
+                )
                 
                 if let prediction = message.prediction {
                     PredictionInlineCard(prediction: prediction)
@@ -622,5 +653,42 @@ private struct ChatInputBar: View {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !isLoading &&
         !isDisabled
+    }
+}
+
+private extension String {
+    
+    func boldPartsFromMarkdown() -> [(text: String, isBold: Bool)] {
+        var result: [(text: String, isBold: Bool)] = []
+        var currentText = ""
+        var isInsideBold = false
+        
+        var index = startIndex
+        
+        while index < endIndex {
+            let nextIndex = self.index(after: index)
+            
+            if self[index] == "*",
+               nextIndex < endIndex,
+               self[nextIndex] == "*" {
+                
+                if !currentText.isEmpty {
+                    result.append((currentText, isInsideBold))
+                    currentText = ""
+                }
+                
+                isInsideBold.toggle()
+                index = self.index(after: nextIndex)
+            } else {
+                currentText.append(self[index])
+                index = self.index(after: index)
+            }
+        }
+        
+        if !currentText.isEmpty {
+            result.append((currentText, isInsideBold))
+        }
+        
+        return result
     }
 }
