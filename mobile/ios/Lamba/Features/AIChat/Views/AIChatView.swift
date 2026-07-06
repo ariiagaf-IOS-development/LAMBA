@@ -4,7 +4,6 @@
 //
 
 import SwiftUI
-import PhotosUI
 
 struct AIChatView: View {
     
@@ -14,7 +13,6 @@ struct AIChatView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
     @StateObject private var chatViewModel = ChatViewModel()
-    @State private var selectedVehiclePhoto: PhotosPickerItem?
     
     var body: some View {
         ZStack {
@@ -126,30 +124,14 @@ struct AIChatView: View {
         .safeAreaInset(edge: .bottom) {
             ChatInputBar(
                 text: $chatViewModel.inputText,
-                selectedPhoto: $selectedVehiclePhoto,
-                pendingPhotoData: chatViewModel.pendingPhotoData,
-                canUploadPhoto: vehicleViewModel.activeVehicle != nil,
                 isLoading: chatViewModel.isLoading,
-                isDisabled: false,
-                onRemovePhoto: {
-                    chatViewModel.removeDraftPhoto()
-                }
+                isDisabled: false
             ) {
                 Task {
                     await chatViewModel.sendMessage(
                         vehicleViewModel: vehicleViewModel,
                         token: authViewModel.token
                     )
-                }
-            }
-            .onChange(of: selectedVehiclePhoto) { _, newValue in
-                Task {
-                    guard let data = try? await newValue?.loadTransferable(type: Data.self) else {
-                        return
-                    }
-                    
-                    chatViewModel.attachPhotoToDraft(data)
-                    selectedVehiclePhoto = nil
                 }
             }
             .padding(.horizontal, AppSpacing.lg)
@@ -664,45 +646,16 @@ private struct CreatedVehicleMiniCard: View {
 private struct ChatInputBar: View {
     
     @Binding var text: String
-    @Binding var selectedPhoto: PhotosPickerItem?
-    let pendingPhotoData: Data?
     
-    let canUploadPhoto: Bool
     let isLoading: Bool
     let isDisabled: Bool
-    let onRemovePhoto: () -> Void
     let onSend: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let pendingPhotoData {
-                PendingChatPhotoPreview(
-                    imageData: pendingPhotoData,
-                    onRemove: onRemovePhoto
-                )
-            }
-            
             HStack(spacing: 10) {
-                if canUploadPhoto {
-                    PhotosPicker(
-                        selection: $selectedPhoto,
-                        matching: .images
-                    ) {
-                        ZStack {
-                            Circle()
-                                .fill(AppColors.primary.opacity(0.10))
-                                .frame(width: 38, height: 38)
-                            
-                            Image(systemName: pendingPhotoData == nil ? "paperclip" : "photo.fill")
-                                .font(.system(size: 15, weight: .black))
-                                .foregroundStyle(AppColors.primary)
-                        }
-                    }
-                    .disabled(isLoading)
-                }
-                
                 TextField(
-                    canUploadPhoto ? "Ask your digital twin..." : "Answer to create my digital twin...",
+                    "Ask your digital twin...",
                     text: $text,
                     axis: .vertical
                 )
@@ -738,53 +691,9 @@ private struct ChatInputBar: View {
     }
     
     private var canSend: Bool {
-        (!text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || pendingPhotoData != nil) &&
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !isLoading &&
         !isDisabled
-    }
-}
-
-private struct PendingChatPhotoPreview: View {
-    let imageData: Data
-    let onRemove: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 10) {
-            if let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 54, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
-                    .clipped()
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text("PHOTO ATTACHED")
-                    .font(.system(size: 9, weight: .black))
-                    .foregroundStyle(AppColors.textMuted)
-                    .tracking(1)
-                
-                Text("Will be sent with this message")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(AppColors.textSecondary)
-            }
-            
-            Spacer()
-            
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .black))
-                    .foregroundStyle(AppColors.textSecondary)
-                    .frame(width: 28, height: 28)
-                    .background(AppColors.background)
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(8)
-        .background(AppColors.background)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
     }
 }
 

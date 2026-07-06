@@ -16,6 +16,7 @@ struct VehicleRequest: Encodable {
     let fuelType: String?
     let transmission: String?
     let usageType: String?
+    let personality: VehiclePersonality?
 }
 
 struct VehicleUpdateRequest: Encodable {
@@ -27,6 +28,7 @@ struct VehicleUpdateRequest: Encodable {
     let fuelType: String?
     let transmission: String?
     let usageType: String?
+    let personality: VehiclePersonality?
 }
 
 struct VehicleResponse: Decodable, Identifiable {

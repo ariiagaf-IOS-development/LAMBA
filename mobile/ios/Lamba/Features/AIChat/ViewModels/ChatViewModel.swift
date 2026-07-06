@@ -7,16 +7,12 @@
 
 import Foundation
 import Combine
-#if canImport(UIKit)
-import UIKit
-#endif
 
 @MainActor
 final class ChatViewModel: ObservableObject {
     
     @Published var messages: [ChatUIMessage] = []
     @Published var inputText: String = ""
-    @Published var pendingPhotoData: Data?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
@@ -134,9 +130,8 @@ final class ChatViewModel: ObservableObject {
         token: String?
     ) async {
         let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let pendingAttachment = pendingPhotoData.map { ChatMessageAttachment.chatPhoto(data: $0) }
         
-        guard !trimmedText.isEmpty || pendingAttachment != nil else {
+        guard !trimmedText.isEmpty else {
             return
         }
         
@@ -173,9 +168,9 @@ final class ChatViewModel: ObservableObject {
         
         let userMessage = ChatUIMessage(
             role: .user,
-            text: trimmedText.isEmpty ? "Please inspect this photo." : trimmedText,
+            text: trimmedText,
             prediction: nil,
-            attachment: pendingAttachment
+            attachment: nil
         )
         
         messages.append(userMessage)
@@ -183,18 +178,13 @@ final class ChatViewModel: ObservableObject {
         saveLocalCache()
         
         inputText = ""
-        pendingPhotoData = nil
         isLoading = true
         errorMessage = nil
         
         do {
-            let backendMessage = pendingAttachment == nil
-            ? trimmedText
-            : "\(trimmedText.isEmpty ? "Please inspect this photo." : trimmedText)\n\n[Photo attached in the mobile app.]"
-            
             let response = try await repository.sendMessage(
                 vehicleId: vehicle.id,
-                message: backendMessage,
+                message: trimmedText,
                 token: token
             )
             
@@ -448,7 +438,7 @@ final class ChatViewModel: ObservableObject {
                 
                 let connectedMessage = ChatUIMessage(
                     role: .assistant,
-                    text: "I am connected now. Your \(onboardingDraft.brand) \(onboardingDraft.model) digital twin is ready.\n\nPersonality detected: **\(personality.title)**. \(personality.subtitle)\n\n\(personality.aiLine)\n\nWould you like to upload my photo? Tap the attachment button below so I can recognize myself visually in your vehicle profile.",
+                    text: "I am connected now. Your \(onboardingDraft.brand) \(onboardingDraft.model) digital twin is ready.\n\nPersonality detected: **\(personality.title)**. \(personality.subtitle)\n\n\(personality.aiLine)\n\nYou can add my photo from the vehicle profile editor.",
                     prediction: nil,
                     attachment: nil
                 )
@@ -496,14 +486,6 @@ final class ChatViewModel: ObservableObject {
         messages.append(message)
         loadedVehicleId = vehicleId
         persistCurrentMessages()
-    }
-    
-    func attachPhotoToDraft(_ data: Data) {
-        pendingPhotoData = data.normalizedChatPhotoData
-    }
-    
-    func removeDraftPhoto() {
-        pendingPhotoData = nil
     }
     
     private func persistCurrentMessages() {
@@ -731,27 +713,4 @@ struct VehicleOnboardingDraft {
 enum ChatRole: String, Codable {
     case user
     case assistant
-}
-
-private extension Data {
-    var normalizedChatPhotoData: Data {
-        #if canImport(UIKit)
-        guard let image = UIImage(data: self) else {
-            return self
-        }
-        
-        let maxSide: CGFloat = 1400
-        let size = image.size
-        let scale = Swift.min(1, maxSide / Swift.max(size.width, size.height))
-        let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
-        let renderer = UIGraphicsImageRenderer(size: targetSize)
-        let resized = renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: targetSize))
-        }
-        
-        return resized.jpegData(compressionQuality: 0.8) ?? self
-        #else
-        return self
-        #endif
-    }
 }

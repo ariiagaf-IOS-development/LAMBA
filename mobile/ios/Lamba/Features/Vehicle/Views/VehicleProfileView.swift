@@ -138,8 +138,14 @@ struct VehicleProfileView: View {
                     vehicle: activeVehicle,
                     selectedPersonality: vehicleViewModel.personality(for: activeVehicle),
                     onSelect: { personality in
-                        vehicleViewModel.setPersonality(personality, for: activeVehicle.id)
-                        isChangingPersonality = false
+                        Task {
+                            _ = await vehicleViewModel.setPersonality(
+                                personality,
+                                for: activeVehicle.id,
+                                token: authViewModel.token
+                            )
+                            isChangingPersonality = false
+                        }
                     }
                 )
             }

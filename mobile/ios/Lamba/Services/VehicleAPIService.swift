@@ -87,7 +87,13 @@ final class VehicleAPIService {
             vin: vin,
             fuelType: nil,
             transmission: nil,
-            usageType: nil
+            usageType: nil,
+            personality: VehiclePersonality.inferred(
+                brand: brand,
+                model: model,
+                year: year,
+                mileageKm: mileageKm
+            )
         )
         
         let encoder = JSONEncoder()
@@ -118,6 +124,7 @@ final class VehicleAPIService {
         year: Int,
         mileageKm: Int,
         vin: String,
+        personality: VehiclePersonality? = nil,
         token: String
     ) async throws -> VehicleResponse {
         
@@ -136,7 +143,8 @@ final class VehicleAPIService {
             vin: vin,
             fuelType: nil,
             transmission: nil,
-            usageType: nil
+            usageType: nil,
+            personality: personality
         )
         
         let encoder = JSONEncoder()

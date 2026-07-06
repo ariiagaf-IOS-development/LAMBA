@@ -195,6 +195,7 @@ final class VehicleViewModel: ObservableObject {
                 year: vehicle.year,
                 mileageKm: mileageKm,
                 vin: vehicle.vin,
+                personality: personality(for: vehicle),
                 token: token
             )
             
@@ -341,8 +342,8 @@ final class VehicleViewModel: ObservableObject {
     }
     
     func personality(for vehicle: VehicleResponse) -> VehiclePersonality {
-        return vehiclePersonalities[vehicle.id] ??
-        vehicle.backendPersonality ??
+        return vehicle.backendPersonality ??
+        vehiclePersonalities[vehicle.id] ??
         VehiclePersonality.inferred(
             brand: vehicle.brand,
             model: vehicle.model,
@@ -363,10 +364,50 @@ final class VehicleViewModel: ObservableObject {
         return personality(for: vehicle)
     }
     
-    func setPersonality(_ personality: VehiclePersonality, for vehicleId: Int) {
+    func setPersonality(
+        _ personality: VehiclePersonality,
+        for vehicleId: Int,
+        token: String?
+    ) async -> Bool {
         loadVehiclePersonalitiesIfNeeded()
-        vehiclePersonalities[vehicleId] = personality
-        saveVehiclePersonalities()
+        
+        guard let vehicle = vehicles.first(where: { $0.id == vehicleId }),
+              let token else {
+            vehiclePersonalities[vehicleId] = personality
+            saveVehiclePersonalities()
+            return false
+        }
+        
+        do {
+            let updatedVehicle = try await VehicleAPIService.shared.updateVehicle(
+                id: vehicle.id,
+                brand: vehicle.brand,
+                model: vehicle.model,
+                year: vehicle.year,
+                mileageKm: vehicle.mileageKm,
+                vin: vehicle.vin,
+                personality: personality,
+                token: token
+            )
+            
+            if let index = vehicles.firstIndex(where: { $0.id == updatedVehicle.id }) {
+                vehicles[index] = updatedVehicle
+            }
+            
+            selectedVehicle = vehicles.first(where: { $0.id == activeVehicleId })
+            
+            if updatedVehicle.backendPersonality == nil {
+                vehiclePersonalities[vehicleId] = personality
+            } else {
+                vehiclePersonalities.removeValue(forKey: vehicleId)
+            }
+            
+            saveVehiclePersonalities()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
     
     private func saveVehicleImages() {
