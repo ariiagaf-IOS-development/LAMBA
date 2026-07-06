@@ -103,6 +103,7 @@ final class ChatViewModel: ObservableObject {
             if backendMessages.isEmpty {
                 if cachedMessagesByVehicleId[vehicle.id]?.isEmpty == false {
                     messages = cachedMessagesByVehicleId[vehicle.id] ?? []
+                    restoreCreatedVehicleAnchorIfNeeded()
                 } else {
                     showVehicleGreeting(vehicle: vehicle)
                 }
@@ -111,6 +112,7 @@ final class ChatViewModel: ObservableObject {
                     backendMessages: backendMessages,
                     localMessages: cachedMessagesByVehicleId[vehicle.id] ?? []
                 )
+                restoreCreatedVehicleAnchorIfNeeded()
                 cachedMessagesByVehicleId[vehicle.id] = messages
                 saveLocalCache()
             }
@@ -507,22 +509,36 @@ final class ChatViewModel: ObservableObject {
         backendMessages: [ChatUIMessage],
         localMessages: [ChatUIMessage]
     ) -> [ChatUIMessage] {
-        var mergedMessages = backendMessages
+        guard !localMessages.isEmpty else {
+            return backendMessages
+        }
         
-        for localMessage in localMessages {
-            if let existingIndex = mergedMessages.firstIndex(where: { backendMessage in
-                backendMessage.role == localMessage.role &&
-                backendMessage.text == localMessage.text
+        var mergedMessages = localMessages
+        
+        for backendMessage in backendMessages {
+            if !mergedMessages.contains(where: { localMessage in
+                localMessage.role == backendMessage.role &&
+                localMessage.text == backendMessage.text
             }) {
-                if localMessage.attachment != nil {
-                    mergedMessages[existingIndex] = localMessage
-                }
-            } else {
-                mergedMessages.append(localMessage)
+                mergedMessages.append(backendMessage)
             }
         }
         
         return mergedMessages
+    }
+    
+    private func restoreCreatedVehicleAnchorIfNeeded() {
+        guard let createdMessage = messages.first(where: {
+            $0.role == .assistant &&
+            $0.text.contains("digital twin is ready")
+        }) else {
+            createdVehicleCardAnchorId = nil
+            shouldShowCreatedVehicleCard = false
+            return
+        }
+        
+        createdVehicleCardAnchorId = createdMessage.id
+        shouldShowCreatedVehicleCard = true
     }
     
     private func friendlyMessage(for error: Error) -> String {

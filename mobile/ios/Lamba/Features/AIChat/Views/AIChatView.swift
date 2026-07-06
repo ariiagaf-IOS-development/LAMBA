@@ -13,6 +13,7 @@ struct AIChatView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
     @StateObject private var chatViewModel = ChatViewModel()
+    @State private var isEditingCreatedVehicle = false
     
     var body: some View {
         ZStack {
@@ -46,7 +47,7 @@ struct AIChatView: View {
                                 if chatViewModel.createdVehicleCardAnchorId == message.id,
                                    let vehicle = vehicleViewModel.activeVehicle {
                                     CreatedVehicleMiniCard(vehicle: vehicle) {
-                                        selectedTab = .vehicle
+                                        isEditingCreatedVehicle = true
                                     }
                                     .id("createdVehicleCard")
                                 }
@@ -144,6 +145,16 @@ struct AIChatView: View {
                 UIApplication.shared.hideKeyboard()
             }
         )
+        .fullScreenCover(isPresented: $isEditingCreatedVehicle) {
+            AddVehicleView(
+                mode: .edit,
+                onClose: {
+                    isEditingCreatedVehicle = false
+                }
+            )
+            .environmentObject(vehicleViewModel)
+            .environmentObject(authViewModel)
+        }
     }
     
     private var chatHeader: some View {
@@ -629,6 +640,10 @@ private struct CreatedVehicleMiniCard: View {
                     Text("\(vehicle.year) · \(vehicle.mileageKm) km")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(AppColors.textMuted)
+                    
+                    Text("Tap to add photo or edit profile")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(AppColors.primary)
                 }
                 
                 Spacer()
