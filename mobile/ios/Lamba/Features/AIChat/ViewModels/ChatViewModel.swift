@@ -111,7 +111,10 @@ final class ChatViewModel: ObservableObject {
                     showVehicleGreeting(vehicle: vehicle)
                 }
             } else {
-                messages = backendMessages + localOnlyMessages(for: vehicle.id)
+                messages = mergedHistory(
+                    backendMessages: backendMessages,
+                    localMessages: cachedMessagesByVehicleId[vehicle.id] ?? []
+                )
                 cachedMessagesByVehicleId[vehicle.id] = messages
                 saveLocalCache()
             }
@@ -512,8 +515,38 @@ final class ChatViewModel: ObservableObject {
         saveLocalCache()
     }
     
-    private func localOnlyMessages(for vehicleId: Int) -> [ChatUIMessage] {
-        (cachedMessagesByVehicleId[vehicleId] ?? []).filter { $0.attachment != nil }
+    private func mergedHistory(
+        backendMessages: [ChatUIMessage],
+        localMessages: [ChatUIMessage]
+    ) -> [ChatUIMessage] {
+        var mergedMessages = backendMessages
+        var previousLocalMessageHadChatPhoto = false
+        
+        for localMessage in localMessages {
+            let shouldKeepLocalMessage =
+            localMessage.attachment != nil ||
+            (previousLocalMessageHadChatPhoto && localMessage.role == .assistant)
+            
+            guard shouldKeepLocalMessage else {
+                previousLocalMessageHadChatPhoto = localMessage.attachment?.chatPhotoData != nil
+                continue
+            }
+            
+            if let existingIndex = mergedMessages.firstIndex(where: { backendMessage in
+                backendMessage.role == localMessage.role &&
+                backendMessage.text == localMessage.text
+            }) {
+                if localMessage.attachment != nil {
+                    mergedMessages[existingIndex] = localMessage
+                }
+            } else {
+                mergedMessages.append(localMessage)
+            }
+            
+            previousLocalMessageHadChatPhoto = localMessage.attachment?.chatPhotoData != nil
+        }
+        
+        return mergedMessages
     }
     
     private func friendlyMessage(for error: Error) -> String {
