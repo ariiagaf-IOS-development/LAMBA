@@ -13,6 +13,9 @@ struct VehicleRequest: Encodable {
     let year: Int
     let mileageKm: Int
     let vin: String
+    let fuelType: String?
+    let transmission: String?
+    let usageType: String?
 }
 
 struct VehicleUpdateRequest: Encodable {
@@ -21,6 +24,9 @@ struct VehicleUpdateRequest: Encodable {
     let year: Int
     let mileageKm: Int
     let vin: String
+    let fuelType: String?
+    let transmission: String?
+    let usageType: String?
 }
 
 struct VehicleResponse: Decodable, Identifiable {
@@ -31,6 +37,10 @@ struct VehicleResponse: Decodable, Identifiable {
     let year: Int
     let mileageKm: Int
     let vin: String
+    let fuelType: String?
+    let transmission: String?
+    let usageType: String?
+    let photoUrl: String?
     let createdAt: String?
     let updatedAt: String?
     let backendPersonality: VehiclePersonality?
@@ -43,6 +53,11 @@ struct VehicleResponse: Decodable, Identifiable {
         case year
         case mileageKm
         case vin
+        case fuelType
+        case transmission
+        case usageType
+        case photoUrl
+        case phoytoUrl
         case createdAt
         case updatedAt
         case personality
@@ -59,6 +74,11 @@ struct VehicleResponse: Decodable, Identifiable {
         year = try container.decode(Int.self, forKey: .year)
         mileageKm = try container.decode(Int.self, forKey: .mileageKm)
         vin = try container.decodeIfPresent(String.self, forKey: .vin) ?? ""
+        fuelType = try container.decodeIfPresent(String.self, forKey: .fuelType)
+        transmission = try container.decodeIfPresent(String.self, forKey: .transmission)
+        usageType = try container.decodeIfPresent(String.self, forKey: .usageType)
+        photoUrl = try container.decodeIfPresent(String.self, forKey: .photoUrl) ??
+        (try container.decodeIfPresent(String.self, forKey: .phoytoUrl))
         createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
         updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
         

@@ -157,8 +157,29 @@ struct VehicleEventRequest: Encodable {
     let eventDate: String
     let mileageKm: Int?
     let cost: Double?
-    let fuelLiters: Double?
     let metadata: [String: EventMetadataValue]?
+}
+
+struct VehicleEventUpdateRequest: Encodable {
+    let type: VehicleEventType?
+    let title: String?
+    let description: String?
+    let eventDate: String?
+    let mileageKm: Int?
+    let cost: Double?
+    let metadata: [String: EventMetadataValue]?
+}
+
+struct VehicleEventPhoto: Decodable, Identifiable {
+    let id: Int
+    let vehicleEventId: Int?
+    let url: String
+    let createdAt: String?
+}
+
+struct VehicleEventPhotoListResponse: Decodable {
+    let vehicleEventId: Int
+    let photos: [VehicleEventPhoto]
 }
 
 enum EventMetadataValue: Codable, Equatable {

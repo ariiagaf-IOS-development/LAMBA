@@ -273,6 +273,21 @@ struct TimelineView: View {
         }
         
         await timelineRepository.loadTimeline(vehicleId: vehicleId, token: token)
+        await syncEventPhotos(vehicleId: vehicleId, token: token)
+    }
+    
+    private func syncEventPhotos(vehicleId: Int, token: String) async {
+        for event in timelineRepository.events where event.type.supportsPhotoAttachments {
+            let backendPhotos = await timelineRepository.loadPhotoData(
+                vehicleId: vehicleId,
+                eventId: event.id,
+                token: token
+            )
+            
+            if !backendPhotos.isEmpty {
+                eventPhotoStore.mergePhotos(backendPhotos, for: event.id)
+            }
+        }
     }
     
     private func deleteEvent(_ event: VehicleEvent) async {
@@ -342,7 +357,6 @@ struct TimelineView: View {
             eventDate: closedAt.iso8601String,
             mileageKm: sanitizedEndMileage,
             cost: cost,
-            fuelLiters: nil,
             metadata: nil
         )
         
@@ -1093,6 +1107,14 @@ private final class EventPhotoStore: ObservableObject {
             photosByEventId[eventId] = trimmed
         }
         
+        save()
+    }
+    
+    func mergePhotos(_ photos: [Data], for eventId: Int) {
+        guard !photos.isEmpty else { return }
+        
+        let currentPhotos = photosByEventId[eventId] ?? []
+        photosByEventId[eventId] = Array((currentPhotos + photos).prefix(maxPhotosPerEvent))
         save()
     }
     
@@ -2052,7 +2074,6 @@ private struct AddEventView: View {
             eventDate: date.iso8601String,
             mileageKm: Int(mileage.filter { $0.isNumber }),
             cost: parsedCost,
-            fuelLiters: type == .refuel ? parsedFuelLiters : nil,
             metadata: eventMetadata
         )
         
@@ -2064,7 +2085,23 @@ private struct AddEventView: View {
         
         if let createdEvent {
             if !selectedPhotoData.isEmpty {
+                let uploadedPhotos = await repository.uploadEventPhotos(
+                    vehicleId: vehicleId,
+                    eventId: createdEvent.id,
+                    photos: selectedPhotoData,
+                    token: token
+                )
+                
                 photoStore.setPhotos(selectedPhotoData, for: createdEvent.id)
+                
+                if !uploadedPhotos.isEmpty {
+                    let backendPhotos = await repository.loadPhotoData(
+                        vehicleId: vehicleId,
+                        eventId: createdEvent.id,
+                        token: token
+                    )
+                    photoStore.mergePhotos(backendPhotos, for: createdEvent.id)
+                }
             }
             
             onClose()

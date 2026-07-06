@@ -7,6 +7,9 @@
 
 import Foundation
 import Combine
+#if canImport(UIKit)
+import UIKit
+#endif
 
 @MainActor
 final class VehicleViewModel: ObservableObject {
@@ -92,6 +95,7 @@ final class VehicleViewModel: ObservableObject {
             }
 
             selectedVehicle = vehicles.first(where: { $0.id == activeVehicleId })
+            await syncVehiclePhotos(for: loadedVehicles, token: token)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -314,6 +318,29 @@ final class VehicleViewModel: ObservableObject {
         saveVehicleImages()
     }
     
+    func uploadImage(_ data: Data, for vehicleId: Int, token: String) async -> Bool {
+        errorMessage = nil
+        
+        do {
+            let updatedVehicle = try await VehicleAPIService.shared.uploadVehiclePhoto(
+                id: vehicleId,
+                photoData: data.normalizedVehiclePhotoData,
+                token: token
+            )
+            
+            if let index = vehicles.firstIndex(where: { $0.id == updatedVehicle.id }) {
+                vehicles[index] = updatedVehicle
+            }
+            
+            selectedVehicle = vehicles.first(where: { $0.id == activeVehicleId })
+            setImage(data.normalizedVehiclePhotoData, for: vehicleId)
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+    
     func personality(for vehicle: VehicleResponse) -> VehiclePersonality {
         vehiclePersonalities[vehicle.id] ??
         vehicle.backendPersonality ??
@@ -364,6 +391,25 @@ final class VehicleViewModel: ObservableObject {
         } catch {
             print("Failed to load vehicle images:", error.localizedDescription)
         }
+    }
+    
+    private func syncVehiclePhotos(for vehicles: [VehicleResponse], token: String) async {
+        for vehicle in vehicles {
+            guard let photoUrl = vehicle.photoUrl,
+                  !photoUrl.isEmpty,
+                  vehicleImages[vehicle.id] == nil else {
+                continue
+            }
+            
+            if let data = try? await VehicleAPIService.shared.fetchPhotoData(
+                urlOrPath: photoUrl,
+                token: token
+            ) {
+                vehicleImages[vehicle.id] = data
+            }
+        }
+        
+        saveVehicleImages()
     }
     
     private func migrateBMWPersonalitiesIfNeeded(for vehicles: [VehicleResponse]) {
@@ -419,5 +465,28 @@ final class VehicleViewModel: ObservableObject {
         } catch {
             print("Failed to load vehicle personalities:", error.localizedDescription)
         }
+    }
+}
+
+private extension Data {
+    var normalizedVehiclePhotoData: Data {
+        #if canImport(UIKit)
+        guard let image = UIImage(data: self) else {
+            return self
+        }
+        
+        let maxSide: CGFloat = 1400
+        let size = image.size
+        let scale = Swift.min(1, maxSide / Swift.max(size.width, size.height))
+        let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        let resizedImage = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+        
+        return resizedImage.jpegData(compressionQuality: 0.82) ?? self
+        #else
+        return self
+        #endif
     }
 }

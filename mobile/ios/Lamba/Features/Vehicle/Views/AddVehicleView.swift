@@ -199,8 +199,13 @@ struct AddVehicleView: View {
                         }
                         
                         if vehicleViewModel.errorMessage == nil {
-                            if let id = vehicleViewModel.activeVehicleId {
-                                vehicleViewModel.setImage(localVehicleImageData, for: id)
+                            if let id = vehicleViewModel.activeVehicleId,
+                               let localVehicleImageData {
+                                _ = await vehicleViewModel.uploadImage(
+                                    localVehicleImageData,
+                                    for: id,
+                                    token: token
+                                )
                             }
                             
                             onClose?()

@@ -42,6 +42,20 @@ final class TimelineAPIService {
         )
     }
     
+    func updateEvent(
+        vehicleId: Int,
+        eventId: Int,
+        request body: VehicleEventUpdateRequest,
+        token: String
+    ) async throws -> VehicleEvent {
+        try await sendRequest(
+            path: "/api/vehicles/\(vehicleId)/events/\(eventId)",
+            method: "PATCH",
+            token: token,
+            body: body
+        )
+    }
+    
     func deleteEvent(
         vehicleId: Int,
         eventId: Int,
@@ -52,6 +66,55 @@ final class TimelineAPIService {
             method: "DELETE",
             token: token
         )
+    }
+    
+    func listEventPhotos(
+        vehicleId: Int,
+        eventId: Int,
+        token: String
+    ) async throws -> VehicleEventPhotoListResponse {
+        try await sendRequest(
+            path: "/api/vehicles/\(vehicleId)/events/\(eventId)/photos",
+            method: "GET",
+            token: token
+        )
+    }
+    
+    func uploadEventPhoto(
+        vehicleId: Int,
+        eventId: Int,
+        photoData: Data,
+        token: String
+    ) async throws -> VehicleEventPhoto {
+        try await uploadMultipartPhoto(
+            path: "/api/vehicles/\(vehicleId)/events/\(eventId)/photos",
+            photoData: photoData,
+            token: token,
+            responseType: VehicleEventPhoto.self
+        )
+    }
+    
+    func fetchPhotoData(urlOrPath: String, token: String) async throws -> Data {
+        let url = photoURL(from: urlOrPath)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
+        guard 200...299 ~= httpResponse.statusCode else {
+            throw APIError.serverError(
+                statusCode: httpResponse.statusCode,
+                message: String(data: data, encoding: .utf8)
+            )
+        }
+        
+        return data
     }
     
     func startTrip(
@@ -134,6 +197,84 @@ final class TimelineAPIService {
         } catch {
             throw APIError.decodingError
         }
+    }
+    
+    private func uploadMultipartPhoto<Response: Decodable>(
+        path: String,
+        photoData: Data,
+        token: String,
+        responseType: Response.Type
+    ) async throws -> Response {
+        let url = APIConfig.baseURL.appending(path: path)
+        let boundary = "Boundary-\(UUID().uuidString)"
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = multipartBody(
+            boundary: boundary,
+            fieldName: "photo",
+            filename: "photo.jpg",
+            mimeType: "image/jpeg",
+            data: photoData
+        )
+        
+        let data: Data
+        let response: URLResponse
+        
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw APIError.noInternet
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
+        guard 200...299 ~= httpResponse.statusCode else {
+            throw APIError.serverError(
+                statusCode: httpResponse.statusCode,
+                message: String(data: data, encoding: .utf8)
+            )
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(Response.self, from: data)
+    }
+    
+    private func multipartBody(
+        boundary: String,
+        fieldName: String,
+        filename: String,
+        mimeType: String,
+        data: Data
+    ) -> Data {
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8) ?? Data())
+        body.append("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"\(filename)\"\r\n".data(using: .utf8) ?? Data())
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8) ?? Data())
+        body.append(data)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8) ?? Data())
+        return body
+    }
+    
+    private func photoURL(from urlOrPath: String) -> URL {
+        if let url = URL(string: urlOrPath), url.scheme != nil {
+            return url
+        }
+        
+        let filename = urlOrPath
+            .split(separator: "/")
+            .last
+            .map(String.init) ?? urlOrPath
+        
+        return APIConfig.baseURL
+            .appendingPathComponent("api")
+            .appendingPathComponent("photos")
+            .appendingPathComponent(filename)
     }
 }
 

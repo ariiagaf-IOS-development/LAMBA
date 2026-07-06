@@ -121,6 +121,60 @@ final class TimelineRepository: ObservableObject {
         }
     }
     
+    func uploadEventPhotos(
+        vehicleId: Int,
+        eventId: Int,
+        photos: [Data],
+        token: String
+    ) async -> [VehicleEventPhoto] {
+        var uploadedPhotos: [VehicleEventPhoto] = []
+        
+        for photo in photos {
+            do {
+                let uploadedPhoto = try await apiService.uploadEventPhoto(
+                    vehicleId: vehicleId,
+                    eventId: eventId,
+                    photoData: photo,
+                    token: token
+                )
+                uploadedPhotos.append(uploadedPhoto)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+        
+        return uploadedPhotos
+    }
+    
+    func loadPhotoData(
+        vehicleId: Int,
+        eventId: Int,
+        token: String
+    ) async -> [Data] {
+        do {
+            let photoList = try await apiService.listEventPhotos(
+                vehicleId: vehicleId,
+                eventId: eventId,
+                token: token
+            )
+            
+            var loadedPhotos: [Data] = []
+            
+            for photo in photoList.photos {
+                if let data = try? await apiService.fetchPhotoData(
+                    urlOrPath: photo.url,
+                    token: token
+                ) {
+                    loadedPhotos.append(data)
+                }
+            }
+            
+            return loadedPhotos
+        } catch {
+            return []
+        }
+    }
+    
     func clear() {
         events = []
         stats = nil
