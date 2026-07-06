@@ -119,11 +119,11 @@ struct VehicleEventStats: Decodable {
     
     var repairCost: Double {
         let serviceCost = byType
-            .filter { ![.trip, .refuel].contains($0.type) }
+            .filter { [.repair, .maintenance, .partReplacement].contains($0.type) }
             .map(\.cost)
             .reduce(0, +)
         
-        return serviceCost > 0 ? serviceCost : totalCost
+        return serviceCost
     }
     
     init(from decoder: Decoder) throws {

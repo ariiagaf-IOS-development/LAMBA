@@ -1248,6 +1248,10 @@ private struct LatestTimelineEventCard: View {
             HStack(spacing: AppSpacing.md) {
                 LatestEventMeta(title: "MILEAGE", value: mileageText)
                 LatestEventMeta(title: "COST", value: costText)
+                
+                if event.displayFuelLiters != nil {
+                    LatestEventMeta(title: "FUEL", value: fuelText)
+                }
             }
         }
         .padding(AppSpacing.lg)
@@ -1267,6 +1271,11 @@ private struct LatestTimelineEventCard: View {
     private var costText: String {
         guard let cost = event.cost, cost > 0 else { return "--" }
         return "\(cost.formatted(.number.precision(.fractionLength(0)))) rub"
+    }
+    
+    private var fuelText: String {
+        guard let fuelLiters = event.displayFuelLiters else { return "--" }
+        return "\(fuelLiters.fuelLitersText) L"
     }
 }
 
@@ -1564,7 +1573,9 @@ private struct TimelineEventDetailView: View {
                     TimelineDetailMetric(title: "MILEAGE", value: mileageText, tint: AppColors.primary)
                     TimelineDetailMetric(title: "COST", value: costText, tint: AppColors.orange)
                     TimelineDetailMetric(title: "FUEL", value: fuelText, tint: AppColors.teal)
+                    TimelineDetailMetric(title: "PRICE/L", value: pricePerLiterText, tint: AppColors.primary)
                     TimelineDetailMetric(title: "PHOTOS", value: "\(photos.count)", tint: AppColors.green)
+                    TimelineDetailMetric(title: "TYPE", value: event.type.title, tint: event.type.tintColor)
                 }
                 
                 if !photos.isEmpty {
@@ -1617,6 +1628,17 @@ private struct TimelineEventDetailView: View {
     private var fuelText: String {
         guard let fuelLiters = event.displayFuelLiters else { return "--" }
         return "\(fuelLiters.fuelLitersText) L"
+    }
+    
+    private var pricePerLiterText: String {
+        guard let fuelLiters = event.displayFuelLiters,
+              fuelLiters > 0,
+              let cost = event.cost,
+              cost > 0 else {
+            return "--"
+        }
+        
+        return "\((cost / fuelLiters).formatted(.number.precision(.fractionLength(1...2)))) rub"
     }
     
     private var descriptionText: String {
@@ -1788,7 +1810,9 @@ private struct AddEventView: View {
     @State private var selectedPhotoData: [Data] = []
     
     private var isFormValid: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        fuelLitersValidationMessage == nil &&
+        costValidationMessage == nil
     }
     
     var body: some View {
@@ -1857,7 +1881,9 @@ private struct AddEventView: View {
                                 title: "FUEL LITERS",
                                 placeholder: "45.5",
                                 text: $fuelLiters,
-                                keyboardType: .decimalPad
+                                keyboardType: .decimalPad,
+                                helperText: fuelLitersValidationMessage,
+                                helperColor: AppColors.red
                             )
                         }
                         
@@ -1873,12 +1899,14 @@ private struct AddEventView: View {
                                 title: "COST (RUB)",
                                 placeholder: "0.00",
                                 text: $cost,
-                                keyboardType: .decimalPad
+                                keyboardType: .decimalPad,
+                                helperText: costValidationMessage,
+                                helperColor: AppColors.red
                             )
                         }
                         
                         EventFieldSection(title: "EVENT DATE") {
-                            DatePicker("", selection: $date, displayedComponents: [.date])
+                            DatePicker("", selection: $date, displayedComponents: [.date, .hourAndMinute])
                                 .labelsHidden()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(AppSpacing.md)
@@ -1932,6 +1960,17 @@ private struct AddEventView: View {
                 fuelLiters = ""
             }
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                
+                Button("Done") {
+                    UIApplication.shared.hideKeyboard()
+                }
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(AppColors.primary)
+            }
+        }
     }
     
     private var titlePlaceholder: String {
@@ -1950,19 +1989,41 @@ private struct AddEventView: View {
     }
     
     private var parsedCost: Double? {
-        let normalized = cost
-            .replacingOccurrences(of: ",", with: ".")
-            .filter { $0.isNumber || $0 == "." }
-        
-        return Double(normalized)
+        cost.normalizedPositiveDecimal
     }
     
     private var parsedFuelLiters: Double? {
-        let normalized = fuelLiters
-            .replacingOccurrences(of: ",", with: ".")
-            .filter { $0.isNumber || $0 == "." }
+        fuelLiters.normalizedPositiveDecimal
+    }
+    
+    private var fuelLitersValidationMessage: String? {
+        guard type == .refuel else { return nil }
         
-        return Double(normalized)
+        let trimmedFuelLiters = fuelLiters.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmedFuelLiters.isEmpty {
+            return "Fuel volume is required for refuel events."
+        }
+        
+        guard let parsedFuelLiters, parsedFuelLiters > 0 else {
+            return "Enter a valid decimal value, e.g. 45.5."
+        }
+        
+        return nil
+    }
+    
+    private var costValidationMessage: String? {
+        let trimmedCost = cost.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedCost.isEmpty else {
+            return nil
+        }
+        
+        guard parsedCost != nil else {
+            return "Enter a valid decimal cost, e.g. 3200.50."
+        }
+        
+        return nil
     }
     
     private var eventMetadata: [String: EventMetadataValue]? {
@@ -1975,6 +2036,10 @@ private struct AddEventView: View {
     }
     
     private func submit() async {
+        guard isFormValid else {
+            return
+        }
+        
         guard let vehicleId = vehicleViewModel.activeVehicleId,
               let token = authViewModel.token else {
             return
@@ -2043,21 +2108,32 @@ private struct EventTextFieldSection: View {
     @Binding var text: String
     var keyboardType: UIKeyboardType = .default
     var axis: Axis = .horizontal
+    var helperText: String?
+    var helperColor: Color = AppColors.textSecondary
     
     var body: some View {
         EventFieldSection(title: title) {
-            TextField(placeholder, text: $text, axis: axis)
-                .keyboardType(keyboardType)
-                .font(AppTypography.caption)
-                .foregroundStyle(AppColors.textPrimary)
-                .lineLimit(axis == .vertical ? 3...5 : 1...1)
-                .padding(AppSpacing.md)
-                .background(AppColors.card)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppRadius.xl)
-                        .stroke(AppColors.bubbleBorder, lineWidth: 1)
-                )
+            VStack(alignment: .leading, spacing: 8) {
+                TextField(placeholder, text: $text, axis: axis)
+                    .keyboardType(keyboardType)
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AppColors.textPrimary)
+                    .lineLimit(axis == .vertical ? 3...5 : 1...1)
+                    .padding(AppSpacing.md)
+                    .background(AppColors.card)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.xl)
+                            .stroke(helperText == nil ? AppColors.bubbleBorder : helperColor.opacity(0.45), lineWidth: 1)
+                    )
+                
+                if let helperText {
+                    Text(helperText)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(helperColor)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
     }
 }
@@ -2189,6 +2265,21 @@ private extension String {
     var emptyToNil: String? {
         let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+    
+    var normalizedPositiveDecimal: Double? {
+        let normalized = trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: ",", with: ".")
+        
+        guard !normalized.isEmpty,
+              normalized.allSatisfy({ $0.isNumber || $0 == "." }),
+              normalized.filter({ $0 == "." }).count <= 1,
+              let value = Double(normalized),
+              value >= 0 else {
+            return nil
+        }
+        
+        return value
     }
     
     var iso8601Date: Date? {
