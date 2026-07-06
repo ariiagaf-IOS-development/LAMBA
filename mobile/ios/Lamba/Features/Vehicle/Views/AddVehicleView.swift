@@ -38,6 +38,8 @@ struct AddVehicleView: View {
     @State private var year: String = ""
     @State private var mileage: String = ""
     @State private var vin: String = ""
+    @State private var selectedPersonality: VehiclePersonality = .kindFriend
+    @State private var didManuallySelectPersonality = false
     
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var localVehicleImageData: Data?
@@ -78,12 +80,20 @@ struct AddVehicleView: View {
         normalizedVin.allSatisfy { $0.isLetter || $0.isNumber }
     }
     
+    private var inferredPersonality: VehiclePersonality {
+        VehiclePersonality.inferred(
+            brand: brand,
+            model: model,
+            year: parsedYear,
+            mileageKm: parsedMileage
+        )
+    }
+    
     var body: some View {
         ZStack {
             AppColors.background.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                
                 AppHeaderView(
                     config: .init(
                         title: isEditing ? "EDIT VEHICLE" : "CREATE VEHICLE"
@@ -103,120 +113,9 @@ struct AddVehicleView: View {
                     : "Add your vehicle details to initialize LAMBA AI sync."
                 )
                 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        
-                        VehiclePhotoUploadField(
-                            selectedPhoto: $selectedPhoto,
-                            vehicleImageData: localVehicleImageData
-                        )
-                        
-                        VehicleFieldSection(
-                            title: "VEHICLE NODE (BRAND)",
-                            placeholder: "e.g. Tesla",
-                            text: $brand
-                        )
-                        
-                        VehicleFieldSection(
-                            title: "MODEL NAME",
-                            placeholder: "e.g. Model 3",
-                            text: $model
-                        )
-                        
-                        HStack(spacing: 12) {
-                            VehicleFieldSection(
-                                title: "PRODUCTION YEAR",
-                                placeholder: "2022",
-                                text: $year,
-                                keyboardType: .numberPad
-                            )
-                            .frame(maxWidth: .infinity)
-                            
-                            VehicleFieldSection(
-                                title: "MILEAGE (KM)",
-                                placeholder: "42000",
-                                text: $mileage,
-                                keyboardType: .numberPad
-                            )
-                            .frame(maxWidth: .infinity)
-                        }
-                        
-                        VehicleFieldSection(
-                            title: "17-character VIN",
-                            placeholder: "JTDBE32K620123456",
-                            text: $vin
-                        )
-                        
-                        if let errorMessage = vehicleViewModel.errorMessage {
-                            Text(errorMessage)
-                                .font(AppTypography.caption)
-                                .foregroundStyle(AppColors.orange)
-                                .padding(.top, 4)
-                        }
-                    }
-                    .padding(.horizontal, AppSpacing.xxl)
-                    .padding(.top, 40)
-                    .padding(.bottom, AppSpacing.xl)
-                }
+                formContent
                 
-                PrimaryActionButton(
-                    title: vehicleViewModel.isLoading
-                    ? "SAVING..."
-                    : (isEditing ? "SAVE CHANGES" : "INITIALIZE PROTOCOL"),
-                    colors: isFormValid
-                    ? [
-                        AppColors.gradientStart,
-                        AppColors.gradientEnd
-                    ]
-                    : [
-                        AppColors.textSecondary.opacity(0.5),
-                        AppColors.textSecondary.opacity(0.5)
-                    ]
-                ) {
-                    guard isFormValid, let token = authViewModel.token else {
-                        return
-                    }
-                    
-                    Task {
-                        if isEditing {
-                            await vehicleViewModel.updateSelectedVehicle(
-                                brand: brand,
-                                model: model,
-                                year: year,
-                                mileage: mileage,
-                                vin: normalizedVin,
-                                token: token
-                            )
-                        } else {
-                            await vehicleViewModel.createVehicle(
-                                brand: brand,
-                                model: model,
-                                year: year,
-                                mileage: mileage,
-                                vin: normalizedVin,
-                                token: token
-                            )
-                        }
-                        
-                        if vehicleViewModel.errorMessage == nil {
-                            if let id = vehicleViewModel.activeVehicleId,
-                               let localVehicleImageData {
-                                _ = await vehicleViewModel.uploadImage(
-                                    localVehicleImageData,
-                                    for: id,
-                                    token: token
-                                )
-                            }
-                            
-                            onClose?()
-                        }
-                    }
-                }
-                .disabled(!isFormValid || vehicleViewModel.isLoading)
-                .padding(.horizontal, AppSpacing.xxl)
-                .padding(.top, AppSpacing.sm)
-                .padding(.bottom, AppSpacing.xl)
-                .background(AppColors.background)
+                saveButton
             }
         }
         .onAppear {
@@ -228,11 +127,18 @@ struct AddVehicleView: View {
                 year = String(vehicle.year)
                 mileage = String(vehicle.mileageKm)
                 vin = vehicle.vin
+                selectedPersonality = vehicleViewModel.personality(for: vehicle)
+                didManuallySelectPersonality = vehicle.backendPersonality != nil
                 localVehicleImageData = vehicleViewModel.getImage(for: vehicle.id)
             } else {
+                syncInferredPersonality()
                 localVehicleImageData = nil
             }
         }
+        .onChange(of: brand) { _, _ in syncInferredPersonality() }
+        .onChange(of: model) { _, _ in syncInferredPersonality() }
+        .onChange(of: year) { _, _ in syncInferredPersonality() }
+        .onChange(of: mileage) { _, _ in syncInferredPersonality() }
         .onChange(of: selectedPhoto) { _, newValue in
             Task {
                 if let data = try? await newValue?.loadTransferable(type: Data.self) {
@@ -240,6 +146,135 @@ struct AddVehicleView: View {
                 }
             }
         }
+    }
+    
+    private var formContent: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 16) {
+                VehiclePhotoUploadField(
+                    selectedPhoto: $selectedPhoto,
+                    vehicleImageData: localVehicleImageData
+                )
+                
+                VehicleFieldSection(
+                    title: "VEHICLE NODE (BRAND)",
+                    placeholder: "e.g. Tesla",
+                    text: $brand
+                )
+                
+                VehicleFieldSection(
+                    title: "MODEL NAME",
+                    placeholder: "e.g. Model 3",
+                    text: $model
+                )
+                
+                HStack(spacing: 12) {
+                    VehicleFieldSection(
+                        title: "PRODUCTION YEAR",
+                        placeholder: "2022",
+                        text: $year,
+                        keyboardType: .numberPad
+                    )
+                    .frame(maxWidth: .infinity)
+                    
+                    VehicleFieldSection(
+                        title: "MILEAGE (KM)",
+                        placeholder: "42000",
+                        text: $mileage,
+                        keyboardType: .numberPad
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                
+                VehicleFieldSection(
+                    title: "17-character VIN",
+                    placeholder: "JTDBE32K620123456",
+                    text: $vin
+                )
+                
+                VehiclePersonalityFormSection(
+                    selectedPersonality: $selectedPersonality,
+                    inferredPersonality: inferredPersonality,
+                    didManuallySelectPersonality: $didManuallySelectPersonality
+                )
+                
+                if let errorMessage = vehicleViewModel.errorMessage {
+                    Text(errorMessage)
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AppColors.orange)
+                        .padding(.top, 4)
+                }
+            }
+            .padding(.horizontal, AppSpacing.xxl)
+            .padding(.top, 40)
+            .padding(.bottom, AppSpacing.xl)
+        }
+    }
+    
+    private var saveButton: some View {
+        PrimaryActionButton(
+            title: vehicleViewModel.isLoading
+            ? "SAVING..."
+            : (isEditing ? "SAVE CHANGES" : "INITIALIZE PROTOCOL"),
+            colors: isFormValid
+            ? [AppColors.gradientStart, AppColors.gradientEnd]
+            : [AppColors.textSecondary.opacity(0.5), AppColors.textSecondary.opacity(0.5)]
+        ) {
+            submit()
+        }
+        .disabled(!isFormValid || vehicleViewModel.isLoading)
+        .padding(.horizontal, AppSpacing.xxl)
+        .padding(.top, AppSpacing.sm)
+        .padding(.bottom, AppSpacing.xl)
+        .background(AppColors.background)
+    }
+    
+    private func submit() {
+        guard isFormValid, let token = authViewModel.token else {
+            return
+        }
+        
+        Task {
+            if isEditing {
+                await vehicleViewModel.updateSelectedVehicle(
+                    brand: brand,
+                    model: model,
+                    year: year,
+                    mileage: mileage,
+                    vin: normalizedVin,
+                    personality: selectedPersonality,
+                    token: token
+                )
+            } else {
+                await vehicleViewModel.createVehicle(
+                    brand: brand,
+                    model: model,
+                    year: year,
+                    mileage: mileage,
+                    vin: normalizedVin,
+                    personality: selectedPersonality,
+                    token: token
+                )
+            }
+            
+            if vehicleViewModel.errorMessage == nil {
+                if let id = vehicleViewModel.activeVehicleId,
+                   let localVehicleImageData {
+                    _ = await vehicleViewModel.uploadImage(
+                        localVehicleImageData,
+                        for: id,
+                        token: token
+                    )
+                }
+                
+                onClose?()
+            }
+        }
+    }
+    
+    private func syncInferredPersonality() {
+        guard !didManuallySelectPersonality else { return }
+        selectedPersonality = inferredPersonality
     }
     
     private struct VehicleInputField: View {
@@ -278,6 +313,76 @@ struct AddVehicleView: View {
                     keyboardType: keyboardType
                 )
             }
+        }
+    }
+    
+    private struct VehiclePersonalityFormSection: View {
+        @Binding var selectedPersonality: VehiclePersonality
+        let inferredPersonality: VehiclePersonality
+        @Binding var didManuallySelectPersonality: Bool
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("BEHAVIOR PROFILE")
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .tracking(2)
+                
+                Menu {
+                    ForEach(VehiclePersonality.allCases) { personality in
+                        Button {
+                            selectedPersonality = personality
+                            didManuallySelectPersonality = true
+                        } label: {
+                            Text(personality.title)
+                        }
+                    }
+                    
+                    Button {
+                        selectedPersonality = inferredPersonality
+                        didManuallySelectPersonality = false
+                    } label: {
+                        Text("Use detected profile")
+                    }
+                } label: {
+                    HStack(spacing: AppSpacing.md) {
+                        Image(systemName: selectedPersonality.iconName)
+                            .font(.system(size: 18, weight: .black))
+                            .foregroundStyle(AppColors.primary)
+                            .frame(width: 48, height: 48)
+                            .background(AppColors.primary.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+                        
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(selectedPersonality.title)
+                                .font(.system(size: 16, weight: .black))
+                                .foregroundStyle(AppColors.textPrimary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                            
+                            Text(statusText)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(AppColors.textSecondary)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 12, weight: .black))
+                            .foregroundStyle(AppColors.primary)
+                    }
+                    .appCard()
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        
+        private var statusText: String {
+            didManuallySelectPersonality
+            ? "Selected manually. Will sync with backend on save."
+            : "Detected from brand, age and mileage."
         }
     }
     

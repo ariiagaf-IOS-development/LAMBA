@@ -22,75 +22,75 @@ enum VehiclePersonality: String, Codable, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .oldGrumbler:
-            return "СТАРЫЙ ВОРЧУН"
+            return "OLD GRUMBLER"
         case .boardBuddy:
-            return "СВОЙ В ДОСКУ"
+            return "BOARD BUDDY"
         case .boldRacer:
-            return "ДЕРЗКИЙ ГОНЩИК"
+            return "BOLD RACER"
         case .capriciousStar:
-            return "КАПРИЗНАЯ ЗВЕЗДА"
+            return "CAPRICIOUS STAR"
         case .formerStar:
-            return "БЫВШАЯ ЗВЕЗДА"
+            return "FORMER STAR"
         case .aristocrat:
-            return "АРИСТОКРАТ"
+            return "ARISTOCRAT"
         case .seasonedTraveler:
-            return "БЫВАЛЫЙ ПУТЕШЕСТВЕННИК"
+            return "SEASONED TRAVELER"
         case .enthusiasticNewbie:
-            return "ВОСТОРЖЕННЫЙ НОВИЧОК"
+            return "ENTHUSIASTIC NEWBIE"
         case .tirelessWorker:
-            return "НЕУТОМИМЫЙ ТРУДЯГА"
+            return "TIRELESS WORKER"
         case .kindFriend:
-            return "ДОБРЫЙ ДРУГ"
+            return "KIND FRIEND"
         }
     }
     
     var subtitle: String {
         switch self {
         case .oldGrumbler:
-            return "Лада, УАЗ или ГАЗ с возрастом и большим пробегом."
+            return "Lada, UAZ or GAZ with age and serious mileage."
         case .boardBuddy:
-            return "Молодая Лада или УАЗ, простая и разговорчивая."
+            return "Young Lada or UAZ: simple, familiar, and talkative."
         case .boldRacer:
-            return "Ferrari, Porsche или Lamborghini с гоночным самолюбием."
+            return "Ferrari, Porsche or Lamborghini with racing pride."
         case .capriciousStar:
-            return "BMW, Audi или Mercedes до 150k км: премиум, драма, требования."
+            return "BMW, Audi or Mercedes under 150k km: premium, dramatic, demanding."
         case .formerStar:
-            return "BMW, Audi или Mercedes после 150k км: блеск остался, терпение нет."
+            return "BMW, Audi or Mercedes over 150k km: still shiny, less patient."
         case .aristocrat:
-            return "Rolls-Royce, Bentley, Lexus или Tesla с дорогими манерами."
+            return "Rolls-Royce, Bentley, Lexus or Tesla with expensive manners."
         case .seasonedTraveler:
-            return "Обычная марка, возраст и большой пробег."
+            return "A regular brand with age, mileage, and stories."
         case .enthusiasticNewbie:
-            return "Любая машина до двух лет и до 30k км."
+            return "Any vehicle up to two years old and under 30k km."
         case .tirelessWorker:
-            return "Большой пробег и дорогое обслуживание."
+            return "High mileage and expensive service habits."
         case .kindFriend:
-            return "Дефолтный спокойный характер для всех остальных."
+            return "The calm default profile for everyone else."
         }
     }
     
     var aiLine: String {
         switch self {
         case .oldGrumbler:
-            return "Кхе-кхе... Масло бы поменять... В мои годы такого не было..."
+            return "Ahem... Could use an oil change... Back in my day, we did things properly."
         case .boardBuddy:
-            return "Братан, масло пора менять, не тяни. Я не BMW, зато ломаюсь реже!"
+            return "Buddy, it is time for oil. Do not drag it out. I am not a BMW, I break less often."
         case .boldRacer:
-            return "Конечно, мне нужно лучшее масло. Ты же видишь, с кем имеешь дело."
+            return "Of course I need the best oil. Look who you are dealing with."
         case .capriciousStar:
-            return "Масло 5W-30?! Я заслуживаю только 5W-40 LL!"
+            return "5W-30 oil? Please. I deserve 5W-40 LL and an apology."
         case .formerStar:
-            return "Когда я выехал из салона, все оборачивались... Даже звёзды стареют."
+            return "When I left the showroom, everyone turned around. Even stars get older."
         case .aristocrat:
-            return "Позвольте обратить ваше внимание на состояние тормозной системы."
+            return "Allow me to draw your attention to the brake system condition."
         case .seasonedTraveler:
-            return "За мои километры я научился чувствовать каждый стук."
+            return "After all my kilometers, I can feel every little knock."
         case .enthusiasticNewbie:
-            return "Мой первый техосмотр! Волнуюсь!"
+            return "My first inspection. I am excited and slightly nervous."
         case .tirelessWorker:
-            return "Колодки стёрлись. Менять. Точка."
+            return "Pads are worn. Replace them. Full stop."
         case .kindFriend:
-            return "Ничего страшного, но лучше заглянуть на сервис."
+            return "Nothing scary, but it is better to stop by service."
         }
     }
     

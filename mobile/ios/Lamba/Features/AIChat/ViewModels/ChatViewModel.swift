@@ -422,6 +422,12 @@ final class ChatViewModel: ObservableObject {
                 year: onboardingDraft.year,
                 mileage: onboardingDraft.mileage,
                 vin: onboardingDraft.vin,
+                personality: VehiclePersonality.inferred(
+                    brand: onboardingDraft.brand,
+                    model: onboardingDraft.model,
+                    year: Int(onboardingDraft.year),
+                    mileageKm: Int(onboardingDraft.mileage)
+                ),
                 token: token
             )
             

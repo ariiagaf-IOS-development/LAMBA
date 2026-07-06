@@ -108,6 +108,7 @@ final class VehicleViewModel: ObservableObject {
         year: String,
         mileage: String,
         vin: String,
+        personality: VehiclePersonality?,
         token: String
     ) async {
         isLoading = true
@@ -128,6 +129,12 @@ final class VehicleViewModel: ObservableObject {
                 year: cleanYear,
                 mileageKm: mileageKm,
                 vin: vin.trimmingCharacters(in: .whitespacesAndNewlines),
+                personality: personality ?? VehiclePersonality.inferred(
+                    brand: brand,
+                    model: model,
+                    year: cleanYear,
+                    mileageKm: mileageKm
+                ),
                 token: token
             )
 
@@ -148,6 +155,7 @@ final class VehicleViewModel: ObservableObject {
         year: String,
         mileage: String,
         vin: String,
+        personality: VehiclePersonality?,
         token: String
     ) async {
         guard let activeVehicle else { return }
@@ -166,6 +174,7 @@ final class VehicleViewModel: ObservableObject {
                 year: cleanYear,
                 mileageKm: mileageKm,
                 vin: vin.trimmingCharacters(in: .whitespacesAndNewlines),
+                personality: personality ?? self.personality(for: activeVehicle),
                 token: token
             )
             

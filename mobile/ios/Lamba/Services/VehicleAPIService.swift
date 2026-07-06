@@ -69,6 +69,7 @@ final class VehicleAPIService {
         year: Int,
         mileageKm: Int,
         vin: String,
+        personality: VehiclePersonality? = nil,
         token: String
     ) async throws -> VehicleResponse {
         
@@ -88,7 +89,7 @@ final class VehicleAPIService {
             fuelType: nil,
             transmission: nil,
             usageType: nil,
-            personality: VehiclePersonality.inferred(
+            personality: personality ?? VehiclePersonality.inferred(
                 brand: brand,
                 model: model,
                 year: year,
