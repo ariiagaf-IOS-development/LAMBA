@@ -1934,11 +1934,10 @@ private struct AddEventView: View {
                             )
                         }
                         
-                        if type == .refuel,
-                           let pricePerLiterPreview {
+                        if type == .refuel {
                             EventDerivedMetricCard(
-                                title: "PRICE PER LITER",
-                                value: pricePerLiterPreview,
+                                title: "COST/L",
+                                value: costPerLiterPreview,
                                 icon: "fuelpump.fill"
                             )
                         }
@@ -2062,12 +2061,12 @@ private struct AddEventView: View {
         return ["fuel_liters": .double(parsedFuelLiters)]
     }
     
-    private var pricePerLiterPreview: String? {
+    private var costPerLiterPreview: String {
         guard let parsedFuelLiters,
               parsedFuelLiters > 0,
               let parsedCost,
               parsedCost > 0 else {
-            return nil
+            return "-- rub/L"
         }
         
         return "\((parsedCost / parsedFuelLiters).formatted(.number.precision(.fractionLength(1...2)))) rub/L"
