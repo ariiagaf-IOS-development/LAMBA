@@ -520,18 +520,8 @@ final class ChatViewModel: ObservableObject {
         localMessages: [ChatUIMessage]
     ) -> [ChatUIMessage] {
         var mergedMessages = backendMessages
-        var previousLocalMessageHadChatPhoto = false
         
         for localMessage in localMessages {
-            let shouldKeepLocalMessage =
-            localMessage.attachment != nil ||
-            (previousLocalMessageHadChatPhoto && localMessage.role == .assistant)
-            
-            guard shouldKeepLocalMessage else {
-                previousLocalMessageHadChatPhoto = localMessage.attachment?.chatPhotoData != nil
-                continue
-            }
-            
             if let existingIndex = mergedMessages.firstIndex(where: { backendMessage in
                 backendMessage.role == localMessage.role &&
                 backendMessage.text == localMessage.text
@@ -542,8 +532,6 @@ final class ChatViewModel: ObservableObject {
             } else {
                 mergedMessages.append(localMessage)
             }
-            
-            previousLocalMessageHadChatPhoto = localMessage.attachment?.chatPhotoData != nil
         }
         
         return mergedMessages

@@ -410,11 +410,7 @@ struct VehicleProfileView: View {
         }
         
         private var subtitle: String {
-            if VehiclePersonality.isBMW(brand: vehicle.brand, model: vehicle.model) {
-                return "BMW detected. Roast mode is locked for this digital twin."
-            }
-            
-            return "Choose how your \(vehicle.brand) \(vehicle.model) talks, reacts, and shows up in the app."
+            "Choose the behavior profile for your \(vehicle.brand) \(vehicle.model)."
         }
     }
     

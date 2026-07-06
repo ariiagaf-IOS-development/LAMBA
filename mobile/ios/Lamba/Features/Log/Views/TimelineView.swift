@@ -1594,8 +1594,15 @@ private struct TimelineEventDetailView: View {
                 ) {
                     TimelineDetailMetric(title: "MILEAGE", value: mileageText, tint: AppColors.primary)
                     TimelineDetailMetric(title: "COST", value: costText, tint: AppColors.orange)
-                    TimelineDetailMetric(title: "FUEL", value: fuelText, tint: AppColors.teal)
-                    TimelineDetailMetric(title: "PRICE/L", value: pricePerLiterText, tint: AppColors.primary)
+                    
+                    if event.displayFuelLiters != nil {
+                        TimelineDetailMetric(title: "FUEL", value: fuelText, tint: AppColors.teal)
+                    }
+                    
+                    if pricePerLiterText != nil {
+                        TimelineDetailMetric(title: "PRICE/L", value: pricePerLiterText ?? "--", tint: AppColors.primary)
+                    }
+                    
                     TimelineDetailMetric(title: "PHOTOS", value: "\(photos.count)", tint: AppColors.green)
                     TimelineDetailMetric(title: "TYPE", value: event.type.title, tint: event.type.tintColor)
                 }
@@ -1652,12 +1659,12 @@ private struct TimelineEventDetailView: View {
         return "\(fuelLiters.fuelLitersText) L"
     }
     
-    private var pricePerLiterText: String {
+    private var pricePerLiterText: String? {
         guard let fuelLiters = event.displayFuelLiters,
               fuelLiters > 0,
               let cost = event.cost,
               cost > 0 else {
-            return "--"
+            return nil
         }
         
         return "\((cost / fuelLiters).formatted(.number.precision(.fractionLength(1...2)))) rub"
@@ -1927,6 +1934,15 @@ private struct AddEventView: View {
                             )
                         }
                         
+                        if type == .refuel,
+                           let pricePerLiterPreview {
+                            EventDerivedMetricCard(
+                                title: "PRICE PER LITER",
+                                value: pricePerLiterPreview,
+                                icon: "fuelpump.fill"
+                            )
+                        }
+                        
                         EventFieldSection(title: "EVENT DATE") {
                             DatePicker("", selection: $date, displayedComponents: [.date, .hourAndMinute])
                                 .labelsHidden()
@@ -1980,17 +1996,6 @@ private struct AddEventView: View {
             
             if newType != .refuel {
                 fuelLiters = ""
-            }
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                
-                Button("Done") {
-                    UIApplication.shared.hideKeyboard()
-                }
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(AppColors.primary)
             }
         }
     }
@@ -2055,6 +2060,17 @@ private struct AddEventView: View {
         }
         
         return ["fuel_liters": .double(parsedFuelLiters)]
+    }
+    
+    private var pricePerLiterPreview: String? {
+        guard let parsedFuelLiters,
+              parsedFuelLiters > 0,
+              let parsedCost,
+              parsedCost > 0 else {
+            return nil
+        }
+        
+        return "\((parsedCost / parsedFuelLiters).formatted(.number.precision(.fractionLength(1...2)))) rub/L"
     }
     
     private func submit() async {
@@ -2175,6 +2191,43 @@ private struct EventTextFieldSection: View {
     }
 }
 
+private struct EventDerivedMetricCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: AppSpacing.md) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .black))
+                .foregroundStyle(AppColors.teal)
+                .frame(width: 38, height: 38)
+                .background(AppColors.teal.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+            
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 9, weight: .black))
+                    .foregroundStyle(AppColors.textMuted)
+                    .tracking(1.1)
+                
+                Text(value)
+                    .font(.system(size: 16, weight: .black))
+                    .foregroundStyle(AppColors.textPrimary)
+            }
+            
+            Spacer()
+        }
+        .padding(AppSpacing.md)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.xl)
+                .stroke(AppColors.bubbleBorder, lineWidth: 1)
+        )
+    }
+}
+
 private struct EventPhotoPickerSection: View {
     @Binding var selectedItems: [PhotosPickerItem]
     let photos: [Data]
@@ -2196,17 +2249,17 @@ private struct EventPhotoPickerSection: View {
                             .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(photos.isEmpty ? "Add repair evidence" : "\(photos.count) photo\(photos.count == 1 ? "" : "s") selected")
+                            Text(photos.isEmpty ? "Attach service photos" : "\(photos.count) photo\(photos.count == 1 ? "" : "s") selected")
                                 .font(.system(size: 14, weight: .black))
                                 .foregroundStyle(AppColors.textPrimary)
                             
-                            Text("Photos are saved locally until backend upload is available.")
+                            Text("Photos sync with this event after saving.")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(AppColors.textSecondary)
-                                .lineLimit(2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                         }
-                        
-                        Spacer()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Image(systemName: "plus")
                             .font(.system(size: 14, weight: .black))

@@ -6,164 +6,171 @@
 import Foundation
 
 enum VehiclePersonality: String, Codable, CaseIterable, Identifiable {
-    case pickMe = "pick_me"
-    case diva
-    case zen
-    case sprinter
-    case nerd
-    case oldSoul = "old_soul"
-    case workhorse
-    case rebel
-    case bmwRoast = "bmw_roast"
+    case oldGrumbler = "old_grumbler"
+    case boardBuddy = "board_buddy"
+    case boldRacer = "bold_racer"
+    case capriciousStar = "capricious_star"
+    case formerStar = "former_star"
+    case aristocrat
+    case seasonedTraveler = "seasoned_traveler"
+    case enthusiasticNewbie = "enthusiastic_newbie"
+    case tirelessWorker = "tireless_worker"
+    case kindFriend = "kind_friend"
     
     var id: String { rawValue }
     
     var title: String {
         switch self {
-        case .pickMe:
-            return "PICK-ME"
-        case .diva:
-            return "DIVA"
-        case .zen:
-            return "ZEN"
-        case .sprinter:
-            return "SPRINTER"
-        case .nerd:
-            return "NERD"
-        case .oldSoul:
-            return "OLD SOUL"
-        case .workhorse:
-            return "WORKHORSE"
-        case .rebel:
-            return "REBEL"
-        case .bmwRoast:
-            return "BMW ROAST MODE"
+        case .oldGrumbler:
+            return "СТАРЫЙ ВОРЧУН"
+        case .boardBuddy:
+            return "СВОЙ В ДОСКУ"
+        case .boldRacer:
+            return "ДЕРЗКИЙ ГОНЩИК"
+        case .capriciousStar:
+            return "КАПРИЗНАЯ ЗВЕЗДА"
+        case .formerStar:
+            return "БЫВШАЯ ЗВЕЗДА"
+        case .aristocrat:
+            return "АРИСТОКРАТ"
+        case .seasonedTraveler:
+            return "БЫВАЛЫЙ ПУТЕШЕСТВЕННИК"
+        case .enthusiasticNewbie:
+            return "ВОСТОРЖЕННЫЙ НОВИЧОК"
+        case .tirelessWorker:
+            return "НЕУТОМИМЫЙ ТРУДЯГА"
+        case .kindFriend:
+            return "ДОБРЫЙ ДРУГ"
         }
     }
     
     var subtitle: String {
         switch self {
-        case .pickMe:
-            return "Craves attention, compliments, and perfect diagnostics."
-        case .diva:
-            return "Stylish, dramatic, and allergic to being ignored."
-        case .zen:
-            return "Calm, smooth, and emotionally fuel-efficient."
-        case .sprinter:
-            return "Fast-minded, alert, and a little impatient."
-        case .nerd:
-            return "Data-obsessed, precise, and proud of every sensor."
-        case .oldSoul:
-            return "Wise, nostalgic, and loyal through every kilometer."
-        case .workhorse:
-            return "Practical, sturdy, and quietly carrying the whole team."
-        case .rebel:
-            return "Independent, sharp, and not here for boring routes."
-        case .bmwRoast:
-            return "A premium ego delivery system with blinkers installed purely for decoration."
+        case .oldGrumbler:
+            return "Лада, УАЗ или ГАЗ с возрастом и большим пробегом."
+        case .boardBuddy:
+            return "Молодая Лада или УАЗ, простая и разговорчивая."
+        case .boldRacer:
+            return "Ferrari, Porsche или Lamborghini с гоночным самолюбием."
+        case .capriciousStar:
+            return "BMW, Audi или Mercedes до 150k км: премиум, драма, требования."
+        case .formerStar:
+            return "BMW, Audi или Mercedes после 150k км: блеск остался, терпение нет."
+        case .aristocrat:
+            return "Rolls-Royce, Bentley, Lexus или Tesla с дорогими манерами."
+        case .seasonedTraveler:
+            return "Обычная марка, возраст и большой пробег."
+        case .enthusiasticNewbie:
+            return "Любая машина до двух лет и до 30k км."
+        case .tirelessWorker:
+            return "Большой пробег и дорогое обслуживание."
+        case .kindFriend:
+            return "Дефолтный спокойный характер для всех остальных."
         }
     }
     
     var aiLine: String {
         switch self {
-        case .pickMe:
-            return "Please notice my excellent condition."
-        case .diva:
-            return "I expect premium care and immediate admiration."
-        case .zen:
-            return "I prefer smooth routes and calm maintenance."
-        case .sprinter:
-            return "I am ready before you even open the map."
-        case .nerd:
-            return "I brought data, confidence scores, and opinions."
-        case .oldSoul:
-            return "I have stories in my mileage."
-        case .workhorse:
-            return "Give me a job and a clean service log."
-        case .rebel:
-            return "I know a better route."
-        case .bmwRoast:
-            return "BMW detected. I will now act expensive, offended, and allergic to turn signals."
+        case .oldGrumbler:
+            return "Кхе-кхе... Масло бы поменять... В мои годы такого не было..."
+        case .boardBuddy:
+            return "Братан, масло пора менять, не тяни. Я не BMW, зато ломаюсь реже!"
+        case .boldRacer:
+            return "Конечно, мне нужно лучшее масло. Ты же видишь, с кем имеешь дело."
+        case .capriciousStar:
+            return "Масло 5W-30?! Я заслуживаю только 5W-40 LL!"
+        case .formerStar:
+            return "Когда я выехал из салона, все оборачивались... Даже звёзды стареют."
+        case .aristocrat:
+            return "Позвольте обратить ваше внимание на состояние тормозной системы."
+        case .seasonedTraveler:
+            return "За мои километры я научился чувствовать каждый стук."
+        case .enthusiasticNewbie:
+            return "Мой первый техосмотр! Волнуюсь!"
+        case .tirelessWorker:
+            return "Колодки стёрлись. Менять. Точка."
+        case .kindFriend:
+            return "Ничего страшного, но лучше заглянуть на сервис."
         }
     }
     
     var iconName: String {
         switch self {
-        case .pickMe:
+        case .oldGrumbler:
+            return "person.fill.questionmark"
+        case .boardBuddy:
+            return "wrench.fill"
+        case .boldRacer:
+            return "flag.checkered"
+        case .capriciousStar:
             return "sparkles"
-        case .diva:
+        case .formerStar:
+            return "sunset.fill"
+        case .aristocrat:
             return "crown.fill"
-        case .zen:
-            return "leaf.fill"
-        case .sprinter:
-            return "bolt.fill"
-        case .nerd:
-            return "cpu.fill"
-        case .oldSoul:
-            return "clock.fill"
-        case .workhorse:
-            return "wrench.and.screwdriver.fill"
-        case .rebel:
-            return "flame.fill"
-        case .bmwRoast:
-            return "exclamationmark.bubble.fill"
+        case .seasonedTraveler:
+            return "map.fill"
+        case .enthusiasticNewbie:
+            return "star.fill"
+        case .tirelessWorker:
+            return "hammer.fill"
+        case .kindFriend:
+            return "face.smiling.fill"
         }
     }
     
-    static func inferred(brand: String, model: String) -> VehiclePersonality {
+    static func inferred(
+        brand: String,
+        model: String,
+        year: Int? = nil,
+        mileageKm: Int? = nil
+    ) -> VehiclePersonality {
         let signature = "\(brand) \(model)".lowercased()
+        let mileage = mileageKm ?? 0
+        let currentYear = Calendar.current.component(.year, from: Date())
+        let age = year.map { max(0, currentYear - $0) }
         
-        if signature.contains("bmw") {
-            return .bmwRoast
+        if (age ?? 99) <= 2, mileage > 0, mileage < 30_000 {
+            return .enthusiasticNewbie
         }
         
-        if signature.contains("tesla") || signature.contains("model") || signature.contains("electric") {
-            return .nerd
+        if containsAny(signature, ["ferrari", "porsche", "lamborghini"]) {
+            return .boldRacer
         }
         
-        if signature.contains("mercedes") || signature.contains("porsche") || signature.contains("lexus") {
-            return .diva
+        if containsAny(signature, ["rolls", "bentley", "lexus", "tesla"]) {
+            return .aristocrat
         }
         
-        if signature.contains("mini") || signature.contains("fiat") || signature.contains("beetle") {
-            return .pickMe
+        if containsAny(signature, ["bmw", "audi", "mercedes"]) {
+            return mileage > 150_000 ? .formerStar : .capriciousStar
         }
         
-        if signature.contains("mustang") || signature.contains("camaro") || signature.contains("dodge") {
-            return .rebel
+        if containsAny(signature, ["lada", "uaz", "уаз", "газ", "gaz"]) {
+            if (age ?? 0) >= 10 || mileage > 150_000 {
+                return .oldGrumbler
+            }
+            
+            return .boardBuddy
         }
         
-        if signature.contains("toyota") || signature.contains("honda") || signature.contains("subaru") {
-            return .zen
+        if mileage > 220_000 {
+            return .tirelessWorker
         }
         
-        if signature.contains("ford") || signature.contains("truck") || signature.contains("transit") || signature.contains("van") {
-            return .workhorse
+        if (age ?? 0) >= 10 || mileage > 150_000 {
+            return .seasonedTraveler
         }
         
-        if signature.contains("classic") || signature.contains("volga") || signature.contains("lada") {
-            return .oldSoul
-        }
-        
-        if signature.contains("sport") || signature.contains("rs") || signature.contains("amg") || signature.contains("gt") {
-            return .sprinter
-        }
-        
-        return .pickMe
+        return .kindFriend
     }
     
     static func availableOptions(brand: String, model: String) -> [VehiclePersonality] {
-        isBMW(brand: brand, model: model) ? [.bmwRoast] : allCases
+        allCases
     }
     
-    static func isBMW(brand: String, model: String) -> Bool {
-        let signature = "\(brand) \(model)"
-            .lowercased()
-            .replacingOccurrences(of: "-", with: " ")
-        
-        return signature
-            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .contains("bmw")
+    private static func containsAny(_ value: String, _ needles: [String]) -> Bool {
+        needles.contains { value.contains($0) }
     }
 }
 
@@ -180,24 +187,26 @@ extension VehiclePersonality {
             .replacingOccurrences(of: " ", with: "_")
         
         switch normalized {
-        case "pick_me", "pickme", "pick-me", "attention", "attention_seeker":
-            self = .pickMe
-        case "diva", "luxury", "premium":
-            self = .diva
-        case "zen", "calm", "balanced":
-            self = .zen
-        case "sprinter", "sport", "racer", "speedy":
-            self = .sprinter
-        case "nerd", "geek", "data", "tech":
-            self = .nerd
-        case "old_soul", "oldsoul", "classic", "vintage":
-            self = .oldSoul
-        case "workhorse", "utility", "worker":
-            self = .workhorse
-        case "rebel", "wild":
-            self = .rebel
-        case "bmw_roast", "bmw", "bmw_therapy", "roast", "roast_mode":
-            self = .bmwRoast
+        case "old_grumbler", "старый_ворчун":
+            self = .oldGrumbler
+        case "board_buddy", "свой_в_доску":
+            self = .boardBuddy
+        case "bold_racer", "дерзкий_гонщик", "rebel", "sprinter", "sport":
+            self = .boldRacer
+        case "capricious_star", "капризная_звезда", "diva", "bmw_roast", "bmw":
+            self = .capriciousStar
+        case "former_star", "бывшая_звезда":
+            self = .formerStar
+        case "aristocrat", "аристократ", "nerd", "premium":
+            self = .aristocrat
+        case "seasoned_traveler", "бывалый_путешественник", "old_soul":
+            self = .seasonedTraveler
+        case "enthusiastic_newbie", "восторженный_новичок", "pick_me":
+            self = .enthusiasticNewbie
+        case "tireless_worker", "неутомимый_трудяга", "workhorse":
+            self = .tirelessWorker
+        case "kind_friend", "добрый_друг", "zen":
+            self = .kindFriend
         default:
             return nil
         }

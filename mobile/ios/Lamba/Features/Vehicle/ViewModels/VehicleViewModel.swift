@@ -85,7 +85,6 @@ final class VehicleViewModel: ObservableObject {
             let loadedVehicles = try await VehicleAPIService.shared.getVehicles(token: token)
             
             vehicles = loadedVehicles
-            migrateBMWPersonalitiesIfNeeded(for: loadedVehicles)
 
             if let currentId = activeVehicleId,
                loadedVehicles.contains(where: { $0.id == currentId }) {
@@ -342,15 +341,13 @@ final class VehicleViewModel: ObservableObject {
     }
     
     func personality(for vehicle: VehicleResponse) -> VehiclePersonality {
-        if VehiclePersonality.isBMW(brand: vehicle.brand, model: vehicle.model) {
-            return .bmwRoast
-        }
-        
         return vehiclePersonalities[vehicle.id] ??
         vehicle.backendPersonality ??
         VehiclePersonality.inferred(
             brand: vehicle.brand,
-            model: vehicle.model
+            model: vehicle.model,
+            year: vehicle.year,
+            mileageKm: vehicle.mileageKm
         )
     }
     
@@ -367,13 +364,6 @@ final class VehicleViewModel: ObservableObject {
     }
     
     func setPersonality(_ personality: VehiclePersonality, for vehicleId: Int) {
-        if let vehicle = vehicles.first(where: { $0.id == vehicleId }),
-           VehiclePersonality.isBMW(brand: vehicle.brand, model: vehicle.model) {
-            vehiclePersonalities[vehicleId] = .bmwRoast
-            saveVehiclePersonalities()
-            return
-        }
-        
         loadVehiclePersonalitiesIfNeeded()
         vehiclePersonalities[vehicleId] = personality
         saveVehiclePersonalities()
@@ -423,23 +413,6 @@ final class VehicleViewModel: ObservableObject {
         saveVehicleImages()
     }
     
-    private func migrateBMWPersonalitiesIfNeeded(for vehicles: [VehicleResponse]) {
-        loadVehiclePersonalitiesIfNeeded()
-        
-        var didChange = false
-        
-        for vehicle in vehicles where VehiclePersonality.isBMW(brand: vehicle.brand, model: vehicle.model) {
-            if vehiclePersonalities[vehicle.id] != .bmwRoast {
-                vehiclePersonalities[vehicle.id] = .bmwRoast
-                didChange = true
-            }
-        }
-        
-        if didChange {
-            saveVehiclePersonalities()
-        }
-    }
-    
     private func setPersonalityIfNeeded(for vehicle: VehicleResponse) {
         guard vehiclePersonalities[vehicle.id] == nil,
               vehicle.backendPersonality == nil else {
@@ -448,7 +421,9 @@ final class VehicleViewModel: ObservableObject {
         
         vehiclePersonalities[vehicle.id] = VehiclePersonality.inferred(
             brand: vehicle.brand,
-            model: vehicle.model
+            model: vehicle.model,
+            year: vehicle.year,
+            mileageKm: vehicle.mileageKm
         )
         saveVehiclePersonalities()
     }
@@ -474,6 +449,8 @@ final class VehicleViewModel: ObservableObject {
                 from: data
             )
         } catch {
+            vehiclePersonalities = [:]
+            UserDefaults.standard.removeObject(forKey: vehiclePersonalitiesCacheKey)
             print("Failed to load vehicle personalities:", error.localizedDescription)
         }
     }
