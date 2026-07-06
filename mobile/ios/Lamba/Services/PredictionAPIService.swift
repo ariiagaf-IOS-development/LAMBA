@@ -82,7 +82,13 @@ final class PredictionAPIService {
         do {
             return try decoder.decode(Response.self, from: data)
         } catch {
-            throw APIError.decodingError
+            let rawBody = String(data: data, encoding: .utf8)?
+                .replacingOccurrences(of: "\n", with: " ")
+                .prefix(240)
+            
+            throw APIError.responseDecodingError(
+                message: "\(error.localizedDescription). Body: \(rawBody ?? "empty")"
+            )
         }
     }
 }

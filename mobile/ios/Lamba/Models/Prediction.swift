@@ -46,11 +46,38 @@ enum PredictionSource: String, Decodable {
     case ruleBased = "rule_based"
     case mock
     case mlService = "ml_service"
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        
+        switch rawValue {
+        case "rule_based":
+            self = .ruleBased
+        case "ml_service":
+            self = .mlService
+        default:
+            self = .mock
+        }
+    }
 }
 
 struct PredictionResponse: Decodable {
-    let vehicleId: Int
+    let vehicleId: Int?
     let predictions: [Prediction]
+    
+    private enum CodingKeys: String, CodingKey {
+        case vehicleId
+        case predictions
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        vehicleId = try container.decodeIfPresent(Int.self, forKey: .vehicleId)
+        predictions = try container.decodeIfPresent([Prediction].self, forKey: .predictions) ?? []
+    }
 }
 
 struct VehiclePartsResponse: Decodable {
@@ -68,6 +95,34 @@ struct VehiclePart: Decodable, Identifiable {
     let lastServiceMileageKm: Int?
     let createdAt: String?
     let updatedAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case vehicleId
+        case name
+        case category
+        case catalogCode
+        case installedAtMileageKm
+        case lastServiceDate
+        case lastServiceMileageKm
+        case createdAt
+        case updatedAt
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        vehicleId = try container.decodeIfPresent(Int.self, forKey: .vehicleId)
+        name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Vehicle part"
+        category = try container.decodeIfPresent(String.self, forKey: .category)
+        catalogCode = try container.decodeIfPresent(String.self, forKey: .catalogCode)
+        installedAtMileageKm = try container.decodeIfPresent(Int.self, forKey: .installedAtMileageKm)
+        lastServiceDate = try container.decodeIfPresent(String.self, forKey: .lastServiceDate)
+        lastServiceMileageKm = try container.decodeIfPresent(Int.self, forKey: .lastServiceMileageKm)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+        id = try container.decodeIfPresent(Int.self, forKey: .id)
+            ?? StableFallbackId.make(vehicleId, name, catalogCode, createdAt)
+    }
 }
 
 struct Prediction: Decodable, Identifiable {
@@ -76,7 +131,7 @@ struct Prediction: Decodable, Identifiable {
     let partName: String
     let partCategory: String?
     let partCode: String?
-    let riskLevel: RiskLevel
+    let riskLevel: RiskLevel?
     let riskScore: Int?
     let remainingKm: Int?
     let remainingDays: Int?
@@ -90,6 +145,52 @@ struct Prediction: Decodable, Identifiable {
     let modelVersion: String?
     let source: PredictionSource?
     let createdAt: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case vehicleId
+        case partName
+        case partCategory
+        case partCode
+        case riskLevel
+        case riskScore
+        case remainingKm
+        case remainingDays
+        case probability
+        case confidence
+        case recommendation
+        case explanation
+        case topFactors
+        case predictedNextDate
+        case predictedNextMileage
+        case modelVersion
+        case source
+        case createdAt
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        vehicleId = try container.decodeIfPresent(Int.self, forKey: .vehicleId)
+        partName = try container.decodeIfPresent(String.self, forKey: .partName) ?? "Vehicle part"
+        partCategory = try container.decodeIfPresent(String.self, forKey: .partCategory)
+        partCode = try container.decodeIfPresent(String.self, forKey: .partCode)
+        riskLevel = try container.decodeIfPresent(RiskLevel.self, forKey: .riskLevel)
+        riskScore = try container.decodeIfPresent(Int.self, forKey: .riskScore)
+        remainingKm = try container.decodeIfPresent(Int.self, forKey: .remainingKm)
+        remainingDays = try container.decodeIfPresent(Int.self, forKey: .remainingDays)
+        probability = try container.decodeIfPresent(Double.self, forKey: .probability)
+        confidence = try container.decodeIfPresent(Double.self, forKey: .confidence)
+        recommendation = try container.decodeIfPresent(String.self, forKey: .recommendation)
+        explanation = try container.decodeIfPresent(String.self, forKey: .explanation)
+        topFactors = try container.decodeIfPresent([String].self, forKey: .topFactors)
+        predictedNextDate = try container.decodeIfPresent(String.self, forKey: .predictedNextDate)
+        predictedNextMileage = try container.decodeIfPresent(Int.self, forKey: .predictedNextMileage)
+        modelVersion = try container.decodeIfPresent(String.self, forKey: .modelVersion)
+        source = try container.decodeIfPresent(PredictionSource.self, forKey: .source)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        id = try container.decodeIfPresent(Int.self, forKey: .id)
+            ?? StableFallbackId.make(vehicleId, partName, partCode, createdAt)
+    }
     
     var displayConfidence: Double? {
         confidence ?? probability
@@ -114,6 +215,22 @@ struct Prediction: Decodable, Identifiable {
             source.map { "Prediction source: \($0.rawValue.replacingOccurrences(of: "_", with: " "))" },
             modelVersion.map { "Model version: \($0)" }
         ].compactMap { $0 }
+    }
+}
+
+private enum StableFallbackId {
+    static func make(_ parts: Any?...) -> Int {
+        let value = parts
+            .compactMap { $0 }
+            .map { String(describing: $0) }
+            .joined(separator: "|")
+        
+        let seed = value.isEmpty ? "care-item" : value
+        let number = seed.unicodeScalars.reduce(17) { result, scalar in
+            ((result &* 31) &+ Int(scalar.value)) & 0x3fffffff
+        }
+        
+        return -max(1, number)
     }
 }
 

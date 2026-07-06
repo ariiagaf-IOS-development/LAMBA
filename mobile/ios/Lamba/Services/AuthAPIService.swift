@@ -11,6 +11,7 @@ enum APIError: LocalizedError {
     case invalidResponse
     case serverError(statusCode: Int, message: String?)
     case decodingError
+    case responseDecodingError(message: String?)
     case noInternet
     case unknown
     
@@ -38,6 +39,13 @@ enum APIError: LocalizedError {
             }
             
         case .decodingError:
+            return "Could not read server response."
+            
+        case .responseDecodingError(let message):
+            if let message, !message.isEmpty {
+                return "Could not read server response: \(message)"
+            }
+            
             return "Could not read server response."
             
         case .noInternet:

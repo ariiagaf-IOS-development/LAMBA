@@ -17,6 +17,7 @@ final class PredictionRepository: ObservableObject {
     @Published private(set) var eventStats: VehicleEventStats?
     @Published private(set) var isLoading = false
     @Published private(set) var isRefreshing = false
+    @Published private(set) var debugStatus: String?
     @Published var errorMessage: String?
     
     private let apiService: PredictionAPIService
@@ -33,31 +34,7 @@ final class PredictionRepository: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        do {
-            let loadedDashboard = try await apiService.getDashboard(vehicleId: vehicleId, token: token)
-            dashboard = loadedDashboard
-        } catch {
-            dashboard = nil
-        }
-        
-        do {
-            let loadedPredictions = try await apiService.getPredictions(vehicleId: vehicleId, token: token)
-            predictions = loadedPredictions.predictions
-        } catch {
-            predictions = []
-            errorMessage = error.localizedDescription
-        }
-        
-        if predictions.isEmpty, let dashboard, !dashboard.allPredictions.isEmpty {
-            predictions = dashboard.allPredictions
-            errorMessage = nil
-        }
-        
-        parts = (try? await apiService.getVehicleParts(vehicleId: vehicleId, token: token).parts) ?? []
-        
-        eventStats = try? await TimelineAPIService.shared
-            .getEventStats(vehicleId: vehicleId, token: token)
-            .stats
+        await reloadCarePayload(vehicleId: vehicleId, token: token)
         
         isLoading = false
     }
@@ -68,32 +45,71 @@ final class PredictionRepository: ObservableObject {
         
         do {
             let refreshedPredictions = try await apiService.refreshPredictions(vehicleId: vehicleId, token: token)
-            predictions = refreshedPredictions.predictions
             
-            do {
-                async let dashboardResponse = apiService.getDashboard(vehicleId: vehicleId, token: token)
-                async let eventStatsResponse = TimelineAPIService.shared.getEventStats(vehicleId: vehicleId, token: token)
-                
-                let (loadedDashboard, loadedEventStats) = try await (dashboardResponse, eventStatsResponse)
-                dashboard = loadedDashboard
-                eventStats = loadedEventStats.stats
-            } catch {
-                dashboard = try? await apiService.getDashboard(vehicleId: vehicleId, token: token)
-                eventStats = try? await TimelineAPIService.shared
-                    .getEventStats(vehicleId: vehicleId, token: token)
-                    .stats
+            if !refreshedPredictions.predictions.isEmpty {
+                predictions = refreshedPredictions.predictions
             }
-            
-            if predictions.isEmpty, let dashboard, !dashboard.allPredictions.isEmpty {
-                predictions = dashboard.allPredictions
-            }
-            
-            parts = (try? await apiService.getVehicleParts(vehicleId: vehicleId, token: token).parts) ?? parts
         } catch {
             errorMessage = error.localizedDescription
         }
         
+        await reloadCarePayload(vehicleId: vehicleId, token: token)
+        
         isRefreshing = false
+    }
+    
+    private func reloadCarePayload(vehicleId: Int, token: String) async {
+        var debugLines: [String] = []
+        
+        do {
+            let loadedDashboard = try await apiService.getDashboard(vehicleId: vehicleId, token: token)
+            dashboard = loadedDashboard
+            debugLines.append(
+                "dashboard ok: all_predictions \(loadedDashboard.allPredictions.count), summary \(loadedDashboard.predictionSummary == nil ? "no" : "yes")"
+            )
+        } catch {
+            dashboard = nil
+            debugLines.append("dashboard error: \(error.localizedDescription)")
+        }
+        
+        do {
+            let loadedPredictions = try await apiService.getPredictions(vehicleId: vehicleId, token: token)
+            predictions = loadedPredictions.predictions
+            errorMessage = nil
+            debugLines.append("predictions ok: \(loadedPredictions.predictions.count)")
+        } catch {
+            predictions = []
+            errorMessage = error.localizedDescription
+            debugLines.append("predictions error: \(error.localizedDescription)")
+        }
+        
+        if predictions.isEmpty, let dashboard, !dashboard.allPredictions.isEmpty {
+            predictions = dashboard.allPredictions
+            errorMessage = nil
+            debugLines.append("used dashboard fallback: \(dashboard.allPredictions.count)")
+        }
+        
+        do {
+            let loadedParts = try await apiService.getVehicleParts(vehicleId: vehicleId, token: token).parts
+            parts = loadedParts
+            debugLines.append("parts ok: \(loadedParts.count)")
+        } catch {
+            parts = []
+            debugLines.append("parts error: \(error.localizedDescription)")
+        }
+        
+        do {
+            let loadedStats = try await TimelineAPIService.shared
+                .getEventStats(vehicleId: vehicleId, token: token)
+                .stats
+            eventStats = loadedStats
+            debugLines.append("stats ok: \(loadedStats.totalEvents) events")
+        } catch {
+            eventStats = nil
+            debugLines.append("stats error: \(error.localizedDescription)")
+        }
+        
+        debugStatus = debugLines.joined(separator: "\n")
     }
     
     func clear() {
@@ -101,6 +117,7 @@ final class PredictionRepository: ObservableObject {
         parts = []
         dashboard = nil
         eventStats = nil
+        debugStatus = nil
         errorMessage = nil
     }
 }

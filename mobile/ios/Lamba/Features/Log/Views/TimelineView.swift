@@ -1087,10 +1087,22 @@ private struct TimelineMonthGroup: Identifiable {
 private final class EventPhotoStore: ObservableObject {
     @Published private(set) var photosByEventId: [Int: [Data]] = [:]
     
-    private let cacheKey = "local_event_photos_by_event_id"
+    private let legacyCacheKey = "local_event_photos_by_event_id"
     private let maxPhotosPerEvent = 6
+    private let directoryURL: URL
     
     init() {
+        let supportURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? FileManager.default.temporaryDirectory
+        
+        directoryURL = supportURL
+            .appendingPathComponent("Lamba", isDirectory: true)
+            .appendingPathComponent("EventPhotos", isDirectory: true)
+        
+        prepareDirectory()
+        migrateLegacyDefaultsIfNeeded()
         load()
     }
     
@@ -1107,38 +1119,125 @@ private final class EventPhotoStore: ObservableObject {
             photosByEventId[eventId] = trimmed
         }
         
-        save()
+        persistPhotos(for: eventId)
     }
     
     func mergePhotos(_ photos: [Data], for eventId: Int) {
         guard !photos.isEmpty else { return }
         
         let currentPhotos = photosByEventId[eventId] ?? []
-        photosByEventId[eventId] = Array((currentPhotos + photos).prefix(maxPhotosPerEvent))
-        save()
+        let newPhotos = photos.reduce(into: currentPhotos) { result, photo in
+            if !result.contains(photo) {
+                result.append(photo)
+            }
+        }
+        
+        photosByEventId[eventId] = Array(newPhotos.prefix(maxPhotosPerEvent))
+        persistPhotos(for: eventId)
     }
     
     func removePhotos(for eventId: Int) {
         photosByEventId.removeValue(forKey: eventId)
-        save()
+        removeStoredPhotos(for: eventId)
     }
     
-    private func save() {
+    private func prepareDirectory() {
         do {
-            let data = try JSONEncoder().encode(photosByEventId)
-            UserDefaults.standard.set(data, forKey: cacheKey)
+            try FileManager.default.createDirectory(
+                at: directoryURL,
+                withIntermediateDirectories: true
+            )
+        } catch {
+            print("Failed to prepare event photo directory:", error.localizedDescription)
+        }
+    }
+    
+    private func migrateLegacyDefaultsIfNeeded() {
+        guard let data = UserDefaults.standard.data(forKey: legacyCacheKey) else {
+            return
+        }
+        
+        do {
+            let legacyPhotos = try JSONDecoder().decode([Int: [Data]].self, from: data)
+            
+            for (eventId, photos) in legacyPhotos {
+                photosByEventId[eventId] = Array(photos.prefix(maxPhotosPerEvent))
+                persistPhotos(for: eventId)
+            }
+        } catch {
+            print("Failed to migrate legacy event photos:", error.localizedDescription)
+        }
+        
+        UserDefaults.standard.removeObject(forKey: legacyCacheKey)
+    }
+    
+    private func load() {
+        guard let eventDirectories = try? FileManager.default.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: nil
+        ) else {
+            return
+        }
+        
+        var loadedPhotos: [Int: [Data]] = [:]
+        
+        for eventDirectory in eventDirectories where eventDirectory.hasDirectoryPath {
+            guard let eventId = Int(eventDirectory.lastPathComponent) else {
+                continue
+            }
+            
+            let photoURLs = (try? FileManager.default.contentsOfDirectory(
+                at: eventDirectory,
+                includingPropertiesForKeys: nil
+            )) ?? []
+            
+            let photos = photoURLs
+                .sorted { $0.lastPathComponent < $1.lastPathComponent }
+                .prefix(maxPhotosPerEvent)
+                .compactMap { try? Data(contentsOf: $0) }
+            
+            if !photos.isEmpty {
+                loadedPhotos[eventId] = photos
+            }
+        }
+        
+        photosByEventId.merge(loadedPhotos) { current, _ in current }
+    }
+    
+    private func persistPhotos(for eventId: Int) {
+        let photos = photosByEventId[eventId] ?? []
+        let eventDirectory = directoryURL.appendingPathComponent(String(eventId), isDirectory: true)
+        
+        removeStoredPhotos(for: eventId)
+        
+        guard !photos.isEmpty else {
+            return
+        }
+        
+        do {
+            try FileManager.default.createDirectory(
+                at: eventDirectory,
+                withIntermediateDirectories: true
+            )
+            
+            for (index, photo) in photos.prefix(maxPhotosPerEvent).enumerated() {
+                let fileURL = eventDirectory.appendingPathComponent("\(index).jpg")
+                try photo.write(to: fileURL, options: [.atomic])
+            }
         } catch {
             print("Failed to save event photos:", error.localizedDescription)
         }
     }
     
-    private func load() {
-        guard let data = UserDefaults.standard.data(forKey: cacheKey) else { return }
+    private func removeStoredPhotos(for eventId: Int) {
+        let eventDirectory = directoryURL.appendingPathComponent(String(eventId), isDirectory: true)
         
         do {
-            photosByEventId = try JSONDecoder().decode([Int: [Data]].self, from: data)
+            if FileManager.default.fileExists(atPath: eventDirectory.path) {
+                try FileManager.default.removeItem(at: eventDirectory)
+            }
         } catch {
-            photosByEventId = [:]
+            print("Failed to remove event photos:", error.localizedDescription)
         }
     }
 }

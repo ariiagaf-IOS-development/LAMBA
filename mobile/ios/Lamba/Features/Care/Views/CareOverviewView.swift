@@ -129,7 +129,9 @@ struct CareOverviewView: View {
                             }
                         } else if predictionRepository.predictions.isEmpty {
                             CarePredictionsEmptyCard(
-                                isRefreshing: predictionRepository.isRefreshing
+                                isRefreshing: predictionRepository.isRefreshing,
+                                diagnostics: predictionRepository.debugStatus,
+                                hasEvents: (predictionRepository.eventStats?.totalEvents ?? 0) > 0
                             ) {
                                 Task {
                                     await refreshCareData()
@@ -209,7 +211,17 @@ struct CareOverviewView: View {
 
 private struct CarePredictionsEmptyCard: View {
     let isRefreshing: Bool
+    let diagnostics: String?
+    let hasEvents: Bool
     let onRefresh: () -> Void
+    
+    private var helperText: String {
+        if hasEvents {
+            return "Event history is connected, but the backend returned no predictions or installed parts for this vehicle."
+        }
+        
+        return "Add maintenance or repair events, then refresh predictions."
+    }
     
     var body: some View {
         AppCard(padding: AppSpacing.lg, cornerRadius: AppRadius.xl) {
@@ -227,10 +239,18 @@ private struct CarePredictionsEmptyCard: View {
                         .foregroundStyle(AppColors.textMuted)
                         .tracking(1.2)
                     
-                    Text("No part predictions are available for this vehicle yet.")
+                    Text(helperText)
                         .font(AppTypography.subtitle)
                         .foregroundStyle(AppColors.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    
+                    if shouldShowDataState {
+                        Text("No predictions · No installed parts")
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(AppColors.textMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 4)
+                    }
                     
                     Button(action: onRefresh) {
                         Text(isRefreshing ? "REFRESHING..." : "REFRESH PREDICTIONS")
@@ -243,6 +263,11 @@ private struct CarePredictionsEmptyCard: View {
                 }
             }
         }
+    }
+    
+    private var shouldShowDataState: Bool {
+        diagnostics?.contains("predictions ok: 0") == true &&
+        diagnostics?.contains("parts ok: 0") == true
     }
 }
 
@@ -286,7 +311,15 @@ private struct CareStatsGrid: View {
             return mileage.formatted()
         }
         
-        return "Pending"
+        if let mileage = nextRemainingMileage {
+            return mileage.formatted()
+        }
+        
+        if let days = nextRemainingDays {
+            return days.formatted()
+        }
+        
+        return "--"
     }
     
     private var nextCheckUnit: String {
@@ -294,8 +327,12 @@ private struct CareStatsGrid: View {
             return ""
         }
         
-        if nextPredictionMileage != nil {
+        if nextPredictionMileage != nil || nextRemainingMileage != nil {
             return "km"
+        }
+        
+        if nextRemainingDays != nil {
+            return "days"
         }
         
         return ""
@@ -310,6 +347,16 @@ private struct CareStatsGrid: View {
     
     private var nextPredictionMileage: Int? {
         predictions.compactMap(\.predictedNextMileage).min()
+    }
+    
+    private var nextRemainingMileage: Int? {
+        predictions.compactMap(\.remainingKm).min()
+            ?? dashboard?.predictionSummary?.remainingKm
+    }
+    
+    private var nextRemainingDays: Int? {
+        predictions.compactMap(\.remainingDays).min()
+            ?? dashboard?.predictionSummary?.remainingDays
     }
 }
 
@@ -379,7 +426,7 @@ private struct FocusPredictionCard: View {
                         
                         Text(attentionText)
                             .font(.system(size: 10, weight: .black))
-                            .foregroundStyle(prediction.riskLevel.riskColor)
+                            .foregroundStyle(riskColor)
                             .tracking(1.1)
                     }
                     
@@ -431,7 +478,7 @@ private struct FocusPredictionCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 32))
             .overlay(
                 RoundedRectangle(cornerRadius: 32)
-                    .stroke(prediction.riskLevel.riskColor.opacity(0.20), lineWidth: 1)
+                    .stroke(riskColor.opacity(0.20), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -445,7 +492,13 @@ private struct FocusPredictionCard: View {
             return "WATCH CLOSELY"
         case .high:
             return "ATTENTION REQUIRED"
+        case nil:
+            return "AWAITING DATA"
         }
+    }
+    
+    private var riskColor: Color {
+        prediction.riskLevel?.riskColor ?? AppColors.textMuted
     }
     
     private var percentValue: String {
@@ -557,7 +610,7 @@ private struct VehiclePartStatusRow: View {
                     
                     Spacer()
                     
-                    RiskBadge(level: nil)
+                    StatusBadge(title: "INSTALLED", color: AppColors.primary)
                 }
                 
                 HStack(spacing: AppSpacing.sm) {
@@ -869,7 +922,11 @@ private struct PredictionDetailView: View {
                 }
                 
                 HStack(spacing: AppSpacing.sm) {
-                    DetailMetric(title: "RISK", value: prediction.riskLevel.title, color: prediction.riskLevel.riskColor)
+                    DetailMetric(
+                        title: "RISK",
+                        value: prediction.riskLevel?.title ?? "NO DATA",
+                        color: prediction.riskLevel?.riskColor ?? AppColors.textMuted
+                    )
                     DetailMetric(title: "CONFIDENCE", value: confidenceText, color: AppColors.primary)
                 }
                 
@@ -886,7 +943,7 @@ private struct PredictionDetailView: View {
                         ForEach(prediction.factorList, id: \.self) { factor in
                             HStack(alignment: .top, spacing: 10) {
                                 Circle()
-                                    .fill(prediction.riskLevel.riskColor)
+                                    .fill(prediction.riskLevel?.riskColor ?? AppColors.textMuted)
                                     .frame(width: 7, height: 7)
                                     .padding(.top, 6)
                                 
@@ -971,14 +1028,14 @@ private struct DetailMetric: View {
 }
 
 private struct RiskIcon: View {
-    let level: RiskLevel
+    let level: RiskLevel?
     
     var body: some View {
         Image(systemName: iconName)
             .font(.system(size: 18, weight: .black))
-            .foregroundStyle(level.riskColor)
+            .foregroundStyle(color)
             .frame(width: 44, height: 44)
-            .background(level.riskColor.opacity(0.12))
+            .background(color.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
@@ -990,7 +1047,29 @@ private struct RiskIcon: View {
             return "exclamationmark.triangle.fill"
         case .high:
             return "exclamationmark.octagon.fill"
+        case nil:
+            return "questionmark.circle.fill"
         }
+    }
+    
+    private var color: Color {
+        level?.riskColor ?? AppColors.textMuted
+    }
+}
+
+private struct StatusBadge: View {
+    let title: String
+    let color: Color
+    
+    var body: some View {
+        Text(title)
+            .font(.system(size: 10, weight: .black))
+            .foregroundStyle(color)
+            .tracking(1)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(color.opacity(0.12))
+            .clipShape(Capsule())
     }
 }
 
@@ -998,7 +1077,7 @@ private struct RiskBadge: View {
     let level: RiskLevel?
     
     var body: some View {
-        Text(level?.title ?? "READY")
+        Text(level?.title ?? "NO DATA")
             .font(.system(size: 10, weight: .black))
             .foregroundStyle(color)
             .tracking(1)
@@ -1009,7 +1088,7 @@ private struct RiskBadge: View {
     }
     
     private var color: Color {
-        level?.riskColor ?? AppColors.primary
+        level?.riskColor ?? AppColors.textMuted
     }
 }
 
