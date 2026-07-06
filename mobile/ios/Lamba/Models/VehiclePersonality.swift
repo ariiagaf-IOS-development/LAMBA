@@ -151,6 +151,20 @@ enum VehiclePersonality: String, Codable, CaseIterable, Identifiable {
         
         return .pickMe
     }
+    
+    static func availableOptions(brand: String, model: String) -> [VehiclePersonality] {
+        isBMW(brand: brand, model: model) ? [.bmwRoast] : allCases
+    }
+    
+    static func isBMW(brand: String, model: String) -> Bool {
+        let signature = "\(brand) \(model)"
+            .lowercased()
+            .replacingOccurrences(of: "-", with: " ")
+        
+        return signature
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .contains("bmw")
+    }
 }
 
 extension VehiclePersonality {
@@ -166,23 +180,23 @@ extension VehiclePersonality {
             .replacingOccurrences(of: " ", with: "_")
         
         switch normalized {
-        case "pick_me", "pickme":
+        case "pick_me", "pickme", "pick-me", "attention", "attention_seeker":
             self = .pickMe
-        case "diva":
+        case "diva", "luxury", "premium":
             self = .diva
-        case "zen":
+        case "zen", "calm", "balanced":
             self = .zen
-        case "sprinter", "sport":
+        case "sprinter", "sport", "racer", "speedy":
             self = .sprinter
-        case "nerd", "geek":
+        case "nerd", "geek", "data", "tech":
             self = .nerd
-        case "old_soul", "oldsoul":
+        case "old_soul", "oldsoul", "classic", "vintage":
             self = .oldSoul
-        case "workhorse":
+        case "workhorse", "utility", "worker":
             self = .workhorse
-        case "rebel":
+        case "rebel", "wild":
             self = .rebel
-        case "bmw_roast", "bmw", "bmw_therapy":
+        case "bmw_roast", "bmw", "bmw_therapy", "roast", "roast_mode":
             self = .bmwRoast
         default:
             return nil

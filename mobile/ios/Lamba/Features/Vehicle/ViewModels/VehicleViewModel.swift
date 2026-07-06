@@ -342,7 +342,11 @@ final class VehicleViewModel: ObservableObject {
     }
     
     func personality(for vehicle: VehicleResponse) -> VehiclePersonality {
-        vehiclePersonalities[vehicle.id] ??
+        if VehiclePersonality.isBMW(brand: vehicle.brand, model: vehicle.model) {
+            return .bmwRoast
+        }
+        
+        return vehiclePersonalities[vehicle.id] ??
         vehicle.backendPersonality ??
         VehiclePersonality.inferred(
             brand: vehicle.brand,
@@ -363,6 +367,13 @@ final class VehicleViewModel: ObservableObject {
     }
     
     func setPersonality(_ personality: VehiclePersonality, for vehicleId: Int) {
+        if let vehicle = vehicles.first(where: { $0.id == vehicleId }),
+           VehiclePersonality.isBMW(brand: vehicle.brand, model: vehicle.model) {
+            vehiclePersonalities[vehicleId] = .bmwRoast
+            saveVehiclePersonalities()
+            return
+        }
+        
         loadVehiclePersonalitiesIfNeeded()
         vehiclePersonalities[vehicleId] = personality
         saveVehiclePersonalities()
@@ -417,8 +428,8 @@ final class VehicleViewModel: ObservableObject {
         
         var didChange = false
         
-        for vehicle in vehicles where vehicle.brand.lowercased().contains("bmw") {
-            if vehiclePersonalities[vehicle.id] == .diva {
+        for vehicle in vehicles where VehiclePersonality.isBMW(brand: vehicle.brand, model: vehicle.model) {
+            if vehiclePersonalities[vehicle.id] != .bmwRoast {
                 vehiclePersonalities[vehicle.id] = .bmwRoast
                 didChange = true
             }

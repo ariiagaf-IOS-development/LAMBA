@@ -340,12 +340,12 @@ struct VehicleProfileView: View {
                         ScreenHeroView(
                             title: "TWIN",
                             accentTitle: "MOOD",
-                            subtitle: "Choose how your \(vehicle.brand) \(vehicle.model) talks, reacts, and shows up in the app.",
+                            subtitle: subtitle,
                             topPadding: 12
                         )
                         
                         VStack(spacing: AppSpacing.md) {
-                            ForEach(VehiclePersonality.allCases) { personality in
+                            ForEach(availablePersonalities) { personality in
                                 Button {
                                     onSelect(personality)
                                 } label: {
@@ -403,6 +403,18 @@ struct VehicleProfileView: View {
                     )
                 )
             }
+        }
+        
+        private var availablePersonalities: [VehiclePersonality] {
+            VehiclePersonality.availableOptions(brand: vehicle.brand, model: vehicle.model)
+        }
+        
+        private var subtitle: String {
+            if VehiclePersonality.isBMW(brand: vehicle.brand, model: vehicle.model) {
+                return "BMW detected. Roast mode is locked for this digital twin."
+            }
+            
+            return "Choose how your \(vehicle.brand) \(vehicle.model) talks, reacts, and shows up in the app."
         }
     }
     
