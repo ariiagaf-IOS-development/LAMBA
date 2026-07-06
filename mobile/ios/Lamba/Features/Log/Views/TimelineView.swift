@@ -1603,7 +1603,10 @@ private struct TimelineEventDetailView: View {
                         TimelineDetailMetric(title: "PRICE/L", value: pricePerLiterText ?? "--", tint: AppColors.primary)
                     }
                     
-                    TimelineDetailMetric(title: "PHOTOS", value: "\(photos.count)", tint: AppColors.green)
+                    if !photos.isEmpty {
+                        TimelineDetailMetric(title: "PHOTOS", value: "\(photos.count)", tint: AppColors.green)
+                    }
+                    
                     TimelineDetailMetric(title: "TYPE", value: event.type.title, tint: event.type.tintColor)
                 }
                 

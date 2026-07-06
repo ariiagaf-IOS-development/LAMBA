@@ -53,6 +53,23 @@ struct PredictionResponse: Decodable {
     let predictions: [Prediction]
 }
 
+struct VehiclePartsResponse: Decodable {
+    let parts: [VehiclePart]
+}
+
+struct VehiclePart: Decodable, Identifiable {
+    let id: Int
+    let vehicleId: Int?
+    let name: String
+    let category: String?
+    let catalogCode: String?
+    let installedAtMileageKm: Int?
+    let lastServiceDate: String?
+    let lastServiceMileageKm: Int?
+    let createdAt: String?
+    let updatedAt: String?
+}
+
 struct Prediction: Decodable, Identifiable {
     let id: Int
     let vehicleId: Int?

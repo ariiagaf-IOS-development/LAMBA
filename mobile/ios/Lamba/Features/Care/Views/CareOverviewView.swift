@@ -116,13 +116,18 @@ struct CareOverviewView: View {
                             
                             Spacer()
                             
-                            Text("\(predictionRepository.predictions.count) PARTS")
+                            Text("\(partStatusCount) PARTS")
                                 .font(.system(size: 11, weight: .black))
                                 .foregroundStyle(AppColors.primary)
                                 .tracking(1.2)
                         }
                         
-                        if predictionRepository.predictions.isEmpty {
+                        if predictionRepository.predictions.isEmpty,
+                           !predictionRepository.parts.isEmpty {
+                            ForEach(predictionRepository.parts) { part in
+                                VehiclePartStatusRow(part: part)
+                            }
+                        } else if predictionRepository.predictions.isEmpty {
                             CarePredictionsEmptyCard(
                                 isRefreshing: predictionRepository.isRefreshing
                             ) {
@@ -150,6 +155,12 @@ struct CareOverviewView: View {
         .refreshable {
             await refreshCareData()
         }
+    }
+    
+    private var partStatusCount: Int {
+        predictionRepository.predictions.isEmpty
+        ? predictionRepository.parts.count
+        : predictionRepository.predictions.count
     }
     
     private var focusPrediction: Prediction? {
@@ -515,6 +526,92 @@ private struct PredictiveEfficiencyCard: View {
     
     private var statusColor: Color {
         dashboard?.predictionSummary?.riskLevel?.riskColor ?? AppColors.primary
+    }
+}
+
+private struct VehiclePartStatusRow: View {
+    let part: VehiclePart
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: AppSpacing.md) {
+            Image(systemName: iconName)
+                .font(.system(size: 18, weight: .black))
+                .foregroundStyle(AppColors.primary)
+                .frame(width: 48, height: 48)
+                .background(AppColors.primary.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(part.name)
+                            .font(.system(size: 16, weight: .black))
+                            .foregroundStyle(AppColors.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        
+                        Text(part.category?.uppercased() ?? "INSTALLED PART")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(AppColors.textMuted)
+                            .tracking(1.1)
+                    }
+                    
+                    Spacer()
+                    
+                    RiskBadge(level: nil)
+                }
+                
+                HStack(spacing: AppSpacing.sm) {
+                    if let mileage = part.lastServiceMileageKm ?? part.installedAtMileageKm {
+                        CarePartMetaPill(icon: "speedometer", text: "\(mileage.formatted()) km")
+                    }
+                    
+                    if let date = part.lastServiceDate {
+                        CarePartMetaPill(icon: "calendar", text: date.shortCompactDateText)
+                    }
+                }
+            }
+        }
+        .padding(AppSpacing.lg)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30)
+                .stroke(AppColors.bubbleBorder, lineWidth: 1)
+        )
+    }
+    
+    private var iconName: String {
+        switch part.category?.lowercased() {
+        case let category? where category.contains("brake"):
+            return "exclamationmark.octagon.fill"
+        case let category? where category.contains("fluid"):
+            return "drop.fill"
+        case let category? where category.contains("engine"):
+            return "engine.combustion.fill"
+        default:
+            return "shippingbox.fill"
+        }
+    }
+}
+
+private struct CarePartMetaPill: View {
+    let icon: String
+    let text: String
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .black))
+            
+            Text(text)
+                .lineLimit(1)
+        }
+        .font(.system(size: 11, weight: .bold))
+        .foregroundStyle(AppColors.textSecondary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(AppColors.background)
+        .clipShape(Capsule())
     }
 }
 

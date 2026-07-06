@@ -37,6 +37,14 @@ final class PredictionAPIService {
         )
     }
     
+    func getVehicleParts(vehicleId: Int, token: String) async throws -> VehiclePartsResponse {
+        try await sendRequest(
+            path: "/api/vehicles/\(vehicleId)/parts",
+            method: "GET",
+            token: token
+        )
+    }
+    
     private func sendRequest<Response: Decodable>(
         path: String,
         method: String,

@@ -12,6 +12,7 @@ import Combine
 final class PredictionRepository: ObservableObject {
     
     @Published private(set) var predictions: [Prediction] = []
+    @Published private(set) var parts: [VehiclePart] = []
     @Published private(set) var dashboard: VehicleDashboard?
     @Published private(set) var eventStats: VehicleEventStats?
     @Published private(set) var isLoading = false
@@ -52,6 +53,8 @@ final class PredictionRepository: ObservableObject {
             errorMessage = nil
         }
         
+        parts = (try? await apiService.getVehicleParts(vehicleId: vehicleId, token: token).parts) ?? []
+        
         eventStats = try? await TimelineAPIService.shared
             .getEventStats(vehicleId: vehicleId, token: token)
             .stats
@@ -84,6 +87,8 @@ final class PredictionRepository: ObservableObject {
             if predictions.isEmpty, let dashboard, !dashboard.allPredictions.isEmpty {
                 predictions = dashboard.allPredictions
             }
+            
+            parts = (try? await apiService.getVehicleParts(vehicleId: vehicleId, token: token).parts) ?? parts
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -93,6 +98,7 @@ final class PredictionRepository: ObservableObject {
     
     func clear() {
         predictions = []
+        parts = []
         dashboard = nil
         eventStats = nil
         errorMessage = nil
