@@ -90,7 +90,8 @@ struct CareOverviewView: View {
                     
                     CareStatsGrid(
                         dashboard: predictionRepository.dashboard,
-                        eventStats: predictionRepository.eventStats
+                        eventStats: predictionRepository.eventStats,
+                        predictions: predictionRepository.predictions
                     )
                     
                     if let focusPrediction {
@@ -122,11 +123,12 @@ struct CareOverviewView: View {
                         }
                         
                         if predictionRepository.predictions.isEmpty {
-                            AppCard {
-                                Text("No predictions available yet.")
-                                    .font(AppTypography.subtitle)
-                                    .foregroundStyle(AppColors.textSecondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            CarePredictionsEmptyCard(
+                                isRefreshing: predictionRepository.isRefreshing
+                            ) {
+                                Task {
+                                    await refreshCareData()
+                                }
                             }
                         } else {
                             ForEach(predictionRepository.predictions) { prediction in
@@ -194,9 +196,49 @@ struct CareOverviewView: View {
     }
 }
 
+private struct CarePredictionsEmptyCard: View {
+    let isRefreshing: Bool
+    let onRefresh: () -> Void
+    
+    var body: some View {
+        AppCard(padding: AppSpacing.lg, cornerRadius: AppRadius.xl) {
+            HStack(alignment: .top, spacing: AppSpacing.md) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 18, weight: .black))
+                    .foregroundStyle(AppColors.primary)
+                    .frame(width: 44, height: 44)
+                    .background(AppColors.primary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("PREDICTIONS PENDING")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(AppColors.textMuted)
+                        .tracking(1.2)
+                    
+                    Text("No part predictions are available for this vehicle yet.")
+                        .font(AppTypography.subtitle)
+                        .foregroundStyle(AppColors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    Button(action: onRefresh) {
+                        Text(isRefreshing ? "REFRESHING..." : "REFRESH PREDICTIONS")
+                            .font(.system(size: 11, weight: .black))
+                            .foregroundStyle(AppColors.primary)
+                            .tracking(1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isRefreshing)
+                }
+            }
+        }
+    }
+}
+
 private struct CareStatsGrid: View {
     let dashboard: VehicleDashboard?
     let eventStats: VehicleEventStats?
+    let predictions: [Prediction]
     
     var body: some View {
         HStack(spacing: AppSpacing.md) {
@@ -225,12 +267,38 @@ private struct CareStatsGrid: View {
     }
     
     private var nextCheckValue: String {
-        guard let km = dashboard?.predictionSummary?.remainingKm else { return "--" }
-        return km.formatted()
+        if let date = nextPredictionDate {
+            return date.shortCompactDateText
+        }
+        
+        if let mileage = nextPredictionMileage {
+            return mileage.formatted()
+        }
+        
+        return "Pending"
     }
     
     private var nextCheckUnit: String {
-        dashboard?.predictionSummary?.remainingKm == nil ? "" : "km"
+        if nextPredictionDate != nil {
+            return ""
+        }
+        
+        if nextPredictionMileage != nil {
+            return "km"
+        }
+        
+        return ""
+    }
+    
+    private var nextPredictionDate: String? {
+        predictions
+            .compactMap(\.predictedNextDate)
+            .sortedByISODate()
+            .first
+    }
+    
+    private var nextPredictionMileage: Int? {
+        predictions.compactMap(\.predictedNextMileage).min()
     }
 }
 
@@ -488,11 +556,39 @@ private struct DashboardSummaryCard: View {
     }
     
     private var statusText: String {
-        dashboard?.status?.capitalized ?? "Syncing"
+        let rawStatus = dashboard?.status?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        
+        switch rawStatus {
+        case "healthy", "ok", "good", "normal":
+            return "Healthy"
+        case "warning", "attention", "medium":
+            return "Check advised"
+        case "critical", "high", "danger":
+            return "Action needed"
+        case "syncing", "loading":
+            return "Syncing"
+        default:
+            return riskBasedStatus
+        }
     }
     
     private var statusColor: Color {
         dashboard?.predictionSummary?.riskLevel?.riskColor ?? AppColors.primary
+    }
+    
+    private var riskBasedStatus: String {
+        switch dashboard?.predictionSummary?.riskLevel {
+        case .low:
+            return "Healthy"
+        case .medium:
+            return "Check advised"
+        case .high:
+            return "Action needed"
+        case nil:
+            return dashboard == nil ? "Syncing" : "Ready"
+        }
     }
     
     private var lastEventTitle: String {
@@ -805,7 +901,7 @@ private struct RiskBadge: View {
     let level: RiskLevel?
     
     var body: some View {
-        Text(level?.title ?? "UNKNOWN")
+        Text(level?.title ?? "READY")
             .font(.system(size: 10, weight: .black))
             .foregroundStyle(color)
             .tracking(1)
@@ -816,7 +912,7 @@ private struct RiskBadge: View {
     }
     
     private var color: Color {
-        level?.riskColor ?? AppColors.textMuted
+        level?.riskColor ?? AppColors.primary
     }
 }
 
@@ -868,6 +964,16 @@ private extension String {
         isEmpty ? nil : self
     }
     
+    var shortCompactDateText: String {
+        let formatter = ISO8601DateFormatter()
+        
+        if let date = formatter.date(from: self) {
+            return date.formatted(.dateTime.month(.abbreviated).day())
+        }
+        
+        return shortDateText
+    }
+    
     var shortDateText: String {
         let formatter = ISO8601DateFormatter()
         
@@ -876,5 +982,27 @@ private extension String {
         }
         
         return self
+    }
+    
+    var careDateText: String {
+        let formatter = ISO8601DateFormatter()
+        
+        if let date = formatter.date(from: self) {
+            return date.formatted(.dateTime.month(.abbreviated).day())
+        }
+        
+        return self
+    }
+}
+
+private extension Array where Element == String {
+    func sortedByISODate() -> [String] {
+        let formatter = ISO8601DateFormatter()
+        
+        return sorted { lhs, rhs in
+            let lhsDate = formatter.date(from: lhs) ?? .distantFuture
+            let rhsDate = formatter.date(from: rhs) ?? .distantFuture
+            return lhsDate < rhsDate
+        }
     }
 }

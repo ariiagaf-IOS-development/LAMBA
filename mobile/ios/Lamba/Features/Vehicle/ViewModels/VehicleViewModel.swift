@@ -177,6 +177,42 @@ final class VehicleViewModel: ObservableObject {
         isLoading = false
     }
     
+    func updateMileage(
+        for vehicle: VehicleResponse,
+        to mileageKm: Int,
+        token: String
+    ) async -> Bool {
+        errorMessage = nil
+        
+        do {
+            let updatedVehicle = try await VehicleAPIService.shared.updateVehicle(
+                id: vehicle.id,
+                brand: vehicle.brand,
+                model: vehicle.model,
+                year: vehicle.year,
+                mileageKm: mileageKm,
+                vin: vehicle.vin,
+                token: token
+            )
+            
+            if let index = vehicles.firstIndex(where: { $0.id == updatedVehicle.id }) {
+                vehicles[index] = updatedVehicle
+            } else {
+                vehicles.append(updatedVehicle)
+            }
+            
+            if activeVehicleId == updatedVehicle.id {
+                selectedVehicle = updatedVehicle
+            }
+            
+            NotificationCenter.default.post(name: .vehicleEventsDidChange, object: updatedVehicle.id)
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+    
     func deleteSelectedVehicle(token: String) async {
         guard let activeVehicle else { return }
         

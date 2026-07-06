@@ -9,11 +9,14 @@ import SwiftUI
 
 struct VehicleProfileView: View {
     
+    @Binding var selectedTab: AppTab
+    
     @EnvironmentObject var vehicleViewModel: VehicleViewModel
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var isEditingVehicle = false
     @State private var isAddingVehicle = false
     @State private var isManagingVehicles = false
+    @State private var isChangingPersonality = false
         
     var body: some View {
         ZStack {
@@ -45,17 +48,32 @@ struct VehicleProfileView: View {
                             .zIndex(10)
                         }
 
-                        VehicleImageCard()
-                            .padding(.horizontal, AppSpacing.lg)
-                            .padding(.top, AppSpacing.lg)
+                        Button {
+                            isEditingVehicle = true
+                        } label: {
+                            VehicleImageCard()
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, AppSpacing.lg)
+                        .padding(.top, AppSpacing.lg)
                         
-                        NeuralLinkCard()
-                            .padding(.horizontal, AppSpacing.lg)
-                            .padding(.top, AppSpacing.sm)
+                        Button {
+                            selectedTab = .ai
+                        } label: {
+                            NeuralLinkCard()
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, AppSpacing.lg)
+                        .padding(.top, AppSpacing.sm)
                         
-                        VehiclePersonalityMiniCard()
-                            .padding(.horizontal, AppSpacing.lg)
-                            .padding(.top, AppSpacing.sm)
+                        Button {
+                            isChangingPersonality = true
+                        } label: {
+                            VehiclePersonalityMiniCard()
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, AppSpacing.lg)
+                        .padding(.top, AppSpacing.sm)
                         
                         AddNewVehicleCard {
                             isAddingVehicle = true
@@ -113,6 +131,18 @@ struct VehicleProfileView: View {
             ManageVehiclesView()
                 .environmentObject(vehicleViewModel)
                 .environmentObject(authViewModel)
+        }
+        .sheet(isPresented: $isChangingPersonality) {
+            if let activeVehicle = vehicleViewModel.activeVehicle {
+                VehiclePersonalityPickerSheet(
+                    vehicle: activeVehicle,
+                    selectedPersonality: vehicleViewModel.personality(for: activeVehicle),
+                    onSelect: { personality in
+                        vehicleViewModel.setPersonality(personality, for: activeVehicle.id)
+                        isChangingPersonality = false
+                    }
+                )
+            }
         }
         .onAppear {
             if vehicleViewModel.activeVehicleId == nil {
@@ -277,6 +307,10 @@ struct VehicleProfileView: View {
                     }
                     
                     Spacer()
+                    
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 15, weight: .black))
+                        .foregroundStyle(AppColors.primary)
                 }
                 .padding(AppSpacing.lg)
                 .background(AppColors.card)
@@ -284,6 +318,89 @@ struct VehicleProfileView: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: AppRadius.xxl)
                         .stroke(AppColors.bubbleBorder, lineWidth: 1)
+                )
+            }
+        }
+    }
+    
+    private struct VehiclePersonalityPickerSheet: View {
+        let vehicle: VehicleResponse
+        let selectedPersonality: VehiclePersonality
+        let onSelect: (VehiclePersonality) -> Void
+        
+        @Environment(\.dismiss) private var dismiss
+        
+        var body: some View {
+            ZStack {
+                AppColors.background
+                    .ignoresSafeArea()
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: AppSpacing.lg) {
+                        ScreenHeroView(
+                            title: "TWIN",
+                            accentTitle: "MOOD",
+                            subtitle: "Choose how your \(vehicle.brand) \(vehicle.model) talks, reacts, and shows up in the app.",
+                            topPadding: 12
+                        )
+                        
+                        VStack(spacing: AppSpacing.md) {
+                            ForEach(VehiclePersonality.allCases) { personality in
+                                Button {
+                                    onSelect(personality)
+                                } label: {
+                                    HStack(spacing: AppSpacing.md) {
+                                        Image(systemName: personality.iconName)
+                                            .font(.system(size: 18, weight: .black))
+                                            .foregroundStyle(personality == selectedPersonality ? .white : AppColors.primary)
+                                            .frame(width: 48, height: 48)
+                                            .background(personality == selectedPersonality ? AppColors.primary : AppColors.primary.opacity(0.10))
+                                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                                        
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Text(personality.title)
+                                                .font(.system(size: 16, weight: .black))
+                                                .foregroundStyle(AppColors.textPrimary)
+                                            
+                                            Text(personality.subtitle)
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundStyle(AppColors.textSecondary)
+                                                .lineSpacing(3)
+                                                .multilineTextAlignment(.leading)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        if personality == selectedPersonality {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 20, weight: .black))
+                                                .foregroundStyle(AppColors.primary)
+                                        }
+                                    }
+                                    .padding(AppSpacing.lg)
+                                    .background(AppColors.card)
+                                    .clipShape(RoundedRectangle(cornerRadius: 28))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 28)
+                                            .stroke(personality == selectedPersonality ? AppColors.primary.opacity(0.35) : AppColors.bubbleBorder, lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, AppSpacing.lg)
+                    }
+                    .padding(.bottom, AppSpacing.xxl)
+                }
+            }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                AppHeaderView(
+                    config: .init(title: "PERSONALITY"),
+                    actions: .init(
+                        onBackTap: {
+                            dismiss()
+                        }
+                    )
                 )
             }
         }

@@ -34,7 +34,7 @@ struct MainTabView: View {
                 }
                 .tag(AppTab.log)
             
-            VehicleProfileView()
+            VehicleProfileView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("VEHICLE", systemImage: "car.fill")
                 }
@@ -46,7 +46,7 @@ struct MainTabView: View {
                 }
                 .tag(AppTab.care)
             
-            UserProfileView()
+            UserProfileView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("PROFILE", systemImage: "person.crop.circle.fill")
                 }

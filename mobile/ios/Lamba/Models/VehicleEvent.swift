@@ -81,7 +81,13 @@ struct VehicleEvent: Codable, Identifiable {
     let eventDate: String
     let mileageKm: Int?
     let cost: Double?
+    let fuelLiters: Double?
+    let metadata: [String: EventMetadataValue]?
     let createdAt: String?
+    
+    var displayFuelLiters: Double? {
+        fuelLiters ?? metadata?["fuel_liters"]?.doubleValue
+    }
 }
 
 struct VehicleTimelineResponse: Decodable {
@@ -151,4 +157,55 @@ struct VehicleEventRequest: Encodable {
     let eventDate: String
     let mileageKm: Int?
     let cost: Double?
+    let fuelLiters: Double?
+    let metadata: [String: EventMetadataValue]?
+}
+
+enum EventMetadataValue: Codable, Equatable {
+    case string(String)
+    case double(Double)
+    case int(Int)
+    case bool(Bool)
+    
+    var doubleValue: Double? {
+        switch self {
+        case .double(let value):
+            return value
+        case .int(let value):
+            return Double(value)
+        case .string(let value):
+            return Double(value.replacingOccurrences(of: ",", with: "."))
+        case .bool:
+            return nil
+        }
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        if let value = try? container.decode(Double.self) {
+            self = .double(value)
+        } else if let value = try? container.decode(Int.self) {
+            self = .int(value)
+        } else if let value = try? container.decode(Bool.self) {
+            self = .bool(value)
+        } else {
+            self = .string((try? container.decode(String.self)) ?? "")
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        
+        switch self {
+        case .string(let value):
+            try container.encode(value)
+        case .double(let value):
+            try container.encode(value)
+        case .int(let value):
+            try container.encode(value)
+        case .bool(let value):
+            try container.encode(value)
+        }
+    }
 }

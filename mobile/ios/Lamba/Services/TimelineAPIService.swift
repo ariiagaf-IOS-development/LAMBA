@@ -54,6 +54,33 @@ final class TimelineAPIService {
         )
     }
     
+    func startTrip(
+        vehicleId: Int,
+        request body: StartTripRequest,
+        token: String
+    ) async throws -> Trip {
+        try await sendRequest(
+            path: "/api/vehicles/\(vehicleId)/trips/start",
+            method: "POST",
+            token: token,
+            body: body
+        )
+    }
+    
+    func endTrip(
+        vehicleId: Int,
+        tripId: Int,
+        request body: EndTripRequest,
+        token: String
+    ) async throws -> Trip {
+        try await sendRequest(
+            path: "/api/vehicles/\(vehicleId)/trips/\(tripId)/end",
+            method: "POST",
+            token: token,
+            body: body
+        )
+    }
+    
     private func sendRequest<Response: Decodable, Body: Encodable>(
         path: String,
         method: String,

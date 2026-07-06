@@ -7,11 +7,15 @@ import SwiftUI
 
 struct UserProfileView: View {
     
+    @Binding var selectedTab: AppTab
+    
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var vehicleViewModel: VehicleViewModel
     
     @State private var showsLogoutConfirmation = false
     @State private var showsPersonalityPicker = false
+    @State private var showsManageVehicles = false
+    @State private var showsEditVehicle = false
     
     var body: some View {
         ZStack {
@@ -30,12 +34,26 @@ struct UserProfileView: View {
                     VStack(spacing: AppSpacing.lg) {
                         UserIdentityCard(user: authViewModel.currentUser)
                         
-                        ProfileMetricsGrid(
-                            vehicleCount: vehicleViewModel.vehicles.count,
-                            activeVehicle: vehicleViewModel.activeVehicle
-                        )
+                        Button {
+                            showsManageVehicles = true
+                        } label: {
+                            ProfileMetricsGrid(
+                                vehicleCount: vehicleViewModel.vehicles.count,
+                                activeVehicle: vehicleViewModel.activeVehicle
+                            )
+                        }
+                        .buttonStyle(.plain)
                         
-                        CurrentVehicleProfileCard(vehicle: vehicleViewModel.activeVehicle)
+                        Button {
+                            if vehicleViewModel.activeVehicle != nil {
+                                showsEditVehicle = true
+                            } else {
+                                selectedTab = .vehicle
+                            }
+                        } label: {
+                            CurrentVehicleProfileCard(vehicle: vehicleViewModel.activeVehicle)
+                        }
+                        .buttonStyle(.plain)
                         
                         if let activeVehicle = vehicleViewModel.activeVehicle {
                             VehiclePersonalityCard(
@@ -100,6 +118,21 @@ struct UserProfileView: View {
                     }
                 )
             }
+        }
+        .sheet(isPresented: $showsManageVehicles) {
+            ManageVehiclesView()
+                .environmentObject(vehicleViewModel)
+                .environmentObject(authViewModel)
+        }
+        .fullScreenCover(isPresented: $showsEditVehicle) {
+            AddVehicleView(
+                mode: .edit,
+                onClose: {
+                    showsEditVehicle = false
+                }
+            )
+            .environmentObject(vehicleViewModel)
+            .environmentObject(authViewModel)
         }
     }
 }

@@ -49,6 +49,18 @@ final class TimelineRepository: ObservableObject {
         token: String,
         event: VehicleEventRequest
     ) async -> Bool {
+        return await createEventAndReturn(
+            vehicleId: vehicleId,
+            token: token,
+            event: event
+        ) != nil
+    }
+    
+    func createEventAndReturn(
+        vehicleId: Int,
+        token: String,
+        event: VehicleEventRequest
+    ) async -> VehicleEvent? {
         isCreating = true
         errorMessage = nil
         
@@ -69,11 +81,11 @@ final class TimelineRepository: ObservableObject {
             NotificationCenter.default.post(name: .vehicleEventsDidChange, object: vehicleId)
             
             isCreating = false
-            return true
+            return createdEvent
         } catch {
             errorMessage = error.localizedDescription
             isCreating = false
-            return false
+            return nil
         }
     }
     

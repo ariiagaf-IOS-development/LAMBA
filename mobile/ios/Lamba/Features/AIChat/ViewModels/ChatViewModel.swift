@@ -7,12 +7,16 @@
 
 import Foundation
 import Combine
+#if canImport(UIKit)
+import UIKit
+#endif
 
 @MainActor
 final class ChatViewModel: ObservableObject {
     
     @Published var messages: [ChatUIMessage] = []
     @Published var inputText: String = ""
+    @Published var pendingPhotoData: Data?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
@@ -127,8 +131,9 @@ final class ChatViewModel: ObservableObject {
         token: String?
     ) async {
         let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pendingAttachment = pendingPhotoData.map { ChatMessageAttachment.chatPhoto(data: $0) }
         
-        guard !trimmedText.isEmpty else {
+        guard !trimmedText.isEmpty || pendingAttachment != nil else {
             return
         }
         
@@ -165,9 +170,9 @@ final class ChatViewModel: ObservableObject {
         
         let userMessage = ChatUIMessage(
             role: .user,
-            text: trimmedText,
+            text: trimmedText.isEmpty ? "Please inspect this photo." : trimmedText,
             prediction: nil,
-            attachment: nil
+            attachment: pendingAttachment
         )
         
         messages.append(userMessage)
@@ -175,13 +180,18 @@ final class ChatViewModel: ObservableObject {
         saveLocalCache()
         
         inputText = ""
+        pendingPhotoData = nil
         isLoading = true
         errorMessage = nil
         
         do {
+            let backendMessage = pendingAttachment == nil
+            ? trimmedText
+            : "\(trimmedText.isEmpty ? "Please inspect this photo." : trimmedText)\n\n[Photo attached in the mobile app.]"
+            
             let response = try await repository.sendMessage(
                 vehicleId: vehicle.id,
-                message: trimmedText,
+                message: backendMessage,
                 token: token
             )
             
@@ -195,12 +205,6 @@ final class ChatViewModel: ObservableObject {
             messages.append(assistantMessage)
             cachedMessagesByVehicleId[vehicle.id] = messages
             saveLocalCache()
-
-            await loadHistory(
-                vehicle: vehicle,
-                token: token,
-                forceReload: true
-            )
         } catch {
             errorMessage = friendlyMessage(for: error)
         }
@@ -491,6 +495,14 @@ final class ChatViewModel: ObservableObject {
         persistCurrentMessages()
     }
     
+    func attachPhotoToDraft(_ data: Data) {
+        pendingPhotoData = data.normalizedChatPhotoData
+    }
+    
+    func removeDraftPhoto() {
+        pendingPhotoData = nil
+    }
+    
     private func persistCurrentMessages() {
         guard let loadedVehicleId else {
             return
@@ -595,6 +607,87 @@ struct ChatUIMessage: Identifiable, Codable {
 
 enum ChatMessageAttachment: Codable, Equatable {
     case vehiclePhoto(vehicleId: Int)
+    case chatPhoto(data: Data)
+    
+    var vehiclePhotoId: Int? {
+        if case .vehiclePhoto(let vehicleId) = self {
+            return vehicleId
+        }
+        
+        return nil
+    }
+    
+    var chatPhotoData: Data? {
+        if case .chatPhoto(let data) = self {
+            return data
+        }
+        
+        return nil
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case type
+        case vehicleId
+        case data
+        case vehiclePhoto
+        case chatPhoto
+        case unlabeled = "_0"
+    }
+    
+    private enum AttachmentType: String, Codable {
+        case vehiclePhoto
+        case chatPhoto
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        if let type = try? container.decode(AttachmentType.self, forKey: .type) {
+            switch type {
+            case .vehiclePhoto:
+                self = .vehiclePhoto(vehicleId: try container.decode(Int.self, forKey: .vehicleId))
+            case .chatPhoto:
+                self = .chatPhoto(data: try container.decode(Data.self, forKey: .data))
+            }
+            return
+        }
+        
+        if let legacyVehicle = try? container.nestedContainer(keyedBy: CodingKeys.self, forKey: .vehiclePhoto) {
+            if let vehicleId = try? legacyVehicle.decode(Int.self, forKey: .vehicleId) {
+                self = .vehiclePhoto(vehicleId: vehicleId)
+                return
+            }
+            
+            if let vehicleId = try? legacyVehicle.decode(Int.self, forKey: .unlabeled) {
+                self = .vehiclePhoto(vehicleId: vehicleId)
+                return
+            }
+        }
+        
+        if let legacyPhoto = try? container.nestedContainer(keyedBy: CodingKeys.self, forKey: .chatPhoto),
+           let data = (try? legacyPhoto.decode(Data.self, forKey: .data)) ??
+           (try? legacyPhoto.decode(Data.self, forKey: .unlabeled)) {
+            self = .chatPhoto(data: data)
+            return
+        }
+        
+        throw DecodingError.dataCorrupted(
+            .init(codingPath: decoder.codingPath, debugDescription: "Unknown chat attachment format.")
+        )
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        switch self {
+        case .vehiclePhoto(let vehicleId):
+            try container.encode(AttachmentType.vehiclePhoto, forKey: .type)
+            try container.encode(vehicleId, forKey: .vehicleId)
+        case .chatPhoto(let data):
+            try container.encode(AttachmentType.chatPhoto, forKey: .type)
+            try container.encode(data, forKey: .data)
+        }
+    }
 }
 
 enum VehicleOnboardingStep {
@@ -617,4 +710,27 @@ struct VehicleOnboardingDraft {
 enum ChatRole: String, Codable {
     case user
     case assistant
+}
+
+private extension Data {
+    var normalizedChatPhotoData: Data {
+        #if canImport(UIKit)
+        guard let image = UIImage(data: self) else {
+            return self
+        }
+        
+        let maxSide: CGFloat = 1400
+        let size = image.size
+        let scale = Swift.min(1, maxSide / Swift.max(size.width, size.height))
+        let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        let resized = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+        
+        return resized.jpegData(compressionQuality: 0.8) ?? self
+        #else
+        return self
+        #endif
+    }
 }

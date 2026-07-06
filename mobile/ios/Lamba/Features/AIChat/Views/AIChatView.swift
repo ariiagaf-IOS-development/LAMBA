@@ -40,7 +40,8 @@ struct AIChatView: View {
                                     message: message,
                                     vehicleImageData: message.attachment?.vehiclePhotoId.flatMap {
                                         vehicleViewModel.getImage(for: $0)
-                                    }
+                                    },
+                                    chatPhotoData: message.attachment?.chatPhotoData
                                 )
                                     .id(message.id)
                                 
@@ -126,9 +127,13 @@ struct AIChatView: View {
             ChatInputBar(
                 text: $chatViewModel.inputText,
                 selectedPhoto: $selectedVehiclePhoto,
+                pendingPhotoData: chatViewModel.pendingPhotoData,
                 canUploadPhoto: vehicleViewModel.activeVehicle != nil,
                 isLoading: chatViewModel.isLoading,
-                isDisabled: false
+                isDisabled: false,
+                onRemovePhoto: {
+                    chatViewModel.removeDraftPhoto()
+                }
             ) {
                 Task {
                     await chatViewModel.sendMessage(
@@ -139,15 +144,11 @@ struct AIChatView: View {
             }
             .onChange(of: selectedVehiclePhoto) { _, newValue in
                 Task {
-                    guard let vehicleId = vehicleViewModel.activeVehicleId,
-                          let data = try? await newValue?.loadTransferable(type: Data.self) else {
+                    guard let data = try? await newValue?.loadTransferable(type: Data.self) else {
                         return
                     }
                     
-                    vehicleViewModel.setImage(data, for: vehicleId)
-                    
-                    chatViewModel.addVehiclePhotoMessage(vehicleId: vehicleId)
-                    
+                    chatViewModel.attachPhotoToDraft(data)
                     selectedVehiclePhoto = nil
                 }
             }
@@ -287,6 +288,7 @@ private struct ChatBubble: View {
     
     let message: ChatUIMessage
     let vehicleImageData: Data?
+    let chatPhotoData: Data?
     
     private var isUser: Bool {
         message.role == .user
@@ -302,6 +304,10 @@ private struct ChatBubble: View {
                 if message.attachment?.vehiclePhotoId != nil {
                     ChatVehiclePhotoCard(imageData: vehicleImageData)
                 } else {
+                    if let chatPhotoData {
+                        ChatAttachedPhotoCard(imageData: chatPhotoData, isUser: isUser)
+                    }
+                    
                     ChatMessageText(
                         text: message.text,
                         isUser: isUser
@@ -322,6 +328,28 @@ private struct ChatBubble: View {
             
             if !isUser {
                 Spacer(minLength: 48)
+            }
+        }
+    }
+}
+
+private struct ChatAttachedPhotoCard: View {
+    let imageData: Data
+    let isUser: Bool
+    
+    var body: some View {
+        Group {
+            if let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 220, height: 160)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
+                    .clipped()
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.xl)
+                            .stroke(isUser ? Color.clear : AppColors.bubbleBorder, lineWidth: 1)
+                    )
             }
         }
     }
@@ -637,57 +665,68 @@ private struct ChatInputBar: View {
     
     @Binding var text: String
     @Binding var selectedPhoto: PhotosPickerItem?
+    let pendingPhotoData: Data?
     
     let canUploadPhoto: Bool
     let isLoading: Bool
     let isDisabled: Bool
+    let onRemovePhoto: () -> Void
     let onSend: () -> Void
     
     var body: some View {
-        HStack(spacing: 10) {
-            if canUploadPhoto {
-                PhotosPicker(
-                    selection: $selectedPhoto,
-                    matching: .images
-                ) {
+        VStack(alignment: .leading, spacing: 8) {
+            if let pendingPhotoData {
+                PendingChatPhotoPreview(
+                    imageData: pendingPhotoData,
+                    onRemove: onRemovePhoto
+                )
+            }
+            
+            HStack(spacing: 10) {
+                if canUploadPhoto {
+                    PhotosPicker(
+                        selection: $selectedPhoto,
+                        matching: .images
+                    ) {
+                        ZStack {
+                            Circle()
+                                .fill(AppColors.primary.opacity(0.10))
+                                .frame(width: 38, height: 38)
+                            
+                            Image(systemName: pendingPhotoData == nil ? "paperclip" : "photo.fill")
+                                .font(.system(size: 15, weight: .black))
+                                .foregroundStyle(AppColors.primary)
+                        }
+                    }
+                    .disabled(isLoading)
+                }
+                
+                TextField(
+                    canUploadPhoto ? "Ask your digital twin..." : "Answer to create my digital twin...",
+                    text: $text,
+                    axis: .vertical
+                )
+                .lineLimit(1...4)
+                .font(AppTypography.caption)
+                .foregroundStyle(AppColors.textPrimary)
+                .disabled(isDisabled || isLoading)
+                
+                Button {
+                    UIApplication.shared.hideKeyboard()
+                    onSend()
+                } label: {
                     ZStack {
                         Circle()
-                            .fill(AppColors.primary.opacity(0.10))
+                            .fill(canSend ? AppColors.primary : AppColors.textMuted.opacity(0.4))
                             .frame(width: 38, height: 38)
                         
-                        Image(systemName: "paperclip")
+                        Image(systemName: isLoading ? "hourglass" : "arrow.up")
                             .font(.system(size: 15, weight: .black))
-                            .foregroundStyle(AppColors.primary)
+                            .foregroundStyle(.white)
                     }
                 }
-                .disabled(isLoading)
+                .disabled(!canSend)
             }
-            
-            TextField(
-                canUploadPhoto ? "Ask your digital twin..." : "Answer to create my digital twin...",
-                text: $text,
-                axis: .vertical
-            )
-            .lineLimit(1...4)
-            .font(AppTypography.caption)
-            .foregroundStyle(AppColors.textPrimary)
-            .disabled(isDisabled || isLoading)
-            
-            Button {
-                UIApplication.shared.hideKeyboard()
-                onSend()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(canSend ? AppColors.primary : AppColors.textMuted.opacity(0.4))
-                        .frame(width: 38, height: 38)
-                    
-                    Image(systemName: isLoading ? "hourglass" : "arrow.up")
-                        .font(.system(size: 15, weight: .black))
-                        .foregroundStyle(.white)
-                }
-            }
-            .disabled(!canSend)
         }
         .padding(10)
         .background(AppColors.card)
@@ -699,9 +738,53 @@ private struct ChatInputBar: View {
     }
     
     private var canSend: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        (!text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || pendingPhotoData != nil) &&
         !isLoading &&
         !isDisabled
+    }
+}
+
+private struct PendingChatPhotoPreview: View {
+    let imageData: Data
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 10) {
+            if let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 54, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.md))
+                    .clipped()
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("PHOTO ATTACHED")
+                    .font(.system(size: 9, weight: .black))
+                    .foregroundStyle(AppColors.textMuted)
+                    .tracking(1)
+                
+                Text("Will be sent with this message")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(AppColors.textSecondary)
+            }
+            
+            Spacer()
+            
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundStyle(AppColors.textSecondary)
+                    .frame(width: 28, height: 28)
+                    .background(AppColors.background)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(8)
+        .background(AppColors.background)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.lg))
     }
 }
 
@@ -752,15 +835,5 @@ private extension String {
         }
         
         return result
-    }
-}
-
-private extension ChatMessageAttachment {
-    var vehiclePhotoId: Int? {
-        if case .vehiclePhoto(let vehicleId) = self {
-            return vehicleId
-        }
-        
-        return nil
     }
 }

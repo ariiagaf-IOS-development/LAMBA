@@ -33,21 +33,23 @@ final class PredictionRepository: ObservableObject {
         errorMessage = nil
         
         do {
-            async let predictionsResponse = apiService.getPredictions(vehicleId: vehicleId, token: token)
-            async let dashboardResponse = apiService.getDashboard(vehicleId: vehicleId, token: token)
-            
-            let (loadedPredictions, loadedDashboard) = try await (
-                predictionsResponse,
-                dashboardResponse
-            )
-            predictions = loadedPredictions.predictions
+            let loadedDashboard = try await apiService.getDashboard(vehicleId: vehicleId, token: token)
             dashboard = loadedDashboard
-            
-            if predictions.isEmpty, !loadedDashboard.allPredictions.isEmpty {
-                predictions = loadedDashboard.allPredictions
-            }
         } catch {
+            dashboard = nil
+        }
+        
+        do {
+            let loadedPredictions = try await apiService.getPredictions(vehicleId: vehicleId, token: token)
+            predictions = loadedPredictions.predictions
+        } catch {
+            predictions = []
             errorMessage = error.localizedDescription
+        }
+        
+        if predictions.isEmpty, let dashboard, !dashboard.allPredictions.isEmpty {
+            predictions = dashboard.allPredictions
+            errorMessage = nil
         }
         
         eventStats = try? await TimelineAPIService.shared
@@ -77,6 +79,10 @@ final class PredictionRepository: ObservableObject {
                 eventStats = try? await TimelineAPIService.shared
                     .getEventStats(vehicleId: vehicleId, token: token)
                     .stats
+            }
+            
+            if predictions.isEmpty, let dashboard, !dashboard.allPredictions.isEmpty {
+                predictions = dashboard.allPredictions
             }
         } catch {
             errorMessage = error.localizedDescription

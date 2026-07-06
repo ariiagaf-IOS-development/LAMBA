@@ -12,6 +12,24 @@ enum RiskLevel: String, Decodable, CaseIterable {
     case medium
     case high
     
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        
+        switch rawValue {
+        case "low", "healthy", "ok", "good", "normal":
+            self = .low
+        case "medium", "warning", "attention", "moderate":
+            self = .medium
+        case "high", "critical", "danger":
+            self = .high
+        default:
+            self = .low
+        }
+    }
+    
     var title: String {
         switch self {
         case .low:
