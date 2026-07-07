@@ -6,8 +6,26 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A3C100000000000000000001 /* PredictionDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C100000000000000000101 /* PredictionDecodingTests.swift */; };
+		A3C100000000000000000002 /* VehiclePersonalityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C100000000000000000102 /* VehiclePersonalityTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A3C100000000000000000301 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A3B9FB682FDB85D900EB6F9B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A3B9FB6F2FDB85D900EB6F9B;
+			remoteInfo = Lamba;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		A3B9FB702FDB85D900EB6F9B /* Lamba.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lamba.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A3C100000000000000000101 /* PredictionDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PredictionDecodingTests.swift; sourceTree = "<group>"; };
+		A3C100000000000000000102 /* VehiclePersonalityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehiclePersonalityTests.swift; sourceTree = "<group>"; };
+		A3C100000000000000000103 /* LambaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LambaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -39,6 +57,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A3C100000000000000000402 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -46,6 +71,7 @@
 			isa = PBXGroup;
 			children = (
 				A3B9FB722FDB85D900EB6F9B /* Lamba */,
+				A3C100000000000000000201 /* LambaTests */,
 				A3B9FB712FDB85D900EB6F9B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,8 +80,18 @@
 			isa = PBXGroup;
 			children = (
 				A3B9FB702FDB85D900EB6F9B /* Lamba.app */,
+				A3C100000000000000000103 /* LambaTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A3C100000000000000000201 /* LambaTests */ = {
+			isa = PBXGroup;
+			children = (
+				A3C100000000000000000101 /* PredictionDecodingTests.swift */,
+				A3C100000000000000000102 /* VehiclePersonalityTests.swift */,
+			);
+			path = LambaTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -83,6 +119,26 @@
 			productReference = A3B9FB702FDB85D900EB6F9B /* Lamba.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A3C100000000000000000501 /* LambaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A3C100000000000000000701 /* Build configuration list for PBXNativeTarget "LambaTests" */;
+			buildPhases = (
+				A3C100000000000000000401 /* Sources */,
+				A3C100000000000000000402 /* Frameworks */,
+				A3C100000000000000000403 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A3C100000000000000000302 /* PBXTargetDependency */,
+			);
+			name = LambaTests;
+			packageProductDependencies = (
+			);
+			productName = LambaTests;
+			productReference = A3C100000000000000000103 /* LambaTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -95,6 +151,10 @@
 				TargetAttributes = {
 					A3B9FB6F2FDB85D900EB6F9B = {
 						CreatedOnToolsVersion = 26.3;
+					};
+					A3C100000000000000000501 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = A3B9FB6F2FDB85D900EB6F9B;
 					};
 				};
 			};
@@ -113,12 +173,20 @@
 			projectRoot = "";
 			targets = (
 				A3B9FB6F2FDB85D900EB6F9B /* Lamba */,
+				A3C100000000000000000501 /* LambaTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A3B9FB6E2FDB85D900EB6F9B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A3C100000000000000000403 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -135,7 +203,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A3C100000000000000000401 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A3C100000000000000000001 /* PredictionDecodingTests.swift in Sources */,
+				A3C100000000000000000002 /* VehiclePersonalityTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A3C100000000000000000302 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A3B9FB6F2FDB85D900EB6F9B /* Lamba */;
+			targetProxy = A3C100000000000000000301 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A3B9FB792FDB85DC00EB6F9B /* Debug */ = {
@@ -325,6 +410,58 @@
 			};
 			name = Release;
 		};
+		A3C100000000000000000601 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4625D2FT3L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ari.LambaaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Lamba.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Lamba";
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Debug;
+		};
+		A3C100000000000000000602 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4625D2FT3L;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ari.LambaaTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Lamba.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Lamba";
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -342,6 +479,15 @@
 			buildConfigurations = (
 				A3B9FB7C2FDB85DC00EB6F9B /* Debug */,
 				A3B9FB7D2FDB85DC00EB6F9B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A3C100000000000000000701 /* Build configuration list for PBXNativeTarget "LambaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A3C100000000000000000601 /* Debug */,
+				A3C100000000000000000602 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
