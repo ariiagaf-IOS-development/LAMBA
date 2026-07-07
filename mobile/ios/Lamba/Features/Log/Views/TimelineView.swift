@@ -23,6 +23,7 @@ struct TimelineView: View {
     @State private var isEndingTrip = false
     @State private var selectedEvent: VehicleEvent?
     @State private var tripClock = Date()
+    private let eventsListAnchorId = "timeline-events-list"
     
     var body: some View {
         ZStack {
@@ -120,87 +121,97 @@ struct TimelineView: View {
     }
     
     private var content: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: AppSpacing.lg) {
-                ScreenHeroView(
-                    title: "LIFECYCLE",
-                    accentTitle: "STREAM",
-                    subtitle: "Trips, refueling, repairs and maintenance events in one place.",
-                    topPadding: 12
-                )
-                
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: AppSpacing.lg) {
-                    if let errorMessage = timelineRepository.errorMessage {
-                        TimelineErrorCard(message: errorMessage) {
-                            Task { await loadTimeline() }
-                        }
-                    }
-                    
-                    if let errorMessage = tripTracker.errorMessage {
-                        TimelineErrorCard(message: errorMessage) {
-                            Task { await loadTimeline() }
-                        }
-                    }
-                    
-                    TimelineStatsGrid(
-                        stats: timelineRepository.stats,
-                        events: timelineRepository.events
+                    ScreenHeroView(
+                        title: "LIFECYCLE",
+                        accentTitle: "STREAM",
+                        subtitle: "Trips, refueling, repairs and maintenance events in one place.",
+                        topPadding: 12
                     )
                     
-                    TripTrackingCard(
-                        vehicle: vehicleViewModel.activeVehicle,
-                        activeTrip: tripTracker.activeTrip(for: vehicleViewModel.activeVehicleId),
-                        currentDate: tripClock,
-                        isSaving: tripTracker.isSaving,
-                        onStart: {
-                            isStartingTrip = true
-                        },
-                        onEnd: {
-                            isEndingTrip = true
+                    VStack(spacing: AppSpacing.lg) {
+                        if let errorMessage = timelineRepository.errorMessage {
+                            TimelineErrorCard(message: errorMessage) {
+                                Task { await loadTimeline() }
+                            }
                         }
-                    )
-                    
-                    if !tripHistoryEvents.isEmpty {
-                        TripHistoryStrip(events: tripHistoryEvents)
-                    }
-                    
-                    if let latestEvent = timelineRepository.events.first {
-                        Button {
-                            selectedEvent = latestEvent
-                        } label: {
-                            LatestTimelineEventCard(event: latestEvent)
+                        
+                        if let errorMessage = tripTracker.errorMessage {
+                            TimelineErrorCard(message: errorMessage) {
+                                Task { await loadTimeline() }
+                            }
                         }
-                        .buttonStyle(.plain)
-                    }
-                    
-                    TimelineFilterBar(selectedFilter: $selectedFilter)
-                    
-                    if filteredEvents.isEmpty {
-                        TimelineEmptyState {
-                            isAddingEvent = true
-                        }
-                    } else {
-                        TimelineMonthList(
-                            groupedEvents: groupedEvents,
-                            deletingEventIds: timelineRepository.deletingEventIds,
-                            photoProvider: { eventPhotoStore.photos(for: $0.id) },
-                            onSelect: { event in
-                                selectedEvent = event
-                            },
-                            onDelete: { event in
-                                Task {
-                                    await deleteEvent(event)
+                        
+                        TimelineStatsGrid(
+                            stats: timelineRepository.stats,
+                            events: timelineRepository.events,
+                            onShowAllEvents: {
+                                selectedFilter = .all
+                                
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+                                    proxy.scrollTo(eventsListAnchorId, anchor: .top)
                                 }
                             }
                         )
+                        
+                        TripTrackingCard(
+                            vehicle: vehicleViewModel.activeVehicle,
+                            activeTrip: tripTracker.activeTrip(for: vehicleViewModel.activeVehicleId),
+                            currentDate: tripClock,
+                            isSaving: tripTracker.isSaving,
+                            onStart: {
+                                isStartingTrip = true
+                            },
+                            onEnd: {
+                                isEndingTrip = true
+                            }
+                        )
+                        
+                        if !tripHistoryEvents.isEmpty {
+                            TripHistoryStrip(events: tripHistoryEvents)
+                        }
+                        
+                        if let latestEvent = timelineRepository.events.first {
+                            Button {
+                                selectedEvent = latestEvent
+                            } label: {
+                                LatestTimelineEventCard(event: latestEvent)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        TimelineFilterBar(selectedFilter: $selectedFilter)
+                            .id(eventsListAnchorId)
+                        
+                        if filteredEvents.isEmpty {
+                            TimelineEmptyState {
+                                isAddingEvent = true
+                            }
+                        } else {
+                            TimelineMonthList(
+                                groupedEvents: groupedEvents,
+                                deletingEventIds: timelineRepository.deletingEventIds,
+                                photoProvider: { eventPhotoStore.photos(for: $0.id) },
+                                onSelect: { event in
+                                    selectedEvent = event
+                                },
+                                onDelete: { event in
+                                    Task {
+                                        await deleteEvent(event)
+                                    }
+                                }
+                            )
+                        }
                     }
+                    .padding(.horizontal, AppSpacing.lg)
                 }
-                .padding(.horizontal, AppSpacing.lg)
+                .padding(.bottom, AppSpacing.xxl)
             }
-            .padding(.bottom, AppSpacing.xxl)
-        }
-        .refreshable {
-            await loadTimeline()
+            .refreshable {
+                await loadTimeline()
+            }
         }
     }
     
@@ -1245,21 +1256,27 @@ private final class EventPhotoStore: ObservableObject {
 private struct TimelineStatsGrid: View {
     let stats: VehicleEventStats?
     let events: [VehicleEvent]
+    let onShowAllEvents: () -> Void
     
     var body: some View {
         HStack(spacing: AppSpacing.md) {
-            TimelineHeroStatCard(
-                title: "TOTAL EVENTS",
-                value: totalEvents,
-                unit: "logs",
-                icon: "list.bullet.rectangle"
-            )
+            Button(action: onShowAllEvents) {
+                TimelineHeroStatCard(
+                    title: "TOTAL EVENTS",
+                    value: totalEvents,
+                    unit: "logs",
+                    icon: "list.bullet.rectangle",
+                    actionTitle: "VIEW ALL"
+                )
+            }
+            .buttonStyle(.plain)
             
             TimelineHeroStatCard(
                 title: "TOTAL COST",
                 value: totalCost,
                 unit: "rub",
-                icon: "creditcard.fill"
+                icon: "creditcard.fill",
+                actionTitle: nil
             )
         }
     }
@@ -1279,6 +1296,7 @@ private struct TimelineHeroStatCard: View {
     let value: String
     let unit: String
     let icon: String
+    let actionTitle: String?
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.lg) {
@@ -1306,6 +1324,19 @@ private struct TimelineHeroStatCard: View {
                         .font(.system(size: 12, weight: .black))
                         .foregroundStyle(AppColors.textPrimary.opacity(0.35))
                 }
+            }
+            
+            if let actionTitle {
+                HStack(spacing: 6) {
+                    Text(actionTitle)
+                        .font(.system(size: 10, weight: .black))
+                        .tracking(1)
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .black))
+                }
+                .foregroundStyle(AppColors.primary)
+                .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 186, alignment: .leading)
