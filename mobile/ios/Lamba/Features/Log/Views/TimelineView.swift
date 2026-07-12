@@ -454,6 +454,10 @@ private final class TripTrackingRepository: ObservableObject {
         startMileageKm: Int,
         token: String
     ) async -> Bool {
+        guard !isSaving else {
+            return false
+        }
+        
         isSaving = true
         errorMessage = nil
         
@@ -545,6 +549,10 @@ private final class TripTrackingRepository: ObservableObject {
         vehicle: VehicleResponse,
         endMileageKm: Int
     ) async -> Bool {
+        guard !isSaving else {
+            return false
+        }
+        
         isSaving = true
         errorMessage = nil
         

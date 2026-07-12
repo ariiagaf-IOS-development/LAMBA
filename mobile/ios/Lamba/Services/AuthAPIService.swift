@@ -57,13 +57,21 @@ enum APIError: LocalizedError {
     }
     
     private func cleanBackendMessage(_ message: String) -> String {
-        let lowercased = message.lowercased()
+        let cleanedMessage = decodedBackendMessage(from: message)
+        let lowercased = cleanedMessage.lowercased()
         
         if lowercased.contains("already") || lowercased.contains("exists") || lowercased.contains("duplicate") {
-            return "An account with this email already exists."
+            if lowercased.contains("email") || lowercased.contains("account") {
+                return "An account with this email already exists."
+            }
+            
+            return cleanedMessage
         }
         
-        if lowercased.contains("invalid") || lowercased.contains("wrong") || lowercased.contains("unauthorized") {
+        if lowercased.contains("unauthorized") ||
+            lowercased.contains("wrong password") ||
+            lowercased.contains("invalid password") ||
+            lowercased.contains("invalid credentials") {
             return "Incorrect email or password."
         }
         
@@ -75,7 +83,25 @@ enum APIError: LocalizedError {
             return "Please check your email address."
         }
         
-        return "Something went wrong. Please try again."
+        return cleanedMessage.isEmpty ? "Something went wrong. Please try again." : cleanedMessage
+    }
+    
+    private func decodedBackendMessage(from message: String) -> String {
+        let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard let data = trimmedMessage.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return trimmedMessage
+        }
+        
+        for key in ["error", "message", "detail"] {
+            if let value = object[key] as? String,
+               !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return value.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        
+        return trimmedMessage
     }
 }
 

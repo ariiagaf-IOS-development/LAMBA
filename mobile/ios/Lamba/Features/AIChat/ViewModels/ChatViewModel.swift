@@ -92,12 +92,21 @@ final class ChatViewModel: ObservableObject {
         loadedVehicleId = vehicle.id
         isLoading = true
         errorMessage = nil
+        let requestVehicleId = vehicle.id
         
         do {
             let history = try await repository.loadHistory(
-                vehicleId: vehicle.id,
+                vehicleId: requestVehicleId,
                 token: token
             )
+            
+            guard !Task.isCancelled,
+                  loadedVehicleId == requestVehicleId else {
+                if loadedVehicleId == requestVehicleId {
+                    isLoading = false
+                }
+                return
+            }
             
             let backendMessages = history.map { message in
                 ChatUIMessage(
@@ -125,6 +134,15 @@ final class ChatViewModel: ObservableObject {
                 saveLocalCache()
             }
         } catch {
+            guard !Task.isCancelled,
+                  !isCancellationError(error),
+                  loadedVehicleId == requestVehicleId else {
+                if loadedVehicleId == requestVehicleId {
+                    isLoading = false
+                }
+                return
+            }
+            
             errorMessage = friendlyMessage(for: error)
             
             if messages.isEmpty {
@@ -132,13 +150,19 @@ final class ChatViewModel: ObservableObject {
             }
         }
         
-        isLoading = false
+        if loadedVehicleId == requestVehicleId {
+            isLoading = false
+        }
     }
     
     func sendMessage(
         vehicleViewModel: VehicleViewModel,
         token: String?
     ) async {
+        guard !isLoading else {
+            return
+        }
+        
         let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         
         guard !trimmedText.isEmpty else {
@@ -220,6 +244,10 @@ final class ChatViewModel: ObservableObject {
         vehicleViewModel: VehicleViewModel,
         token: String?
     ) async {
+        guard !isLoading else {
+            return
+        }
+        
         inputText = question
         await sendMessage(
             vehicleViewModel: vehicleViewModel,
@@ -231,6 +259,10 @@ final class ChatViewModel: ObservableObject {
         vehicleViewModel: VehicleViewModel,
         token: String?
     ) async {
+        guard !isLoading else {
+            return
+        }
+        
         guard let lastUserMessage = messages.last(where: { $0.role == .user }) else {
             return
         }
@@ -612,6 +644,16 @@ final class ChatViewModel: ObservableObject {
         }
         
         return "Something went wrong while I was processing your request. Please try again."
+    }
+    
+    private func isCancellationError(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+        
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain &&
+            nsError.code == NSURLErrorCancelled
     }
     
     func resetToNoVehicleState(previousVehicleId: Int?) {

@@ -143,8 +143,28 @@ final class VehicleViewModel: ObservableObject {
 
             activeVehicleId = createdVehicle.id
             selectedVehicle = createdVehicle
-
-            await refreshVehicles(token: token)
+            upsertVehicle(createdVehicle)
+            
+            if let personality {
+                vehiclePersonalities[createdVehicle.id] = personality
+                saveVehiclePersonalities()
+            }
+        } catch APIError.serverError(let statusCode, let message) where statusCode == 409 {
+            let didRecoverExistingVehicle = await recoverExistingVehicleAfterCreateConflict(
+                brand: brand,
+                model: model,
+                year: cleanYear,
+                vin: vin,
+                personality: personality,
+                token: token
+            )
+            
+            if !didRecoverExistingVehicle {
+                errorMessage = APIError.serverError(
+                    statusCode: statusCode,
+                    message: message
+                ).localizedDescription
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -183,8 +203,12 @@ final class VehicleViewModel: ObservableObject {
             
             activeVehicleId = updatedVehicle.id
             selectedVehicle = updatedVehicle
+            upsertVehicle(updatedVehicle)
             
-            await refreshVehicles(token: token)
+            if let personality {
+                vehiclePersonalities[updatedVehicle.id] = personality
+                saveVehiclePersonalities()
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -316,6 +340,58 @@ final class VehicleViewModel: ObservableObject {
     func selectVehicle(_ vehicle: VehicleResponse) {
         activeVehicleId = vehicle.id
         selectedVehicle = vehicle
+    }
+    
+    private func upsertVehicle(_ vehicle: VehicleResponse) {
+        if let index = vehicles.firstIndex(where: { $0.id == vehicle.id }) {
+            vehicles[index] = vehicle
+        } else {
+            vehicles.append(vehicle)
+        }
+    }
+    
+    private func recoverExistingVehicleAfterCreateConflict(
+        brand: String,
+        model: String,
+        year: Int,
+        vin: String,
+        personality: VehiclePersonality?,
+        token: String
+    ) async -> Bool {
+        let requestedBrand = brand.trimmingCharacters(in: .whitespacesAndNewlines)
+        let requestedModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        let requestedVin = vin.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        
+        do {
+            let loadedVehicles = try await VehicleAPIService.shared.getVehicles(token: token)
+            vehicles = loadedVehicles
+            
+            guard let existingVehicle = loadedVehicles.first(where: { vehicle in
+                let vehicleVin = vehicle.vin.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                
+                if !requestedVin.isEmpty, vehicleVin == requestedVin {
+                    return true
+                }
+                
+                return vehicle.brand.caseInsensitiveCompare(requestedBrand) == .orderedSame &&
+                    vehicle.model.caseInsensitiveCompare(requestedModel) == .orderedSame &&
+                    vehicle.year == year
+            }) else {
+                return false
+            }
+            
+            activeVehicleId = existingVehicle.id
+            selectedVehicle = existingVehicle
+            
+            if let personality {
+                vehiclePersonalities[existingVehicle.id] = personality
+                saveVehiclePersonalities()
+            }
+            
+            return true
+        } catch {
+            return false
+        }
     }
     
     func getImage(for vehicleId: Int) -> Data? {
