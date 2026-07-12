@@ -25,6 +25,9 @@ final class VehicleViewModel: ObservableObject {
 
     private let vehicleImagesCacheKey = "local_vehicle_images_by_vehicle_id"
     private let vehiclePersonalitiesCacheKey = "local_vehicle_personalities_by_vehicle_id"
+    private let chatMessagesCacheKey = "local_chat_messages_by_vehicle_id"
+    private let eventPhotosLegacyCacheKey = "local_event_photos_by_event_id"
+    private let activeTripsCacheKey = "local_active_trips_by_vehicle_id"
 
     @Published var activeVehicleId: Int?
     
@@ -300,6 +303,10 @@ final class VehicleViewModel: ObservableObject {
         activeVehicleId = nil
         errorMessage = nil
         isLoading = false
+        vehicleImages = [:]
+        vehiclePersonalities = [:]
+        purgeLocalSessionCaches()
+        NotificationCenter.default.post(name: .localSessionCachesDidClear, object: nil)
     }
     
     func refreshVehicles(token: String) async {
@@ -502,6 +509,38 @@ final class VehicleViewModel: ObservableObject {
             vehiclePersonalities = [:]
             UserDefaults.standard.removeObject(forKey: vehiclePersonalitiesCacheKey)
             print("Failed to load vehicle personalities:", error.localizedDescription)
+        }
+    }
+    
+    private func purgeLocalSessionCaches() {
+        let defaults = UserDefaults.standard
+        [
+            vehicleImagesCacheKey,
+            vehiclePersonalitiesCacheKey,
+            chatMessagesCacheKey,
+            eventPhotosLegacyCacheKey,
+            activeTripsCacheKey
+        ].forEach { defaults.removeObject(forKey: $0) }
+        
+        removeStoredEventPhotos()
+    }
+    
+    private func removeStoredEventPhotos() {
+        let supportURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? FileManager.default.temporaryDirectory
+        
+        let eventPhotosURL = supportURL
+            .appendingPathComponent("Lamba", isDirectory: true)
+            .appendingPathComponent("EventPhotos", isDirectory: true)
+        
+        do {
+            if FileManager.default.fileExists(atPath: eventPhotosURL.path) {
+                try FileManager.default.removeItem(at: eventPhotosURL)
+            }
+        } catch {
+            print("Failed to remove stored event photos:", error.localizedDescription)
         }
     }
 }

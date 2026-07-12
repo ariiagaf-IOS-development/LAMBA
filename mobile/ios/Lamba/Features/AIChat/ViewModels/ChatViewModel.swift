@@ -31,6 +31,13 @@ final class ChatViewModel: ObservableObject {
         "What should I do before a long trip?"
     ]
     
+    var shouldShowSuggestedQuestions: Bool {
+        !isVehicleOnboardingActive &&
+        !isLoading &&
+        errorMessage == nil &&
+        !messages.contains { $0.role == .user }
+    }
+    
     private var loadedVehicleId: Int?
     
     private var cachedMessagesByVehicleId: [Int: [ChatUIMessage]] = [:]
@@ -629,6 +636,22 @@ final class ChatViewModel: ObservableObject {
                 attachment: nil
             )
         ]
+    }
+    
+    func clearLocalSessionState() {
+        messages = []
+        inputText = ""
+        isLoading = false
+        isClearingHistory = false
+        errorMessage = nil
+        isVehicleOnboardingActive = false
+        shouldShowCreatedVehicleCard = false
+        createdVehicleCardAnchorId = nil
+        onboardingStep = .brand
+        onboardingDraft = VehicleOnboardingDraft()
+        loadedVehicleId = nil
+        cachedMessagesByVehicleId = [:]
+        UserDefaults.standard.removeObject(forKey: localCacheKey)
     }
 }
 

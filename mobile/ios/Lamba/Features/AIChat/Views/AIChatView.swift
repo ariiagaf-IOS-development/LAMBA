@@ -55,9 +55,7 @@ struct AIChatView: View {
                             }
                             
                             if vehicleViewModel.activeVehicle != nil,
-                               !chatViewModel.isVehicleOnboardingActive,
-                               !chatViewModel.isLoading,
-                               chatViewModel.errorMessage == nil {
+                               chatViewModel.shouldShowSuggestedQuestions {
                                 SuggestedQuestionsView(
                                     questions: chatViewModel.suggestedQuestions,
                                     onTap: { question in
@@ -122,6 +120,9 @@ struct AIChatView: View {
             if oldValue != nil, newValue == nil {
                 chatViewModel.resetToNoVehicleState(previousVehicleId: oldValue)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .localSessionCachesDidClear)) { _ in
+            chatViewModel.clearLocalSessionState()
         }
         .safeAreaInset(edge: .bottom) {
             ChatInputBar(

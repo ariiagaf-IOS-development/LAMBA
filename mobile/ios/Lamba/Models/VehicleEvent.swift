@@ -9,6 +9,7 @@ import Foundation
 
 extension Notification.Name {
     static let vehicleEventsDidChange = Notification.Name("vehicleEventsDidChange")
+    static let localSessionCachesDidClear = Notification.Name("localSessionCachesDidClear")
 }
 
 enum VehicleEventType: String, Codable, CaseIterable, Identifiable {
