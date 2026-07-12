@@ -112,4 +112,41 @@ final class ChatAPIService {
         let responseBody = try decoder.decode(ChatHistoryResponse.self, from: data)
         return responseBody.messages
     }
+    
+    func clearHistory(vehicleId: Int, token: String) async throws {
+        let url = APIConfig.baseURL
+            .appendingPathComponent("api")
+            .appendingPathComponent("vehicles")
+            .appendingPathComponent(String(vehicleId))
+            .appendingPathComponent("chat")
+            .appendingPathComponent("history")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
+        
+        let data: Data
+        let response: URLResponse
+        
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw APIError.noInternet
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
+        if httpResponse.statusCode == 404 {
+            return
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.serverError(
+                statusCode: httpResponse.statusCode,
+                message: String(data: data, encoding: .utf8) ?? "Something went wrong"
+            )
+        }
+    }
 }

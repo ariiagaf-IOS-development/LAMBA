@@ -34,4 +34,14 @@ final class ChatRepository {
             token: token
         )
     }
+    
+    func clearHistory(
+        vehicleId: Int,
+        token: String
+    ) async throws {
+        try await apiService.clearHistory(
+            vehicleId: vehicleId,
+            token: token
+        )
+    }
 }

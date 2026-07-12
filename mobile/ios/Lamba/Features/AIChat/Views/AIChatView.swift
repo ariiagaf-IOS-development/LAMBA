@@ -14,6 +14,7 @@ struct AIChatView: View {
     
     @StateObject private var chatViewModel = ChatViewModel()
     @State private var isEditingCreatedVehicle = false
+    @State private var showsClearHistoryAlert = false
     
     var body: some View {
         ZStack {
@@ -155,6 +156,20 @@ struct AIChatView: View {
             .environmentObject(vehicleViewModel)
             .environmentObject(authViewModel)
         }
+        .alert("Clear chat history?", isPresented: $showsClearHistoryAlert) {
+            Button("Cancel", role: .cancel) {}
+            
+            Button("Clear chat", role: .destructive) {
+                Task {
+                    await chatViewModel.clearHistory(
+                        vehicle: vehicleViewModel.activeVehicle,
+                        token: authViewModel.token
+                    )
+                }
+            }
+        } message: {
+            Text("This removes the AI chat history for the selected vehicle from the backend and this device.")
+        }
     }
     
     private var chatHeader: some View {
@@ -166,39 +181,25 @@ struct AIChatView: View {
                 .tracking(1.5)
             
             HStack {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(AppColors.card)
-                        .frame(width: 44, height: 44)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(AppColors.bubbleBorder, lineWidth: 1)
-                        )
-                    
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 18, weight: .black))
-                        .foregroundStyle(AppColors.primary)
-                }
+                chatStatusPill
                 
                 Spacer()
                 
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(vehicleViewModel.activeVehicle == nil ? AppColors.orange : AppColors.green)
-                        .frame(width: 6, height: 6)
-                    
-                    Text(vehicleViewModel.activeVehicle == nil ? "NO VEHICLE" : "LINK ACTIVE")
-                        .font(.system(size: 10, weight: .black))
-                        .foregroundStyle(vehicleViewModel.activeVehicle == nil ? AppColors.orange : AppColors.green)
+                if vehicleViewModel.activeVehicle != nil {
+                    Button {
+                        showsClearHistoryAlert = true
+                    } label: {
+                        Image(systemName: chatViewModel.isClearingHistory ? "hourglass" : "trash.fill")
+                            .font(.system(size: 13, weight: .black))
+                            .foregroundStyle(AppColors.red)
+                            .frame(width: 34, height: 34)
+                            .background(AppColors.red.opacity(0.08))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(chatViewModel.isLoading || chatViewModel.isClearingHistory)
+                    .accessibilityLabel("Clear chat")
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(vehicleViewModel.activeVehicle == nil ? AppColors.orange.opacity(0.10) : Color(hex: "ECFDF5"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppRadius.pill)
-                        .stroke(vehicleViewModel.activeVehicle == nil ? AppColors.orange.opacity(0.25) : Color(hex: "D0FAE5"), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.pill))
             }
         }
         .padding(.horizontal, 32)
@@ -211,6 +212,27 @@ struct AIChatView: View {
                 .frame(height: 1),
             alignment: .bottom
         )
+    }
+    
+    private var chatStatusPill: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(vehicleViewModel.activeVehicle == nil ? AppColors.orange : AppColors.green)
+                .frame(width: 6, height: 6)
+            
+            Text(vehicleViewModel.activeVehicle == nil ? "NO VEHICLE" : "LINK ACTIVE")
+                .font(.system(size: 10, weight: .black))
+                .foregroundStyle(vehicleViewModel.activeVehicle == nil ? AppColors.orange : AppColors.green)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(vehicleViewModel.activeVehicle == nil ? AppColors.orange.opacity(0.10) : Color(hex: "ECFDF5"))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.pill)
+                .stroke(vehicleViewModel.activeVehicle == nil ? AppColors.orange.opacity(0.25) : Color(hex: "D0FAE5"), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.pill))
     }
     
     private var heroSection: some View {
@@ -243,8 +265,7 @@ struct AIChatView: View {
     
     private var heroSubtitle: String {
         if let vehicle = vehicleViewModel.activeVehicle {
-            let personality = vehicleViewModel.personality(for: vehicle)
-            return "I am your \(vehicle.brand) \(vehicle.model) digital twin. \(personality.aiLine)"
+            return "Your \(vehicle.brand) \(vehicle.model) AI assistant is ready."
         }
         
         return "Add a vehicle first, and I will become its digital twin."

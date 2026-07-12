@@ -14,6 +14,7 @@ final class ChatViewModel: ObservableObject {
     @Published var messages: [ChatUIMessage] = []
     @Published var inputText: String = ""
     @Published var isLoading: Bool = false
+    @Published var isClearingHistory: Bool = false
     @Published var errorMessage: String?
     
     @Published var isVehicleOnboardingActive: Bool = false
@@ -235,7 +236,45 @@ final class ChatViewModel: ObservableObject {
         )
     }
     
-    private func showVehicleGreeting(vehicle: VehicleResponse) {
+    func clearHistory(
+        vehicle: VehicleResponse?,
+        token: String?
+    ) async {
+        guard let vehicle else {
+            return
+        }
+        
+        guard let token else {
+            errorMessage = "Please sign in again to clear chat history."
+            return
+        }
+        
+        isClearingHistory = true
+        errorMessage = nil
+        
+        do {
+            try await repository.clearHistory(
+                vehicleId: vehicle.id,
+                token: token
+            )
+            
+            cachedMessagesByVehicleId.removeValue(forKey: vehicle.id)
+            saveLocalCache()
+            loadedVehicleId = vehicle.id
+            inputText = ""
+            isVehicleOnboardingActive = false
+            onboardingStep = .completed
+            shouldShowCreatedVehicleCard = false
+            createdVehicleCardAnchorId = nil
+            showVehicleGreeting(vehicle: vehicle, persists: false)
+        } catch {
+            errorMessage = friendlyMessage(for: error)
+        }
+        
+        isClearingHistory = false
+    }
+    
+    private func showVehicleGreeting(vehicle: VehicleResponse, persists: Bool = true) {
         let personality = VehiclePersonality.inferred(
             brand: vehicle.brand,
             model: vehicle.model
@@ -250,8 +289,10 @@ final class ChatViewModel: ObservableObject {
             )
         ]
         
-        cachedMessagesByVehicleId[vehicle.id] = messages
-        saveLocalCache()
+        if persists {
+            cachedMessagesByVehicleId[vehicle.id] = messages
+            saveLocalCache()
+        }
     }
     
     private func showEmptyVehicleGreeting() {
