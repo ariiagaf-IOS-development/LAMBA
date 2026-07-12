@@ -161,11 +161,20 @@ struct TimelineView: View {
                             activeTrip: tripTracker.activeTrip(for: vehicleViewModel.activeVehicleId),
                             currentDate: tripClock,
                             isSaving: tripTracker.isSaving,
+                            errorMessage: tripTracker.errorMessage,
                             onStart: {
                                 isStartingTrip = true
                             },
                             onEnd: {
                                 isEndingTrip = true
+                            },
+                            onTogglePause: {
+                                Task {
+                                    await toggleTripPause()
+                                }
+                            },
+                            onDiscard: {
+                                discardActiveTrip()
                             }
                         )
                         
@@ -283,6 +292,7 @@ struct TimelineView: View {
             return
         }
         
+        await tripTracker.syncActiveTrip(vehicleId: vehicleId, token: token)
         await timelineRepository.loadTimeline(vehicleId: vehicleId, token: token)
         await syncEventPhotos(vehicleId: vehicleId, token: token)
     }
@@ -349,7 +359,9 @@ struct TimelineView: View {
         let closedAt = Date()
         let sanitizedEndMileage = max(endMileageKm, activeTrip.startMileageKm)
         let distance = sanitizedEndMileage - activeTrip.startMileageKm
-        let duration = TripTrackingFormatter.duration(from: activeTrip.startedAt, to: closedAt)
+        let duration = TripTrackingFormatter.duration(
+            fromSeconds: activeTrip.elapsedSeconds(at: closedAt)
+        )
         var descriptionParts = [
             "Started \(TripTrackingFormatter.shortDateTime(activeTrip.startedAt))",
             "Ended \(TripTrackingFormatter.shortDateTime(closedAt))",
@@ -388,6 +400,23 @@ struct TimelineView: View {
             await loadTimeline()
         }
     }
+    
+    private func toggleTripPause() async {
+        guard let vehicleId = vehicleViewModel.activeVehicleId,
+              let token = authViewModel.token else {
+            return
+        }
+        
+        await tripTracker.togglePause(vehicleId: vehicleId, token: token)
+    }
+    
+    private func discardActiveTrip() {
+        guard let vehicleId = vehicleViewModel.activeVehicleId else {
+            return
+        }
+        
+        tripTracker.discardActiveTrip(vehicleId: vehicleId)
+    }
 }
 
 @MainActor
@@ -405,6 +434,19 @@ private final class TripTrackingRepository: ObservableObject {
     func activeTrip(for vehicleId: Int?) -> ActiveTrip? {
         guard let vehicleId else { return nil }
         return activeTrips[vehicleId]
+    }
+    
+    func syncActiveTrip(vehicleId: Int, token: String) async {
+        do {
+            let trip = try await TimelineAPIService.shared.getActiveTrip(vehicleId: vehicleId, token: token)
+            activeTrips[vehicleId] = trip.activeTrip
+            saveActiveTrips()
+        } catch APIError.serverError(let statusCode, _) where statusCode == 404 {
+            activeTrips.removeValue(forKey: vehicleId)
+            saveActiveTrips()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
     
     func startTrip(
@@ -431,7 +473,9 @@ private final class TripTrackingRepository: ObservableObject {
                 tripId: trip.id,
                 vehicleId: vehicle.id,
                 startMileageKm: trip.startMileageKm,
-                startedAt: trip.startAt.iso8601Date ?? startedAt
+                startedAt: trip.startAt.iso8601Date ?? startedAt,
+                accumulatedPausedSeconds: trip.activeTrip.accumulatedPausedSeconds,
+                pausedAt: trip.activeTrip.pausedAt
             )
             saveActiveTrips()
             isSaving = false
@@ -441,6 +485,53 @@ private final class TripTrackingRepository: ObservableObject {
             isSaving = false
             return false
         }
+    }
+    
+    func togglePause(vehicleId: Int, token: String) async {
+        guard let activeTrip = activeTrips[vehicleId],
+              let tripId = activeTrip.tripId else {
+            errorMessage = "This trip is stored only locally. End it or discard it before pausing."
+            return
+        }
+        
+        isSaving = true
+        errorMessage = nil
+        let actionDate = Date()
+        
+        do {
+            let trip: Trip
+            
+            if activeTrip.isPaused {
+                trip = try await TimelineAPIService.shared.resumeTrip(
+                    vehicleId: vehicleId,
+                    tripId: tripId,
+                    request: TripResumeRequest(resumedAt: actionDate.iso8601String),
+                    token: token
+                )
+            } else {
+                trip = try await TimelineAPIService.shared.pauseTrip(
+                    vehicleId: vehicleId,
+                    tripId: tripId,
+                    request: TripPauseRequest(pausedAt: actionDate.iso8601String),
+                    token: token
+                )
+            }
+            
+            var updatedTrip = trip.activeTrip
+            
+            if activeTrip.isPaused, !updatedTrip.isPaused {
+                updatedTrip = activeTrip.resuming(at: actionDate)
+            } else if !activeTrip.isPaused, updatedTrip.isPaused == false {
+                updatedTrip = activeTrip.pausing(at: actionDate)
+            }
+            
+            activeTrips[vehicleId] = updatedTrip
+            saveActiveTrips()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        
+        isSaving = false
     }
     
     func endTrip(
@@ -475,16 +566,18 @@ private final class TripTrackingRepository: ObservableObject {
             }
         }
         
-        let didCreateEvent = await timelineRepository.createEvent(
-            vehicleId: vehicleId,
-            token: token,
-            event: event
-        )
-        
-        guard didCreateEvent else {
-            errorMessage = timelineRepository.errorMessage
-            isSaving = false
-            return false
+        if tripId == nil {
+            let didCreateEvent = await timelineRepository.createEvent(
+                vehicleId: vehicleId,
+                token: token,
+                event: event
+            )
+            
+            guard didCreateEvent else {
+                errorMessage = timelineRepository.errorMessage
+                isSaving = false
+                return false
+            }
         }
         
         let didUpdateMileage: Bool
@@ -512,6 +605,12 @@ private final class TripTrackingRepository: ObservableObject {
         return true
     }
     
+    func discardActiveTrip(vehicleId: Int) {
+        activeTrips.removeValue(forKey: vehicleId)
+        saveActiveTrips()
+        errorMessage = nil
+    }
+    
     private func saveActiveTrips() {
         do {
             let encoded = try JSONEncoder().encode(activeTrips)
@@ -537,17 +636,20 @@ private struct TripTrackingCard: View {
     let activeTrip: ActiveTrip?
     let currentDate: Date
     let isSaving: Bool
+    let errorMessage: String?
     let onStart: () -> Void
     let onEnd: () -> Void
+    let onTogglePause: () -> Void
+    let onDiscard: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.lg) {
             HStack(alignment: .center, spacing: AppSpacing.md) {
-                Image(systemName: activeTrip == nil ? "play.fill" : "location.fill.viewfinder")
+                Image(systemName: iconName)
                     .font(.system(size: 18, weight: .black))
-                    .foregroundStyle(activeTrip == nil ? AppColors.primary : AppColors.green)
+                    .foregroundStyle(statusColor)
                     .frame(width: 48, height: 48)
-                    .background((activeTrip == nil ? AppColors.primary : AppColors.green).opacity(0.12))
+                    .background(statusColor.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
                 
                 VStack(alignment: .leading, spacing: 6) {
@@ -565,13 +667,13 @@ private struct TripTrackingCard: View {
                 
                 Spacer()
                 
-                Text(activeTrip == nil ? "READY" : "LIVE")
+                Text(statusText)
                     .font(.system(size: 9, weight: .black))
-                    .foregroundStyle(activeTrip == nil ? AppColors.primary : AppColors.green)
+                    .foregroundStyle(statusColor)
                     .tracking(1)
                     .padding(.horizontal, 10)
                     .frame(height: 26)
-                    .background((activeTrip == nil ? AppColors.primary : AppColors.green).opacity(0.1))
+                    .background(statusColor.opacity(0.1))
                     .clipShape(Capsule())
             }
             
@@ -581,40 +683,78 @@ private struct TripTrackingCard: View {
                 TripTrackingMetric(title: "DURATION", value: durationText)
             }
             
-            Button {
-                activeTrip == nil ? onStart() : onEnd()
-            } label: {
-                HStack(spacing: 8) {
-                    if isSaving {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Image(systemName: activeTrip == nil ? "play.fill" : "stop.fill")
+            if let activeTrip {
+                HStack(spacing: AppSpacing.sm) {
+                    Button(action: onTogglePause) {
+                        TripActionButtonLabel(
+                            title: activeTrip.isPaused ? "RESUME TRIP" : "PAUSE TRIP",
+                            icon: activeTrip.isPaused ? "play.fill" : "pause.fill",
+                            isLoading: isSaving,
+                            color: activeTrip.isPaused ? AppColors.green : AppColors.orange
+                        )
                     }
+                    .buttonStyle(.plain)
+                    .disabled(isSaving || activeTrip.tripId == nil)
                     
-                    Text(activeTrip == nil ? "START TRIP" : "END TRIP")
-                        .font(.system(size: 12, weight: .black))
-                        .tracking(1.2)
+                    Button(action: onEnd) {
+                        TripActionButtonLabel(
+                            title: "END TRIP",
+                            icon: "stop.fill",
+                            isLoading: false,
+                            color: AppColors.red
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isSaving)
                 }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(activeTrip == nil ? AppColors.primary : AppColors.red)
-                .clipShape(Capsule())
+                
+                if activeTrip.isPaused {
+                    TripPausedInfoRow(pausedAt: activeTrip.pausedAt)
+                }
+                
+                if activeTrip.tripId == nil || errorMessage != nil {
+                    Button(action: onDiscard) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash.fill")
+                            Text("DISCARD LOCAL TRIP")
+                        }
+                        .font(.system(size: 11, weight: .black))
+                        .foregroundStyle(AppColors.red)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(AppColors.red.opacity(0.08))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isSaving)
+                }
+            } else {
+                Button(action: onStart) {
+                    TripActionButtonLabel(
+                        title: "START TRIP",
+                        icon: "play.fill",
+                        isLoading: isSaving,
+                        color: AppColors.primary
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(vehicle == nil || isSaving)
             }
-            .buttonStyle(.plain)
-            .disabled(vehicle == nil || isSaving)
         }
         .padding(AppSpacing.lg)
         .background(AppColors.card)
         .clipShape(RoundedRectangle(cornerRadius: 32))
         .overlay(
             RoundedRectangle(cornerRadius: 32)
-                .stroke((activeTrip == nil ? AppColors.bubbleBorder : AppColors.green.opacity(0.24)), lineWidth: 1)
+                .stroke(activeTrip == nil ? AppColors.bubbleBorder : statusColor.opacity(0.24), lineWidth: 1)
         )
     }
     
     private var title: String {
+        if activeTrip?.isPaused == true {
+            return "Trip paused"
+        }
+        
         if activeTrip != nil {
             return "Trip in progress"
         }
@@ -637,7 +777,92 @@ private struct TripTrackingCard: View {
     
     private var durationText: String {
         guard let activeTrip else { return "--" }
-        return TripTrackingFormatter.duration(from: activeTrip.startedAt, to: currentDate)
+        return TripTrackingFormatter.duration(
+            fromSeconds: activeTrip.elapsedSeconds(at: currentDate)
+        )
+    }
+    
+    private var iconName: String {
+        if activeTrip?.isPaused == true {
+            return "pause.fill"
+        }
+        
+        return activeTrip == nil ? "play.fill" : "location.fill.viewfinder"
+    }
+    
+    private var statusText: String {
+        if activeTrip?.isPaused == true {
+            return "PAUSED"
+        }
+        
+        return activeTrip == nil ? "READY" : "LIVE"
+    }
+    
+    private var statusColor: Color {
+        if activeTrip?.isPaused == true {
+            return AppColors.orange
+        }
+        
+        return activeTrip == nil ? AppColors.primary : AppColors.green
+    }
+}
+
+private struct TripActionButtonLabel: View {
+    let title: String
+    let icon: String
+    let isLoading: Bool
+    let color: Color
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            if isLoading {
+                ProgressView()
+                    .tint(.white)
+            } else {
+                Image(systemName: icon)
+            }
+            
+            Text(title)
+                .font(.system(size: 12, weight: .black))
+                .tracking(1.2)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: 48)
+        .background(color)
+        .clipShape(Capsule())
+    }
+}
+
+private struct TripPausedInfoRow: View {
+    let pausedAt: Date?
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "pause.circle.fill")
+                .font(.system(size: 13, weight: .black))
+            
+            Text(pausedText)
+                .font(.system(size: 12, weight: .bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .foregroundStyle(AppColors.orange)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 36)
+        .background(AppColors.orange.opacity(0.10))
+        .clipShape(Capsule())
+    }
+    
+    private var pausedText: String {
+        guard let pausedAt else {
+            return "Paused - timer is stopped"
+        }
+        
+        return "Paused at \(TripTrackingFormatter.shortDateTime(pausedAt))"
     }
 }
 
@@ -816,16 +1041,44 @@ private struct EndTripView: View {
         activeTrip?.startMileageKm ?? currentMileage
     }
     
-    private var parsedMileage: Int {
-        Int(endMileage.filter { $0.isNumber }) ?? currentMileage
+    private var parsedMileage: Int? {
+        let trimmedMileage = endMileage.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedMileage.isEmpty else {
+            return nil
+        }
+        
+        return Int(trimmedMileage.filter { $0.isNumber })
     }
     
     private var distance: Int {
-        max(0, parsedMileage - startMileage)
+        max(0, (parsedMileage ?? startMileage) - startMileage)
     }
     
     private var isMileageValid: Bool {
-        parsedMileage >= startMileage
+        guard let parsedMileage else {
+            return false
+        }
+        
+        return parsedMileage >= startMileage
+    }
+    
+    private var mileageValidationMessage: String? {
+        let trimmedMileage = endMileage.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmedMileage.isEmpty {
+            return "Enter the current odometer reading before saving the trip."
+        }
+        
+        guard let parsedMileage else {
+            return "Enter odometer as a whole number, e.g. \(max(currentMileage, startMileage).formatted())."
+        }
+        
+        if parsedMileage < startMileage {
+            return "Current odometer cannot be lower than start km."
+        }
+        
+        return nil
     }
     
     private var parsedCost: Double? {
@@ -856,7 +1109,7 @@ private struct EndTripView: View {
                         
                         TripDistancePreviewCard(
                             startMileage: startMileage,
-                            currentMileage: parsedMileage,
+                            currentMileage: parsedMileage ?? startMileage,
                             distance: distance,
                             isValid: isMileageValid
                         )
@@ -864,7 +1117,9 @@ private struct EndTripView: View {
                         if let activeTrip {
                             TripTimingSummaryCard(
                                 startedAt: activeTrip.startedAt,
-                                duration: TripTrackingFormatter.duration(from: activeTrip.startedAt)
+                                duration: TripTrackingFormatter.duration(
+                                    fromSeconds: activeTrip.elapsedSeconds
+                                )
                             )
                         }
                         
@@ -872,7 +1127,9 @@ private struct EndTripView: View {
                             title: "CURRENT ODOMETER (KM)",
                             placeholder: "\(max(currentMileage, startMileage).formatted())",
                             text: $endMileage,
-                            keyboardType: .numberPad
+                            keyboardType: .numberPad,
+                            helperText: mileageValidationMessage,
+                            helperColor: AppColors.red
                         )
                         
                         EventTextFieldSection(
@@ -894,10 +1151,10 @@ private struct EndTripView: View {
                             text: "Enter the car's total odometer now. The app calculates trip distance from it."
                         )
                         
-                        if !isMileageValid {
+                        if let mileageValidationMessage {
                             TripSheetInfoRow(
                                 icon: "exclamationmark.triangle.fill",
-                                text: "Current odometer cannot be lower than start km.",
+                                text: mileageValidationMessage,
                                 tint: AppColors.red
                             )
                         }
@@ -919,13 +1176,15 @@ private struct EndTripView: View {
                     ? [AppColors.gradientStart, AppColors.gradientEnd]
                     : [AppColors.textSecondary.opacity(0.5), AppColors.textSecondary.opacity(0.5)]
                 ) {
-                    onSubmit(
-                        TripEndDraft(
-                            endMileageKm: parsedMileage,
-                            cost: parsedCost,
-                            note: cleanNote
+                    if let parsedMileage, isMileageValid {
+                        onSubmit(
+                            TripEndDraft(
+                                endMileageKm: parsedMileage,
+                                cost: parsedCost,
+                                note: cleanNote
+                            )
                         )
-                    )
+                    }
                 }
                 .disabled(isSaving || activeTrip == nil || !isMileageValid)
                 .padding(.horizontal, AppSpacing.xl)
@@ -935,11 +1194,6 @@ private struct EndTripView: View {
                     AppColors.background
                         .shadow(color: Color.black.opacity(0.06), radius: 12, x: 0, y: -8)
                 )
-            }
-        }
-        .onAppear {
-            if endMileage.isEmpty {
-                endMileage = "\(max(currentMileage, startMileage))"
             }
         }
     }

@@ -27,9 +27,9 @@ enum AppColors {
     static let teal = Color(hex: "0092B8")
     static let green = Color(hex: "00786F")
     
-    static let yellow = Color(hex: "FE9A00")
-    static let orange = Color(hex: "CA3500")
-    static let red = Color(hex: "DC2626")
+    static let yellow = Color(hex: "EAB308")
+    static let orange = Color(hex: "F59E0B")
+    static let red = Color(hex: "B91C1C")
     
     // MARK: - Risk levels
     static let riskLow = green
