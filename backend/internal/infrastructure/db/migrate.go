@@ -1,0 +1,140 @@
+package db
+
+import (
+	"context"
+	"database/sql"
+	"embed"
+	"fmt"
+	"path"
+	"sort"
+	"strconv"
+	"strings"
+)
+
+const (
+	migrationsDir        = "migrations"
+	sqlFileExtension     = ".sql"
+	migrationNameSep     = "_"
+	migrationNameParts   = 2
+	migrationVersionBase = 10
+	migrationVersionBit  = 64
+	minMigrationVersion  = 0
+)
+
+//go:embed migrations/*.sql
+var migrationFiles embed.FS
+
+func Migrate(ctx context.Context, conn *sql.DB) error {
+	if _, err := conn.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version BIGINT PRIMARY KEY,
+			name TEXT NOT NULL,
+			applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`); err != nil {
+		return fmt.Errorf("create schema_migrations table: %w", err)
+	}
+
+	entries, err := migrationFiles.ReadDir(migrationsDir)
+	if err != nil {
+		return fmt.Errorf("read migrations: %w", err)
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name() < entries[j].Name()
+	})
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), sqlFileExtension) {
+			continue
+		}
+
+		version, err := migrationVersion(entry.Name())
+		if err != nil {
+			return err
+		}
+
+		applied, err := migrationApplied(ctx, conn, version)
+		if err != nil {
+			return err
+		}
+		if applied {
+			continue
+		}
+
+		if err := applyMigration(ctx, conn, entry.Name(), version); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyMigration(ctx context.Context, conn *sql.DB, name string, version int64) error {
+	contents, err := migrationFiles.ReadFile(path.Join(migrationsDir, name))
+	if err != nil {
+		return fmt.Errorf("read migration %s: %w", name, err)
+	}
+
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin migration %s: %w", name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, string(contents)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("apply migration %s: %w", name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO schema_migrations (version, name)
+		VALUES ($1, $2)
+	`, version, name); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("record migration %s: %w", name, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit migration %s: %w", name, err)
+	}
+
+	return nil
+}
+
+func migrationVersion(name string) (int64, error) {
+	parts := strings.SplitN(name, migrationNameSep, migrationNameParts)
+	if len(parts) != migrationNameParts {
+		return 0, fmt.Errorf("invalid migration name %q", name)
+	}
+
+	version, err := strconv.ParseInt(
+		parts[0],
+		migrationVersionBase,
+		migrationVersionBit,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("invalid migration version in %q: %w", name, err)
+	}
+
+	if version <= minMigrationVersion {
+		return 0, fmt.Errorf("migration version must be positive in %q", name)
+	}
+
+	return version, nil
+}
+
+func migrationApplied(ctx context.Context, conn *sql.DB, version int64) (bool, error) {
+	var applied bool
+
+	if err := conn.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM schema_migrations
+			WHERE version = $1
+		)
+	`, version).Scan(&applied); err != nil {
+		return false, fmt.Errorf("check migration %d: %w", version, err)
+	}
+
+	return applied, nil
+}

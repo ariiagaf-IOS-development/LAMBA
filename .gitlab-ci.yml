@@ -1,0 +1,54 @@
+stages:
+  - build
+  - test
+  - deploy
+
+build-backend:
+  image: golang:1.23-alpine
+  stage: build
+  script:
+    - cd backend && go build -o /dev/null ./cmd/api
+  tags:
+    - docker
+
+test-backend:
+  image: golang:1.23-alpine
+  stage: test
+  script:
+    - cd backend && go test ./... -coverprofile=coverage.out -covermode=atomic && go tool cover -func=coverage.out | tail -1
+  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
+  artifacts:
+    paths:
+      - backend/coverage.out
+    expire_in: 7 days
+  tags:
+    - docker
+
+deploy:
+  image: ubuntu:latest
+  stage: deploy
+  before_script:
+    - mkdir -p $HOME/.docker
+    - echo $DOCKER_AUTH_CONFIG > $HOME/.docker/config.json
+    - apt-get update && apt-get install -y openssh-client rsync
+    - echo "$SSH_PRIVATE_KEY" > /tmp/id_rsa
+    - chmod 600 /tmp/id_rsa
+    - eval $(ssh-agent -s)
+    - ssh-add /tmp/id_rsa
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" > ~/.ssh/config
+    - ssh-add -l
+  script:
+    - rsync -avz --exclude='.git' --exclude='.env' -e "ssh -i /tmp/id_rsa" ./ root@10.93.27.23:/opt/lamba/
+    - scp -i /tmp/id_rsa $ENV_FILE root@10.93.27.23:/opt/lamba/.env
+    - ssh -i /tmp/id_rsa root@10.93.27.23 "
+        cd /opt/lamba &&
+        docker compose down &&
+        docker compose up -d --build
+      "
+  only:
+    - main
+  tags:
+    - docker
+  environment:
+    name: production

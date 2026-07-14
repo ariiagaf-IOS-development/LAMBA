@@ -1,0 +1,246 @@
+{
+  "context_id": "ctx-101-2026-04-24T10:31:00Z",
+  "schema_version": "ai-assistant-context-v0.1",
+  "generated_at": "2026-04-24T10:31:00Z",
+  "assistant": {
+    "locale": "en-US",
+    "audience": "owner",
+    "response_mode": "concise",
+    "safety_instructions": [
+      "Do not claim the vehicle is safe to drive when high-risk safety or engine issues are present.",
+      "Recommend professional inspection for active warnings, open recalls, and high-risk predictions."
+    ]
+  },
+  "digital_twin_ref": {
+    "digital_twin_id": "dt-101-2026-04-24T10:30:00Z",
+    "schema_version": "digital-twin-v0.1",
+    "generated_at": "2026-04-24T10:30:00Z"
+  },
+  "vehicle": {
+    "id": 101,
+    "user_id": 7,
+    "brand": "Toyota",
+    "model": "Camry",
+    "year": 2018,
+    "vin": "JTDBE32K123456789",
+    "mileage_km": 128500,
+    "created_at": "2026-01-03T12:00:00Z",
+    "updated_at": "2026-04-24T10:30:00Z",
+    "metadata": {
+      "personality_profile": "friendly",
+      "color": "silver",
+      "vehicle_type": "family",
+      "age_group": "older",
+      "voice_note": "Daily-driver tone: supportive, clear, and calm."
+    }
+  },
+  "timeline": {
+    "taxonomy_version": "timeline-taxonomy-v0.1",
+    "events": [
+      {
+        "id": 1003,
+        "vehicle_id": 101,
+        "type": "recall",
+        "title": "Fuel pump recall notice",
+        "description": "Manufacturer recall opened for fuel pump inspection and replacement if required.",
+        "mileage_km": null,
+        "cost": 0.0,
+        "event_date": "2026-04-15T00:00:00Z",
+        "source": "manufacturer_recall_feed",
+        "source_id": "26V123000",
+        "metadata": {
+          "recall_id": "26V123000",
+          "status": "open",
+          "component": "fuel_system",
+          "remedy": "Inspect fuel pump and replace if defective.",
+          "manufacturer": "Example Motors"
+        },
+        "assistant_hint": "Treat this as an unresolved safety/manufacturer action until the recall status is closed."
+      },
+      {
+        "id": 1004,
+        "vehicle_id": 101,
+        "type": "warning",
+        "title": "Check engine warning",
+        "description": "Driver reported intermittent check engine light during cold starts.",
+        "mileage_km": 128420,
+        "cost": null,
+        "event_date": "2026-04-21T07:40:00Z",
+        "source": "owner_report",
+        "source_id": "warning-2231",
+        "metadata": {
+          "warning_code": "check_engine",
+          "severity": "medium",
+          "system": "engine",
+          "is_active": true
+        },
+        "assistant_hint": "Prioritize this warning in answers about drivability, diagnostics, or next service."
+      },
+      {
+        "id": 1005,
+        "vehicle_id": 101,
+        "type": "maintenance",
+        "title": "Engine oil replacement",
+        "description": "Scheduled oil and oil filter replacement completed.",
+        "mileage_km": 128500,
+        "cost": 85.0,
+        "event_date": "2026-04-23T11:00:00Z",
+        "source": "service_center",
+        "source_id": "work-order-9912",
+        "metadata": {
+          "service_name": "Oil service",
+          "part_category": "engine_oil",
+          "parts_replaced": [
+            "engine_oil",
+            "oil_filter"
+          ],
+          "service_provider": "Fit Service"
+        },
+        "assistant_hint": "Use this as evidence that engine oil service was recently completed."
+      },
+      {
+        "id": 1007,
+        "vehicle_id": 101,
+        "type": "diagnostic",
+        "title": "OBD scan completed",
+        "description": "Diagnostic scanner found oxygen sensor and misfire history codes.",
+        "mileage_km": 128510,
+        "cost": 35.0,
+        "event_date": "2026-04-24T10:20:00Z",
+        "source": "diagnostic_tool",
+        "source_id": "scan-5520",
+        "metadata": {
+          "dtc_codes": [
+            "P0133",
+            "P0301"
+          ],
+          "system": "engine",
+          "tool_name": "OBD-II scanner",
+          "result": "codes_found"
+        },
+        "assistant_hint": "Ground engine-related answers in the oxygen sensor and misfire diagnostic codes."
+      }
+    ]
+  },
+  "parts_health": {
+    "model_version": "parts-health-v0.1",
+    "parts": [
+      {
+        "model_version": "parts-health-v0.1",
+        "part_category": "engine_oil",
+        "part_name": "Engine oil",
+        "health_score": 70,
+        "risk_level": "medium",
+        "current_mileage_km": 128500,
+        "mileage_since_service_km": 8500,
+        "remaining_km": 1500,
+        "recommendation": "Oil replacement will be required soon.",
+        "assistant_hint": "Mention that oil was serviced recently but remains a monitored medium-risk item."
+      },
+      {
+        "model_version": "parts-health-v0.1",
+        "part_category": "timing_belt",
+        "part_name": "Timing belt",
+        "health_score": 32,
+        "risk_level": "high",
+        "current_mileage_km": 128500,
+        "mileage_since_service_km": 90500,
+        "remaining_km": -500,
+        "recommendation": "Immediate timing belt inspection and replacement are recommended.",
+        "assistant_hint": "Prioritize this part as the highest maintenance risk in owner-facing answers."
+      }
+    ]
+  },
+  "predictions": {
+    "model_version": "maintenance-v1.2.0",
+    "source": "ml_service",
+    "items": [
+      {
+        "id": 501,
+        "vehicle_id": 101,
+        "part_code": "engine_oil",
+        "part_category": "engine_oil",
+        "part_name": "Engine oil",
+        "risk_level": "medium",
+        "risk_score": 65,
+        "remaining_km": 1500,
+        "remaining_days": 45,
+        "predicted_next_mileage": 130000,
+        "predicted_next_date": "2026-08-01",
+        "probability": 0.72,
+        "recommendation": "Maintenance will be required soon.",
+        "explanation": "8500 km have passed since the last oil change, so the maintenance risk is increased.",
+        "created_at": "2026-04-24T10:25:00Z",
+        "assistant_hint": "Use remaining distance and date when the user asks when to service engine oil."
+      },
+      {
+        "id": 502,
+        "vehicle_id": 101,
+        "part_code": "timing_belt",
+        "part_category": "timing_belt",
+        "part_name": "Timing belt",
+        "risk_level": "high",
+        "risk_score": 98,
+        "remaining_km": -500,
+        "remaining_days": 0,
+        "predicted_next_mileage": 128000,
+        "predicted_next_date": "2026-04-24",
+        "probability": 0.98,
+        "recommendation": "Inspect and replace the timing belt immediately.",
+        "explanation": "The timing belt is past its expected service interval and has recent repair history.",
+        "created_at": "2026-04-24T10:25:00Z",
+        "assistant_hint": "Do not soften this recommendation; it is overdue and high probability."
+      }
+    ]
+  },
+  "grounding": {
+    "overall_risk_level": "high",
+    "active_alerts": [
+      {
+        "severity": "high",
+        "title": "Timing belt is overdue",
+        "source_type": "prediction",
+        "source_id": 502
+      },
+      {
+        "severity": "medium",
+        "title": "Check engine warning is active",
+        "source_type": "timeline_event",
+        "source_id": 1004
+      },
+      {
+        "severity": "medium",
+        "title": "Fuel pump recall is open",
+        "source_type": "timeline_event",
+        "source_id": 1003
+      }
+    ],
+    "recommended_actions": [
+      "Inspect and replace the timing belt immediately.",
+      "Resolve open fuel pump recall.",
+      "Investigate active check engine warning."
+    ],
+    "evidence": [
+      {
+        "source_type": "vehicle",
+        "source_id": 101,
+        "statement": "The vehicle is a 2018 Toyota Camry with 128500 km."
+      },
+      {
+        "source_type": "timeline_event",
+        "source_id": 1007,
+        "statement": "The latest diagnostic scan found P0133 and P0301 codes."
+      },
+      {
+        "source_type": "part_health",
+        "source_id": "timing_belt",
+        "statement": "Timing belt health is 32 with high risk and -500 km remaining."
+      },
+      {
+        "source_type": "prediction",
+        "source_id": 502,
+        "statement": "The prediction model gives timing belt failure risk a 0.98 probability."
+      }
+    ]
+  }
+}

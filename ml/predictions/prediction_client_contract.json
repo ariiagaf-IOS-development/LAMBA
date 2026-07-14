@@ -1,0 +1,84 @@
+{
+    "service": "ML Prediction Service",
+    "endpoint": {
+      "method": "POST",
+      "path": "/predict",
+      "description": "Backend sends vehicle, lifecycle events and parts data to ML service. ML returns maintenance predictions."
+    },
+    "request": {
+      "request_id": "string",
+      "vehicle": {
+        "id": "integer",
+        "brand": "string",
+        "model": "string",
+        "year": "integer",
+        "vin": "string | null",
+        "mileage_km": "integer",
+        "fuel_type": "string",
+        "transmission": "string",
+        "usage_type": "string"
+      },
+      "events": [
+        {
+          "id": "integer",
+          "type": "string",
+          "title": "string",
+          "description": "string | null",
+          "mileage_km": "integer | null",
+          "cost": "number | null",
+          "event_date": "datetime string",
+          "metadata": "object | null"
+        }
+      ],
+      "parts": [
+        {
+          "part_category": "string",
+          "part_name": "string",
+          "installed_at_mileage_km": "integer | null",
+          "last_service_mileage_km": "integer | null",
+          "last_service_date": "datetime string | null"
+        }
+      ]
+    },
+    "response": {
+      "vehicle_id": "integer",
+      "model_version": "string",
+      "predictions": [
+        {
+          "part_category": "string",
+          "part_name": "string",
+          "risk_level": "low | medium | high",
+          "risk_score": "integer 0-100",
+          "remaining_km": "integer | null",
+          "remaining_days": "integer | null",
+          "predicted_next_mileage": "integer | null",
+          "predicted_next_date": "date string | null",
+          "probability": "number 0-1",
+          "recommendation": "string",
+          "explanation": "string",
+          "explanation_details": {
+            "explanation_text": "string",
+            "confidence": "Low confidence | Medium confidence | High confidence",
+            "confidence_qualifier": "low | medium | high",
+            "confidence_score": "number 0-1",
+            "factors": [
+              {
+                "name": "string",
+                "value": "string",
+                "impact": "low | medium | high",
+                "weight": "number 0-1",
+                "description": "string"
+              }
+            ],
+            "recommended_action": "string"
+          }
+        }
+      ]
+    },
+    "errors": {
+      "400": "Invalid request schema",
+      "422": "Validation error",
+      "500": "Internal ML service error",
+      "503": "ML service unavailable"
+    }
+  }

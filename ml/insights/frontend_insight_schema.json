@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lamba.local/schemas/frontend-vehicle-insight-v0.1.json",
+  "title": "Frontend Vehicle Insight",
+  "description": "Frontend-compatible vehicle insight generated from AI Assistant Context data.",
+  "type": "object",
+  "required": [
+    "title",
+    "body",
+    "category",
+    "severity"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short user-facing heading for the insight card or row."
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plain-language explanation grounded only in the provided vehicle context."
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "maintenance_due",
+        "cost_trend",
+        "anomaly_alert",
+        "positive_feedback",
+        "risk_warning"
+      ],
+      "description": "Insight category used by the frontend for grouping, icons, and filtering."
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Display priority and visual treatment. High severity should be surfaced prominently."
+    }
+  }
+}

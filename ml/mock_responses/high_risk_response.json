@@ -1,0 +1,12 @@
+{
+  "model_version": "mock-maintenance-v0.1",
+  "predictions": [
+    {
+      "part_name": "Timing belt",
+      "risk_level": "high",
+      "remaining_km": 300,
+      "probability": 0.91,
+      "recommendation": "Immediate inspection and replacement are recommended"
+    }
+  ]
+}

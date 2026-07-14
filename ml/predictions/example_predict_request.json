@@ -1,0 +1,38 @@
+{
+    "request_id": "pred-1-2026-06-17T12:00:00Z",
+    "vehicle": {
+      "id": 1,
+      "brand": "Toyota",
+      "model": "Camry",
+      "year": 2018,
+      "vin": "JTDBE32K...",
+      "mileage_km": 124500,
+      "fuel_type": "petrol",
+      "transmission": "automatic",
+      "usage_type": "mixed"
+    },
+    "events": [
+      {
+        "id": 101,
+        "type": "maintenance",
+        "title": "Oil change",
+        "description": "5W-30 oil and oil filter replacement",
+        "mileage_km": 120000,
+        "cost": 7500,
+        "event_date": "2026-01-10T12:00:00Z",
+        "metadata": {
+          "part_category": "engine_oil",
+          "service_name": "Fit Service"
+        }
+      }
+    ],
+    "parts": [
+      {
+        "part_category": "engine_oil",
+        "part_name": "Engine oil",
+        "installed_at_mileage_km": 120000,
+        "last_service_mileage_km": 120000,
+        "last_service_date": "2026-01-10T12:00:00Z"
+      }
+    ]
+  }

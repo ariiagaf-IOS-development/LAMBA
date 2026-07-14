@@ -1,0 +1,12 @@
+{
+  "model_version": "mock-maintenance-v0.1",
+  "predictions": [
+    {
+      "part_name": "Engine oil",
+      "risk_level": "medium",
+      "remaining_km": 1500,
+      "probability": 0.72,
+      "recommendation": "Oil replacement will be required soon"
+    }
+  ]
+}

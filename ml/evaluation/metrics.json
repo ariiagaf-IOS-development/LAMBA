@@ -1,0 +1,122 @@
+{
+  "model_version": "maintenance-risk-baseline-v0.1",
+  "selected_model": "random_forest",
+  "artifact_path": "ml/training/artifacts/maintenance_risk_model.joblib",
+  "validation_path": "ml/training/baseline/validation.csv",
+  "validation_rows": 6,
+  "feature_count": 22,
+  "classification": {
+    "labels": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "accuracy": 0.6667,
+    "precision_macro": 0.2222,
+    "recall_macro": 0.3333,
+    "f1_macro": 0.2667,
+    "confusion_matrix": [
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        4,
+        0
+      ],
+      [
+        0,
+        1,
+        0
+      ]
+    ],
+    "per_class": {
+      "low": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "medium": {
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1-score": 0.8,
+        "support": 4.0
+      },
+      "high": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "accuracy": 0.6666666666666666,
+      "macro avg": {
+        "precision": 0.2222222222222222,
+        "recall": 0.3333333333333333,
+        "f1-score": 0.26666666666666666,
+        "support": 6.0
+      },
+      "weighted avg": {
+        "precision": 0.4444444444444444,
+        "recall": 0.6666666666666666,
+        "f1-score": 0.5333333333333333,
+        "support": 6.0
+      }
+    }
+  },
+  "remaining_km_regression": {
+    "mae": 3638.83,
+    "rmse": 5028.73,
+    "r2": -0.7885
+  },
+  "validation_predictions": [
+    {
+      "vehicle_id": 1,
+      "actual_risk_level": "medium",
+      "predicted_risk_level": "medium",
+      "actual_remaining_km": 2637,
+      "predicted_remaining_km": 3383
+    },
+    {
+      "vehicle_id": 9,
+      "actual_risk_level": "low",
+      "predicted_risk_level": "medium",
+      "actual_remaining_km": 12000,
+      "predicted_remaining_km": 2713
+    },
+    {
+      "vehicle_id": 10,
+      "actual_risk_level": "high",
+      "predicted_risk_level": "medium",
+      "actual_remaining_km": 0,
+      "predicted_remaining_km": 7259
+    },
+    {
+      "vehicle_id": 11,
+      "actual_risk_level": "medium",
+      "predicted_risk_level": "medium",
+      "actual_remaining_km": 3000,
+      "predicted_remaining_km": 6329
+    },
+    {
+      "vehicle_id": 19,
+      "actual_risk_level": "medium",
+      "predicted_risk_level": "medium",
+      "actual_remaining_km": 3000,
+      "predicted_remaining_km": 4061
+    },
+    {
+      "vehicle_id": 21,
+      "actual_risk_level": "medium",
+      "predicted_risk_level": "medium",
+      "actual_remaining_km": 3000,
+      "predicted_remaining_km": 3151
+    }
+  ],
+  "notes": [
+    "Validation split is intentionally small and should be treated as a baseline smoke-test.",
+    "Metrics are generated from the persisted model artifact, not from retraining."
+  ]
+}

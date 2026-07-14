@@ -1,0 +1,1548 @@
+definitions:
+  domain.ChatMessage:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      message:
+        type: string
+      role:
+        $ref: '#/definitions/domain.ChatRole'
+      user_id:
+        type: integer
+      vehicle_id:
+        type: integer
+    type: object
+  domain.ChatRole:
+    enum:
+    - user
+    - assistant
+    - system
+    type: string
+    x-enum-varnames:
+    - ChatRoleUser
+    - ChatRoleAssistant
+    - ChatRoleSystem
+  domain.DashboardEventPreview:
+    properties:
+      cost:
+        type: number
+      event_date:
+        type: string
+      id:
+        type: integer
+      mileage_km:
+        type: integer
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/domain.EventType'
+    type: object
+  domain.DashboardPredictionSummary:
+    properties:
+      created_at:
+        type: string
+      model_version:
+        type: string
+      part_category:
+        type: string
+      part_name:
+        type: string
+      probability:
+        type: number
+      recommendation:
+        type: string
+      remaining_days:
+        type: integer
+      remaining_km:
+        type: integer
+      risk_level:
+        $ref: '#/definitions/domain.RiskLevel'
+      risk_score:
+        type: integer
+    type: object
+  domain.DashboardVehicleSummary:
+    properties:
+      brand:
+        type: string
+      id:
+        type: integer
+      mileage_km:
+        type: integer
+      model:
+        type: string
+      vin:
+        type: string
+      year:
+        type: integer
+    type: object
+  domain.EventType:
+    enum:
+    - trip
+    - refuel
+    - repair
+    - inspection
+    - accident
+    - recall
+    - warning
+    - maintenance
+    - prediction
+    - diagnostic
+    - part_replacement
+    - note
+    type: string
+    x-enum-varnames:
+    - EventTypeTrip
+    - EventTypeRefuel
+    - EventTypeRepair
+    - EventTypeInspection
+    - EventTypeAccident
+    - EventTypeRecall
+    - EventTypeWarning
+    - EventTypeMaintenance
+    - EventTypePrediction
+    - EventTypeDiagnostic
+    - EventTypePartReplacement
+    - EventTypeNote
+  domain.PartCatalogItem:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      default_lifetime_days:
+        type: integer
+      default_lifetime_km:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  domain.Prediction:
+    properties:
+      created_at:
+        type: string
+      explanation:
+        type: string
+      id:
+        type: integer
+      model_version:
+        type: string
+      part_category:
+        type: string
+      part_code:
+        type: string
+      part_name:
+        type: string
+      predicted_next_date:
+        type: string
+      predicted_next_mileage:
+        type: integer
+      probability:
+        type: number
+      recommendation:
+        type: string
+      remaining_days:
+        type: integer
+      remaining_km:
+        type: integer
+      risk_level:
+        $ref: '#/definitions/domain.RiskLevel'
+      risk_score:
+        type: integer
+      source:
+        $ref: '#/definitions/domain.PredictionSource'
+      vehicle_id:
+        type: integer
+    type: object
+  domain.PredictionSource:
+    enum:
+    - rule_based
+    - mock
+    - ml_service
+    type: string
+    x-enum-varnames:
+    - PredictionSourceRuleBased
+    - PredictionSourceMock
+    - PredictionSourceMLService
+  domain.RiskLevel:
+    enum:
+    - low
+    - medium
+    - high
+    type: string
+    x-enum-varnames:
+    - RiskLevelLow
+    - RiskLevelMedium
+    - RiskLevelHigh
+  domain.Vehicle:
+    properties:
+      brand:
+        type: string
+      created_at:
+        type: string
+      fuel_type:
+        type: string
+      id:
+        type: integer
+      mileage_km:
+        type: integer
+      model:
+        type: string
+      transmission:
+        type: string
+      updated_at:
+        type: string
+      usage_type:
+        type: string
+      user_id:
+        type: integer
+      vin:
+        type: string
+      year:
+        type: integer
+    type: object
+  domain.VehicleDashboard:
+    properties:
+      all_predictions:
+        items:
+          $ref: '#/definitions/domain.Prediction'
+        type: array
+      current_mileage:
+        type: integer
+      latest_events:
+        items:
+          $ref: '#/definitions/domain.DashboardEventPreview'
+        type: array
+      prediction_summary:
+        $ref: '#/definitions/domain.DashboardPredictionSummary'
+      status:
+        type: string
+      total_events_count:
+        type: integer
+      total_fuel_expenses:
+        type: number
+      total_maintenance_cost:
+        type: number
+      total_repairs_count:
+        type: integer
+      vehicle:
+        $ref: '#/definitions/domain.DashboardVehicleSummary'
+    type: object
+  domain.VehicleEvent:
+    properties:
+      cost:
+        type: number
+      created_at:
+        type: string
+      description:
+        type: string
+      event_date:
+        type: string
+      id:
+        type: integer
+      metadata:
+        additionalProperties: {}
+        type: object
+      mileage_km:
+        type: integer
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/domain.EventType'
+      vehicle_id:
+        type: integer
+    type: object
+  domain.VehicleEventStats:
+    properties:
+      by_type:
+        items:
+          $ref: '#/definitions/domain.VehicleEventTypeStats'
+        type: array
+      total_cost:
+        type: number
+      total_events:
+        type: integer
+    type: object
+  domain.VehicleEventTypeStats:
+    properties:
+      cost:
+        type: number
+      count:
+        type: integer
+      type:
+        $ref: '#/definitions/domain.EventType'
+    type: object
+  domain.VehiclePart:
+    properties:
+      catalog_code:
+        type: string
+      category:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      installed_at_mileage_km:
+        type: integer
+      last_service_date:
+        type: string
+      last_service_mileage_km:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+      vehicle_id:
+        type: integer
+    type: object
+  handler.ErrorResponse:
+    properties:
+      error:
+        example: internal server error
+        type: string
+    type: object
+  handler.HealthResponse:
+    properties:
+      checks:
+        additionalProperties:
+          type: string
+        type: object
+      service:
+        example: lamba-api
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
+  handler.authRequest:
+    properties:
+      email:
+        example: driver@example.com
+        type: string
+      first_name:
+        example: Ivan
+        type: string
+      last_name:
+        example: Petrov
+        type: string
+      password:
+        example: password123
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handler.authResponse:
+    properties:
+      token:
+        example: ZHJpdmVyQGV4YW1wbGUuY29tOnBhc3N3b3JkMTIz
+        type: string
+      token_type:
+        example: Basic
+        type: string
+      user:
+        $ref: '#/definitions/handler.userResponse'
+    type: object
+  handler.catalogResponse:
+    properties:
+      parts:
+        items:
+          $ref: '#/definitions/domain.PartCatalogItem'
+        type: array
+    type: object
+  handler.chatHistoryResponse:
+    properties:
+      count:
+        type: integer
+      limit:
+        type: integer
+      messages:
+        items:
+          $ref: '#/definitions/domain.ChatMessage'
+        type: array
+      offset:
+        type: integer
+      vehicle_id:
+        type: integer
+    type: object
+  handler.chatRequest:
+    properties:
+      message:
+        example: Когда мне нужно менять масло?
+        type: string
+    required:
+    - message
+    type: object
+  handler.chatResponse:
+    properties:
+      message:
+        $ref: '#/definitions/domain.ChatMessage'
+    type: object
+  handler.createPartRequest:
+    properties:
+      catalog_code:
+        example: engine_oil
+        type: string
+      category:
+        example: fluids
+        type: string
+      installed_at_mileage_km:
+        example: 40000
+        type: integer
+      last_service_date:
+        example: "2025-01-15T00:00:00Z"
+        type: string
+      last_service_mileage_km:
+        example: 40000
+        type: integer
+      name:
+        example: Engine oil
+        type: string
+    required:
+    - name
+    type: object
+  handler.predictionsResponse:
+    properties:
+      predictions:
+        items:
+          $ref: '#/definitions/domain.Prediction'
+        type: array
+      vehicle_id:
+        type: integer
+    type: object
+  handler.pushPredictionsRequest:
+    properties:
+      predictions:
+        items:
+          $ref: '#/definitions/domain.Prediction'
+        type: array
+    required:
+    - predictions
+    type: object
+  handler.userResponse:
+    properties:
+      created_at:
+        example: "2026-06-12T12:00:00Z"
+        type: string
+      email:
+        example: driver@example.com
+        type: string
+      first_name:
+        example: Ivan
+        type: string
+      id:
+        example: 1
+        type: integer
+      last_name:
+        example: Petrov
+        type: string
+    type: object
+  handler.vehicleEventRequest:
+    properties:
+      cost:
+        example: 7500
+        type: number
+      description:
+        example: Масло 5W-30, фильтр
+        type: string
+      event_date:
+        example: "2026-06-03T12:00:00Z"
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      mileage_km:
+        example: 124500
+        type: integer
+      title:
+        example: Замена масла
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/domain.EventType'
+        example: repair
+    required:
+    - event_date
+    - title
+    - type
+    type: object
+  handler.vehicleEventStatsResponse:
+    properties:
+      stats:
+        $ref: '#/definitions/domain.VehicleEventStats'
+      vehicle_id:
+        type: integer
+    type: object
+  handler.vehicleEventUpdateRequest:
+    properties:
+      cost:
+        example: 7500
+        type: number
+      description:
+        example: Масло 5W-30, фильтр
+        type: string
+      event_date:
+        example: "2026-06-03T12:00:00Z"
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      mileage_km:
+        example: 124500
+        type: integer
+      title:
+        example: Замена масла
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/domain.EventType'
+        enum:
+        - trip
+        - refuel
+        - repair
+        - inspection
+        - accident
+        - recall
+        - warning
+        - maintenance
+        - prediction
+        - diagnostic
+        - part_replacement
+        - note
+        example: repair
+    type: object
+  handler.vehicleEventsResponse:
+    properties:
+      count:
+        type: integer
+      events:
+        items:
+          $ref: '#/definitions/domain.VehicleEvent'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      vehicle_id:
+        type: integer
+    type: object
+  handler.vehicleListResponse:
+    properties:
+      vehicles:
+        items:
+          $ref: '#/definitions/domain.Vehicle'
+        type: array
+    type: object
+  handler.vehiclePartsResponse:
+    properties:
+      parts:
+        items:
+          $ref: '#/definitions/domain.VehiclePart'
+        type: array
+    type: object
+  handler.vehicleRequest:
+    properties:
+      brand:
+        example: Toyota
+        type: string
+      fuel_type:
+        example: petrol
+        type: string
+      mileage_km:
+        example: 42000
+        type: integer
+      model:
+        example: Camry
+        type: string
+      transmission:
+        example: automatic
+        type: string
+      usage_type:
+        example: mixed
+        type: string
+      vin:
+        example: JTDBE32K620123456
+        type: string
+      year:
+        example: 2020
+        type: integer
+    required:
+    - brand
+    - model
+    - year
+    type: object
+  handler.vehicleTimelineResponse:
+    properties:
+      count:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
+      timeline:
+        items:
+          $ref: '#/definitions/domain.VehicleEvent'
+        type: array
+      vehicle_id:
+        type: integer
+    type: object
+  handler.vehicleUpdateRequest:
+    properties:
+      brand:
+        example: Toyota
+        type: string
+      fuel_type:
+        example: petrol
+        type: string
+      mileage_km:
+        example: 45000
+        type: integer
+      model:
+        example: Camry
+        type: string
+      transmission:
+        example: automatic
+        type: string
+      usage_type:
+        example: mixed
+        type: string
+      vin:
+        example: JTDBE32K620123456
+        type: string
+      year:
+        example: 2021
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Validates credentials and returns an HTTP Basic token payload.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.authRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.authResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Log in
+      tags:
+      - auth
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a user account and returns an HTTP Basic token payload.
+      parameters:
+      - description: Registration credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.authRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.authResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Register a user
+      tags:
+      - auth
+  /api/internal/vehicles/{id}/predictions:
+    post:
+      consumes:
+      - application/json
+      description: Internal endpoint (no auth) for ML service to push predictions
+        directly
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Predictions to save
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.pushPredictionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.predictionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Push predictions from ML service
+      tags:
+      - predictions-internal
+  /api/me:
+    get:
+      description: Returns the user authenticated by HTTP Basic credentials.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.userResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get current user
+      tags:
+      - auth
+  /api/parts/catalog:
+    get:
+      description: Returns all available parts from the catalog
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.catalogResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: List parts catalog
+      tags:
+      - parts
+  /api/vehicles:
+    get:
+      description: Lists vehicles owned by the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehicleListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: List vehicles
+      tags:
+      - vehicles
+    post:
+      consumes:
+      - application/json
+      description: Creates a vehicle owned by the authenticated user.
+      parameters:
+      - description: Vehicle payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.vehicleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Vehicle'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Create a vehicle
+      tags:
+      - vehicles
+  /api/vehicles/{id}:
+    delete:
+      description: Deletes a vehicle owned by the authenticated user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a vehicle
+      tags:
+      - vehicles
+    get:
+      description: Gets a vehicle owned by the authenticated user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Vehicle'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get a vehicle
+      tags:
+      - vehicles
+    patch:
+      consumes:
+      - application/json
+      description: Updates a vehicle owned by the authenticated user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Vehicle patch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.vehicleUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Vehicle'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Update a vehicle
+      tags:
+      - vehicles
+  /api/vehicles/{id}/chat:
+    post:
+      consumes:
+      - application/json
+      description: Sends a message to the AI assistant in the context of a specific
+        vehicle. Returns the AI-generated response.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Chat message
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.chatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.chatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Send a chat message
+      tags:
+      - chat
+  /api/vehicles/{id}/chat/history:
+    get:
+      description: Returns paginated chat message history for a vehicle in chronological
+        order.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Limit (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.chatHistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get chat history
+      tags:
+      - chat
+  /api/vehicles/{id}/dashboard:
+    get:
+      consumes:
+      - application/json
+      description: 'Aggregated vehicle data: stats, events, predictions'
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.VehicleDashboard'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get vehicle dashboard
+      tags:
+      - dashboard
+  /api/vehicles/{id}/events:
+    get:
+      description: Lists lifecycle events for a vehicle owned by the authenticated
+        user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehicleEventsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: List vehicle events
+      tags:
+      - vehicle-events
+    post:
+      consumes:
+      - application/json
+      description: Creates a lifecycle event for a vehicle owned by the authenticated
+        user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Vehicle event payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.vehicleEventRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.VehicleEvent'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Create a vehicle event
+      tags:
+      - vehicle-events
+  /api/vehicles/{id}/events/{eventId}:
+    delete:
+      description: Deletes a lifecycle event for a vehicle owned by the authenticated
+        user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a vehicle event
+      tags:
+      - vehicle-events
+    patch:
+      consumes:
+      - application/json
+      description: Updates a lifecycle event for a vehicle owned by the authenticated
+        user.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Event ID
+        in: path
+        name: eventId
+        required: true
+        type: integer
+      - description: Vehicle event patch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.vehicleEventUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.VehicleEvent'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Update a vehicle event
+      tags:
+      - vehicle-events
+  /api/vehicles/{id}/events/stats:
+    get:
+      description: Returns aggregated statistics for vehicle events.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehicleEventStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get vehicle event statistics
+      tags:
+      - vehicle-events
+  /api/vehicles/{id}/parts:
+    get:
+      description: Returns all parts installed on a vehicle
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehiclePartsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: List vehicle parts
+      tags:
+      - parts
+    post:
+      consumes:
+      - application/json
+      description: Creates a new part record for the specified vehicle
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Part payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.createPartRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.VehiclePart'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Add a part to a vehicle
+      tags:
+      - parts
+  /api/vehicles/{id}/parts/{partId}:
+    delete:
+      description: Removes a part from the vehicle
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Part ID
+        in: path
+        name: partId
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Delete a vehicle part
+      tags:
+      - parts
+  /api/vehicles/{id}/predictions:
+    get:
+      description: Returns latest predictions for vehicle parts. If predictions do
+        not exist, backend generates and stores them.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.predictionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BasicAuth: []
+      summary: Get vehicle predictions
+      tags:
+      - predictions
+  /api/vehicles/{id}/predictions/refresh:
+    post:
+      description: Calls ML service to regenerate predictions for the vehicle, saves
+        results, and returns updated predictions
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.predictionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Refresh vehicle predictions
+      tags:
+      - predictions
+  /api/vehicles/{id}/timeline:
+    get:
+      description: Returns the basic vehicle timeline based on lifecycle events.
+      parameters:
+      - description: Vehicle ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.vehicleTimelineResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BasicAuth: []
+      summary: Get vehicle timeline
+      tags:
+      - vehicle-events
+  /health:
+    get:
+      description: Returns API liveness information and database readiness when configured.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handler.HealthResponse'
+      summary: Check API health
+      tags:
+      - health
+swagger: "2.0"

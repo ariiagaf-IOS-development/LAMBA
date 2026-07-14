@@ -1,0 +1,168 @@
+{
+  "vehicle_id": 101,
+  "taxonomy_version": "timeline-taxonomy-v0.1",
+  "events": [
+    {
+      "id": 1001,
+      "vehicle_id": 101,
+      "type": "inspection",
+      "title": "Pre-service inspection",
+      "description": "Technician inspected brake pads, tires, and fluid levels before scheduled service.",
+      "mileage_km": 128100,
+      "cost": 0.0,
+      "event_date": "2026-04-02T09:30:00Z",
+      "metadata": {
+        "source": "service_center",
+        "source_id": "inspection-7781",
+        "inspection_result": "attention_required",
+        "checked_components": ["brake_pads", "tires", "engine_oil"],
+        "next_check_due": "2026-07-02"
+      }
+    },
+    {
+      "id": 1002,
+      "vehicle_id": 101,
+      "type": "accident",
+      "title": "Minor front bumper impact",
+      "description": "Low-speed parking impact reported by owner. No airbags deployed.",
+      "mileage_km": 128250,
+      "cost": 320.0,
+      "event_date": "2026-04-10T17:15:00Z",
+      "metadata": {
+        "source": "owner_report",
+        "source_id": "owner-accident-004",
+        "severity": "minor",
+        "damage_area": "front_bumper",
+        "airbags_deployed": false,
+        "insurance_claim_id": null
+      }
+    },
+    {
+      "id": 1003,
+      "vehicle_id": 101,
+      "type": "recall",
+      "title": "Fuel pump recall notice",
+      "description": "Manufacturer recall opened for fuel pump inspection and replacement if required.",
+      "mileage_km": null,
+      "cost": 0.0,
+      "event_date": "2026-04-15T00:00:00Z",
+      "metadata": {
+        "source": "manufacturer_recall_feed",
+        "source_id": "26V123000",
+        "recall_id": "26V123000",
+        "status": "open",
+        "component": "fuel_system",
+        "remedy": "Inspect fuel pump and replace if defective.",
+        "manufacturer": "Example Motors"
+      }
+    },
+    {
+      "id": 1004,
+      "vehicle_id": 101,
+      "type": "warning",
+      "title": "Check engine warning",
+      "description": "Driver reported intermittent check engine light during cold starts.",
+      "mileage_km": 128420,
+      "cost": null,
+      "event_date": "2026-04-21T07:40:00Z",
+      "metadata": {
+        "source": "owner_report",
+        "source_id": "warning-2231",
+        "warning_code": "check_engine",
+        "severity": "medium",
+        "system": "engine",
+        "is_active": true
+      }
+    },
+    {
+      "id": 1005,
+      "vehicle_id": 101,
+      "type": "maintenance",
+      "title": "Engine oil replacement",
+      "description": "Scheduled oil and oil filter replacement completed.",
+      "mileage_km": 128500,
+      "cost": 85.0,
+      "event_date": "2026-04-23T11:00:00Z",
+      "metadata": {
+        "source": "service_center",
+        "source_id": "work-order-9912",
+        "service_name": "Oil service",
+        "part_category": "engine_oil",
+        "parts_replaced": ["engine_oil", "oil_filter"],
+        "service_provider": "Fit Service"
+      }
+    },
+    {
+      "id": 1006,
+      "vehicle_id": 101,
+      "type": "prediction",
+      "title": "Brake pads medium risk predicted",
+      "description": "ML prediction indicates brake pads should be inspected soon.",
+      "mileage_km": 128500,
+      "cost": null,
+      "event_date": "2026-04-23T11:05:00Z",
+      "metadata": {
+        "source": "ml_prediction_service",
+        "source_id": "prediction-run-441",
+        "model_version": "maintenance-v1.2.0",
+        "part_category": "brake_pads",
+        "risk_level": "medium",
+        "probability": 0.64,
+        "remaining_km": 4500
+      }
+    },
+    {
+      "id": 1007,
+      "vehicle_id": 101,
+      "type": "diagnostic",
+      "title": "OBD scan completed",
+      "description": "Diagnostic scanner found oxygen sensor and misfire history codes.",
+      "mileage_km": 128510,
+      "cost": 35.0,
+      "event_date": "2026-04-24T10:20:00Z",
+      "metadata": {
+        "source": "diagnostic_tool",
+        "source_id": "scan-5520",
+        "dtc_codes": ["P0133", "P0301"],
+        "system": "engine",
+        "tool_name": "OBD-II scanner",
+        "result": "codes_found"
+      }
+    },
+    {
+      "id": 1008,
+      "vehicle_id": 101,
+      "type": "part_replacement",
+      "title": "Brake pads replaced",
+      "description": "Front brake pads were replaced after inspection.",
+      "mileage_km": 128540,
+      "cost": 180.0,
+      "event_date": "2026-04-24T13:30:00Z",
+      "metadata": {
+        "source": "service_center",
+        "source_id": "work-order-9913",
+        "part_code": "brake_pads",
+        "part_category": "brakes",
+        "part_name": "Brake pads",
+        "old_part_status": "worn",
+        "warranty_covered": false
+      }
+    },
+    {
+      "id": 1009,
+      "vehicle_id": 101,
+      "type": "note",
+      "title": "Owner reported vibration",
+      "description": "Owner noticed light steering wheel vibration above 90 km/h.",
+      "mileage_km": 128600,
+      "cost": 0.0,
+      "event_date": "2026-04-25T08:45:00Z",
+      "metadata": {
+        "source": "owner_report",
+        "source_id": "owner-note-119",
+        "author": "owner",
+        "note_category": "driving_symptom"
+      }
+    }
+  ]
+}

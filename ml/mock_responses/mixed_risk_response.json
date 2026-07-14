@@ -1,0 +1,26 @@
+{
+  "model_version": "mock-maintenance-v0.1",
+  "predictions": [
+    {
+      "part_name": "Engine oil",
+      "risk_level": "medium",
+      "remaining_km": 1500,
+      "probability": 0.72,
+      "recommendation": "Oil replacement will be required soon"
+    },
+    {
+      "part_name": "Brake pads",
+      "risk_level": "low",
+      "remaining_km": 12000,
+      "probability": 0.21,
+      "recommendation": "No critical maintenance risk detected"
+    },
+    {
+      "part_name": "Timing belt",
+      "risk_level": "high",
+      "remaining_km": 300,
+      "probability": 0.91,
+      "recommendation": "Immediate inspection and replacement are recommended"
+    }
+  ]
+}
