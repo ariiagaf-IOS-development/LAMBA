@@ -89,6 +89,46 @@ final class TimelineRepository: ObservableObject {
         }
     }
     
+    func updateEventAndReturn(
+        vehicleId: Int,
+        eventId: Int,
+        token: String,
+        event: VehicleEventUpdateRequest
+    ) async -> VehicleEvent? {
+        isCreating = true
+        errorMessage = nil
+        
+        do {
+            let updatedEvent = try await apiService.updateEvent(
+                vehicleId: vehicleId,
+                eventId: eventId,
+                request: event,
+                token: token
+            )
+            
+            if let index = events.firstIndex(where: { $0.id == eventId }) {
+                events[index] = updatedEvent
+            } else {
+                events.insert(updatedEvent, at: 0)
+            }
+            
+            events = events.sortedByEventDateDescending()
+            
+            if let refreshedStats = try? await apiService.getEventStats(vehicleId: vehicleId, token: token) {
+                stats = refreshedStats.stats
+            }
+            
+            NotificationCenter.default.post(name: .vehicleEventsDidChange, object: vehicleId)
+            
+            isCreating = false
+            return updatedEvent
+        } catch {
+            errorMessage = error.localizedDescription
+            isCreating = false
+            return nil
+        }
+    }
+    
     func deleteEvent(
         vehicleId: Int,
         eventId: Int,

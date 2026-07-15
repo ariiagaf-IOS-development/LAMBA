@@ -87,8 +87,143 @@ struct VehicleEvent: Codable, Identifiable {
     let createdAt: String?
     
     var displayFuelLiters: Double? {
-        fuelLiters ?? metadata?["fuel_liters"]?.doubleValue
+        fuelLiters ?? metadataDoubleValue(for: [
+            "fuel_liters",
+            "fuel_litres",
+            "fuel_liter",
+            "fuel_litre",
+            "liters",
+            "litres",
+            "fuel",
+            "fuel_amount",
+            "fuel_amount_liters",
+            "fuel_volume",
+            "fuel_volume_liters",
+            "volume_liters"
+        ])
     }
+    
+    var displayPricePerLiter: Double? {
+        metadataDoubleValue(for: [
+            "price_per_liter",
+            "price_per_litre",
+            "price_per_l",
+            "price_liter",
+            "price_litre",
+            "fuel_price_per_liter",
+            "cost_per_liter",
+            "cost_per_litre",
+            "rub_per_liter",
+            "rub_per_litre"
+        ])
+    }
+    
+    var tripStartDate: Date? {
+        metadataStringValue(for: ["start_at", "started_at", "trip_start", "start_time"])?.iso8601Date
+    }
+    
+    var tripEndDate: Date? {
+        metadataStringValue(for: ["end_at", "ended_at", "trip_end", "end_time"])?.iso8601Date ?? eventDate.iso8601Date
+    }
+    
+    var tripDurationSeconds: Double? {
+        if let durationSeconds = metadataDoubleValue(for: ["duration_seconds", "trip_duration_seconds"]) {
+            return durationSeconds
+        }
+        
+        guard let tripStartDate,
+              let tripEndDate else {
+            return nil
+        }
+        
+        return tripEndDate.timeIntervalSince(tripStartDate)
+    }
+    
+    var tripDistanceKm: Double? {
+        metadataDoubleValue(for: ["distance_km", "trip_distance_km"])
+    }
+    
+    var additionalMetadataItems: [EventMetadataDisplayItem] {
+        let reservedKeys = Set([
+            "fuel_liters",
+            "fuel_litres",
+            "fuel_liter",
+            "fuel_litre",
+            "liters",
+            "litres",
+            "fuel",
+            "fuel_amount",
+            "fuel_amount_liters",
+            "fuel_volume",
+            "fuel_volume_liters",
+            "volume_liters",
+            "price_per_liter",
+            "price_per_litre",
+            "price_per_l",
+            "price_liter",
+            "price_litre",
+            "fuel_price_per_liter",
+            "cost_per_liter",
+            "cost_per_litre",
+            "rub_per_liter",
+            "rub_per_litre",
+            "start_at",
+            "started_at",
+            "trip_start",
+            "start_time",
+            "end_at",
+            "ended_at",
+            "trip_end",
+            "end_time",
+            "duration_seconds",
+            "trip_duration_seconds",
+            "distance_km",
+            "trip_distance_km"
+        ])
+        
+        return (metadata ?? [:])
+            .filter { !reservedKeys.contains($0.key.lowercased()) }
+            .map { key, value in
+                EventMetadataDisplayItem(
+                    key: key,
+                    title: key.metadataTitle,
+                    value: value.displayText
+                )
+            }
+            .sorted { $0.title < $1.title }
+    }
+    
+    private func metadataDoubleValue(for aliases: [String]) -> Double? {
+        guard let metadata else { return nil }
+        
+        for alias in aliases {
+            if let value = metadata.first(where: { $0.key.caseInsensitiveCompare(alias) == .orderedSame })?.value.doubleValue {
+                return value
+            }
+        }
+        
+        return nil
+    }
+    
+    private func metadataStringValue(for aliases: [String]) -> String? {
+        guard let metadata else { return nil }
+        
+        for alias in aliases {
+            if let value = metadata.first(where: { $0.key.caseInsensitiveCompare(alias) == .orderedSame })?.value.stringValue {
+                return value
+            }
+        }
+        
+        return nil
+    }
+}
+
+struct EventMetadataDisplayItem: Identifiable {
+    let key: String
+    let title: String
+    let value: String
+    
+    var id: String { key }
 }
 
 struct VehicleTimelineResponse: Decodable {
@@ -196,9 +331,35 @@ enum EventMetadataValue: Codable, Equatable {
         case .int(let value):
             return Double(value)
         case .string(let value):
-            return Double(value.replacingOccurrences(of: ",", with: "."))
+            return value.firstDecimalValue
         case .bool:
             return nil
+        }
+    }
+    
+    var displayText: String {
+        switch self {
+        case .double(let value):
+            return value.formatted(.number.precision(.fractionLength(0...2)))
+        case .int(let value):
+            return value.formatted()
+        case .string(let value):
+            return value
+        case .bool(let value):
+            return value ? "Yes" : "No"
+        }
+    }
+    
+    var stringValue: String? {
+        switch self {
+        case .string(let value):
+            return value
+        case .double(let value):
+            return String(value)
+        case .int(let value):
+            return String(value)
+        case .bool(let value):
+            return String(value)
         }
     }
     
@@ -229,5 +390,38 @@ enum EventMetadataValue: Codable, Equatable {
         case .bool(let value):
             try container.encode(value)
         }
+    }
+}
+
+private extension String {
+    var iso8601Date: Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let date = formatter.date(from: self) {
+            return date
+        }
+        
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: self)
+    }
+    
+    var firstDecimalValue: Double? {
+        let normalized = replacingOccurrences(of: ",", with: ".")
+        let allowedCharacters = CharacterSet(charactersIn: "0123456789.-")
+        let parts = normalized
+            .unicodeScalars
+            .split { !allowedCharacters.contains($0) }
+            .map(String.init)
+        
+        return parts.compactMap(Double.init).first
+    }
+    
+    var metadataTitle: String {
+        split(separator: "_")
+            .map { word in
+                word.prefix(1).uppercased() + word.dropFirst()
+            }
+            .joined(separator: " ")
     }
 }

@@ -22,6 +22,7 @@ struct TimelineView: View {
     @State private var isStartingTrip = false
     @State private var isEndingTrip = false
     @State private var selectedEvent: VehicleEvent?
+    @State private var editingEvent: VehicleEvent?
     @State private var tripClock = Date()
     private let eventsListAnchorId = "timeline-events-list"
     
@@ -73,6 +74,18 @@ struct TimelineView: View {
             .environmentObject(authViewModel)
             .environmentObject(vehicleViewModel)
         }
+        .fullScreenCover(item: $editingEvent) { event in
+            AddEventView(
+                repository: timelineRepository,
+                photoStore: eventPhotoStore,
+                editingEvent: event,
+                onClose: {
+                    editingEvent = nil
+                }
+            )
+            .environmentObject(authViewModel)
+            .environmentObject(vehicleViewModel)
+        }
         .sheet(isPresented: $isStartingTrip) {
             StartTripView(
                 vehicle: vehicleViewModel.activeVehicle,
@@ -113,7 +126,13 @@ struct TimelineView: View {
         .sheet(item: $selectedEvent) { event in
             TimelineEventDetailView(
                 event: event,
-                photos: eventPhotoStore.photos(for: event.id)
+                photos: eventPhotoStore.photos(for: event.id),
+                onEdit: {
+                    selectedEvent = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        editingEvent = event
+                    }
+                }
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -380,7 +399,12 @@ struct TimelineView: View {
             eventDate: closedAt.iso8601String,
             mileageKm: sanitizedEndMileage,
             cost: cost,
-            metadata: nil
+            metadata: [
+                "start_at": .string(activeTrip.startedAt.iso8601String),
+                "end_at": .string(closedAt.iso8601String),
+                "duration_seconds": .double(activeTrip.elapsedSeconds(at: closedAt)),
+                "distance_km": .int(distance)
+            ]
         )
         
         let didClose = await tripTracker.endTrip(
@@ -1948,6 +1972,7 @@ private struct TimelineEventCard: View {
 private struct TimelineEventDetailView: View {
     let event: VehicleEvent
     let photos: [Data]
+    let onEdit: () -> Void
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -1978,6 +2003,17 @@ private struct TimelineEventDetailView: View {
                     }
                     
                     Spacer(minLength: 0)
+                    
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 14, weight: .black))
+                            .foregroundStyle(AppColors.primary)
+                            .frame(width: 38, height: 38)
+                            .background(AppColors.primary.opacity(0.10))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Edit event")
                 }
                 
                 LazyVGrid(
@@ -1987,12 +2023,34 @@ private struct TimelineEventDetailView: View {
                     TimelineDetailMetric(title: "MILEAGE", value: mileageText, tint: AppColors.primary)
                     TimelineDetailMetric(title: "COST", value: costText, tint: AppColors.orange)
                     
+                    if event.type == .trip {
+                        if let tripStartText {
+                            TimelineDetailMetric(title: "START", value: tripStartText, tint: AppColors.primary)
+                        }
+                        
+                        if let tripEndText {
+                            TimelineDetailMetric(title: "END", value: tripEndText, tint: AppColors.green)
+                        }
+                        
+                        if let tripDurationText {
+                            TimelineDetailMetric(title: "DURATION", value: tripDurationText, tint: AppColors.teal)
+                        }
+                        
+                        if let tripDistanceText {
+                            TimelineDetailMetric(title: "DISTANCE", value: tripDistanceText, tint: AppColors.primary)
+                        }
+                    }
+                    
                     if event.displayFuelLiters != nil {
                         TimelineDetailMetric(title: "FUEL", value: fuelText, tint: AppColors.teal)
                     }
                     
                     if pricePerLiterText != nil {
                         TimelineDetailMetric(title: "PRICE/L", value: pricePerLiterText ?? "--", tint: AppColors.primary)
+                    }
+                    
+                    ForEach(event.additionalMetadataItems) { item in
+                        TimelineDetailMetric(title: item.title.uppercased(), value: item.value, tint: AppColors.teal)
                     }
                     
                     if !photos.isEmpty {
@@ -2054,7 +2112,49 @@ private struct TimelineEventDetailView: View {
         return "\(fuelLiters.fuelLitersText) L"
     }
     
+    private var tripStartText: String? {
+        event.tripStartDate.map(shortTripDateTime)
+    }
+    
+    private var tripEndText: String? {
+        event.tripEndDate.map(shortTripDateTime)
+    }
+    
+    private var tripDurationText: String? {
+        event.tripDurationSeconds.map(formatTripDuration)
+    }
+    
+    private var tripDistanceText: String? {
+        guard let distance = event.tripDistanceKm,
+              distance >= 0 else {
+            return nil
+        }
+        
+        return "\(distance.formatted(.number.precision(.fractionLength(0...1)))) km"
+    }
+    
+    private func shortTripDateTime(_ date: Date) -> String {
+        date.formatted(.dateTime.month(.abbreviated).day().hour().minute())
+    }
+    
+    private func formatTripDuration(_ seconds: TimeInterval) -> String {
+        let totalMinutes = max(0, Int(seconds / 60))
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        
+        return "\(max(1, minutes))m"
+    }
+    
     private var pricePerLiterText: String? {
+        if let pricePerLiter = event.displayPricePerLiter,
+           pricePerLiter > 0 {
+            return "\(pricePerLiter.formatted(.number.precision(.fractionLength(1...2)))) rub"
+        }
+        
         guard let fuelLiters = event.displayFuelLiters,
               fuelLiters > 0,
               let cost = event.cost,
@@ -2218,6 +2318,7 @@ private struct TimelineErrorCard: View {
 private struct AddEventView: View {
     @ObservedObject var repository: TimelineRepository
     @ObservedObject var photoStore: EventPhotoStore
+    let editingEvent: VehicleEvent?
     let onClose: () -> Void
     
     @EnvironmentObject private var authViewModel: AuthViewModel
@@ -2230,13 +2331,42 @@ private struct AddEventView: View {
     @State private var cost = ""
     @State private var fuelLiters = ""
     @State private var date = Date()
+    @State private var tripStartDate = Date()
+    @State private var tripEndDate = Date()
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var selectedPhotoData: [Data] = []
+    
+    private var isEditing: Bool {
+        editingEvent != nil
+    }
+    
+    init(
+        repository: TimelineRepository,
+        photoStore: EventPhotoStore,
+        editingEvent: VehicleEvent? = nil,
+        onClose: @escaping () -> Void
+    ) {
+        self.repository = repository
+        self.photoStore = photoStore
+        self.editingEvent = editingEvent
+        self.onClose = onClose
+        
+        _type = State(initialValue: editingEvent?.type ?? .trip)
+        _title = State(initialValue: editingEvent?.title ?? "")
+        _description = State(initialValue: editingEvent?.description ?? "")
+        _mileage = State(initialValue: editingEvent?.mileageKm.map(String.init) ?? "")
+        _cost = State(initialValue: editingEvent?.cost.map { "\($0)" } ?? "")
+        _fuelLiters = State(initialValue: editingEvent?.displayFuelLiters.map { "\($0)" } ?? "")
+        _date = State(initialValue: editingEvent?.eventDate.iso8601Date ?? Date())
+        _tripStartDate = State(initialValue: editingEvent?.tripStartDate ?? editingEvent?.eventDate.iso8601Date ?? Date())
+        _tripEndDate = State(initialValue: editingEvent?.tripEndDate ?? editingEvent?.eventDate.iso8601Date ?? Date())
+    }
     
     private var isFormValid: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         fuelLitersValidationMessage == nil &&
-        costValidationMessage == nil
+        costValidationMessage == nil &&
+        tripValidationMessage == nil
     }
     
     var body: some View {
@@ -2247,7 +2377,7 @@ private struct AddEventView: View {
             VStack(spacing: 0) {
                 AppHeaderView(
                     config: .init(
-                        title: "NEURAL ENTRY"
+                        title: isEditing ? "EDIT EVENT" : "NEURAL ENTRY"
                     ),
                     actions: .init(
                         onBackTap: onClose
@@ -2255,9 +2385,11 @@ private struct AddEventView: View {
                 )
                 
                 ScreenHeroView(
-                    title: "SELECT",
-                    accentTitle: "PROTOCOL",
-                    subtitle: "Initialize a new event log to synchronize with your digital twin.",
+                    title: isEditing ? "UPDATE" : "SELECT",
+                    accentTitle: isEditing ? "EVENT" : "PROTOCOL",
+                    subtitle: isEditing
+                    ? "Refine event details created manually or through chat."
+                    : "Initialize a new event log to synchronize with your digital twin.",
                     topPadding: 12
                 )
                 
@@ -2337,17 +2469,26 @@ private struct AddEventView: View {
                             )
                         }
                         
-                        EventFieldSection(title: "EVENT DATE") {
-                            DatePicker("", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                                .labelsHidden()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(AppSpacing.md)
-                                .background(AppColors.card)
-                                .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: AppRadius.xl)
-                                        .stroke(AppColors.bubbleBorder, lineWidth: 1)
-                                )
+                        if type == .trip {
+                            HStack(spacing: AppSpacing.md) {
+                                EventDatePickerSection(title: "START TIME", date: $tripStartDate)
+                                EventDatePickerSection(title: "END TIME", date: $tripEndDate)
+                            }
+                            
+                            EventDerivedMetricCard(
+                                title: "DURATION",
+                                value: tripDurationPreview,
+                                icon: "timer"
+                            )
+                            
+                            if let tripValidationMessage {
+                                Text(tripValidationMessage)
+                                    .font(AppTypography.caption)
+                                    .foregroundStyle(AppColors.red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        } else {
+                            EventDatePickerSection(title: "EVENT DATE", date: $date)
                         }
                         
                         if let errorMessage = repository.errorMessage {
@@ -2363,7 +2504,9 @@ private struct AddEventView: View {
                 }
                 
                 PrimaryActionButton(
-                    title: repository.isCreating ? "SYNCHRONIZING..." : "FINALIZE SYNC",
+                    title: repository.isCreating
+                    ? "SYNCHRONIZING..."
+                    : (isEditing ? "SAVE EVENT" : "FINALIZE SYNC"),
                     colors: isFormValid
                     ? [AppColors.gradientStart, AppColors.gradientEnd]
                     : [AppColors.textSecondary.opacity(0.5), AppColors.textSecondary.opacity(0.5)]
@@ -2390,6 +2533,10 @@ private struct AddEventView: View {
             
             if newType != .refuel {
                 fuelLiters = ""
+            }
+            
+            if newType == .trip {
+                date = tripEndDate
             }
         }
     }
@@ -2447,13 +2594,40 @@ private struct AddEventView: View {
         return nil
     }
     
-    private var eventMetadata: [String: EventMetadataValue]? {
-        guard type == .refuel,
-              let parsedFuelLiters else {
-            return nil
+    private var tripValidationMessage: String? {
+        guard type == .trip else { return nil }
+        
+        guard tripEndDate >= tripStartDate else {
+            return "End time must be later than start time."
         }
         
-        return ["fuel_liters": .double(parsedFuelLiters)]
+        return nil
+    }
+    
+    private var eventMetadata: [String: EventMetadataValue]? {
+        if type == .trip {
+            var metadata = editingEvent?.metadata ?? [:]
+            metadata["start_at"] = .string(tripStartDate.iso8601String)
+            metadata["end_at"] = .string(tripEndDate.iso8601String)
+            metadata["duration_seconds"] = .double(tripEndDate.timeIntervalSince(tripStartDate))
+            
+            if let mileageKm = Int(mileage.filter { $0.isNumber }),
+               let startMileage = editingEvent?.mileageKm,
+               mileageKm >= startMileage {
+                metadata["distance_km"] = .int(mileageKm - startMileage)
+            }
+            
+            return metadata
+        }
+        
+        guard type == .refuel,
+              let parsedFuelLiters else {
+            return editingEvent?.metadata
+        }
+        
+        var metadata = editingEvent?.metadata ?? [:]
+        metadata["fuel_liters"] = .double(parsedFuelLiters)
+        return metadata
     }
     
     private var costPerLiterPreview: String {
@@ -2467,6 +2641,14 @@ private struct AddEventView: View {
         return "\((parsedCost / parsedFuelLiters).formatted(.number.precision(.fractionLength(1...2)))) rub/L"
     }
     
+    private var tripDurationPreview: String {
+        guard tripEndDate >= tripStartDate else {
+            return "--"
+        }
+        
+        return TripTrackingFormatter.duration(from: tripStartDate, to: tripEndDate)
+    }
+    
     private func submit() async {
         guard isFormValid else {
             return
@@ -2477,11 +2659,36 @@ private struct AddEventView: View {
             return
         }
         
+        if let editingEvent {
+            let request = VehicleEventUpdateRequest(
+                type: type,
+                title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                description: description.trimmingCharacters(in: .whitespacesAndNewlines).emptyToNil,
+                eventDate: (type == .trip ? tripEndDate : date).iso8601String,
+                mileageKm: Int(mileage.filter { $0.isNumber }),
+                cost: parsedCost,
+                metadata: eventMetadata
+            )
+            
+            let updatedEvent = await repository.updateEventAndReturn(
+                vehicleId: vehicleId,
+                eventId: editingEvent.id,
+                token: token,
+                event: request
+            )
+            
+            if updatedEvent != nil {
+                onClose()
+            }
+            
+            return
+        }
+        
         let request = VehicleEventRequest(
             type: type,
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             description: description.trimmingCharacters(in: .whitespacesAndNewlines).emptyToNil,
-            eventDate: date.iso8601String,
+            eventDate: (type == .trip ? tripEndDate : date).iso8601String,
             mileageKm: Int(mileage.filter { $0.isNumber }),
             cost: parsedCost,
             metadata: eventMetadata
@@ -2545,6 +2752,26 @@ private struct EventFieldSection<Content: View>: View {
                 .tracking(2)
             
             content
+        }
+    }
+}
+
+private struct EventDatePickerSection: View {
+    let title: String
+    @Binding var date: Date
+    
+    var body: some View {
+        EventFieldSection(title: title) {
+            DatePicker("", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                .labelsHidden()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(AppSpacing.md)
+                .background(AppColors.card)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.xl)
+                        .stroke(AppColors.bubbleBorder, lineWidth: 1)
+                )
         }
     }
 }
