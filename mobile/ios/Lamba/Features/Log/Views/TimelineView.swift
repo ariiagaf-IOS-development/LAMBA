@@ -2350,6 +2350,8 @@ private struct AddEventView: View {
         self.photoStore = photoStore
         self.editingEvent = editingEvent
         self.onClose = onClose
+        let initialTripEndDate = editingEvent?.tripEndDate ?? editingEvent?.eventDate.iso8601Date ?? Date()
+        let initialTripStartDate = editingEvent?.tripStartDate ?? initialTripEndDate.addingTimeInterval(-30 * 60)
         
         _type = State(initialValue: editingEvent?.type ?? .trip)
         _title = State(initialValue: editingEvent?.title ?? "")
@@ -2358,8 +2360,8 @@ private struct AddEventView: View {
         _cost = State(initialValue: editingEvent?.cost.map { "\($0)" } ?? "")
         _fuelLiters = State(initialValue: editingEvent?.displayFuelLiters.map { "\($0)" } ?? "")
         _date = State(initialValue: editingEvent?.eventDate.iso8601Date ?? Date())
-        _tripStartDate = State(initialValue: editingEvent?.tripStartDate ?? editingEvent?.eventDate.iso8601Date ?? Date())
-        _tripEndDate = State(initialValue: editingEvent?.tripEndDate ?? editingEvent?.eventDate.iso8601Date ?? Date())
+        _tripStartDate = State(initialValue: initialTripStartDate)
+        _tripEndDate = State(initialValue: initialTripEndDate)
     }
     
     private var isFormValid: Bool {
@@ -2470,7 +2472,7 @@ private struct AddEventView: View {
                         }
                         
                         if type == .trip {
-                            HStack(spacing: AppSpacing.md) {
+                            VStack(spacing: AppSpacing.lg) {
                                 EventDatePickerSection(title: "START TIME", date: $tripStartDate)
                                 EventDatePickerSection(title: "END TIME", date: $tripEndDate)
                             }
@@ -2597,7 +2599,7 @@ private struct AddEventView: View {
     private var tripValidationMessage: String? {
         guard type == .trip else { return nil }
         
-        guard tripEndDate >= tripStartDate else {
+        guard tripEndDate > tripStartDate else {
             return "End time must be later than start time."
         }
         
@@ -2642,7 +2644,7 @@ private struct AddEventView: View {
     }
     
     private var tripDurationPreview: String {
-        guard tripEndDate >= tripStartDate else {
+        guard tripEndDate > tripStartDate else {
             return "--"
         }
         
